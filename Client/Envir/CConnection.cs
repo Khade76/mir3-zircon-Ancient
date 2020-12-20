@@ -30,7 +30,7 @@ namespace Client.Envir
         public CConnection(TcpClient client)
             : base(client)
         {
-            OnException += (o, e) => CEnvir.SaveError(e.ToString());
+            OnException += (o, e) => CEnvir.SaveException(e);
 
             UpdateTimeOut();
 
@@ -63,6 +63,7 @@ namespace Client.Envir
             }
 
             CEnvir.Storage = null;
+            CEnvir.PartsStorage = null;
         }
         public override void TrySendDisconnect(Packet p)
         {
@@ -80,7 +81,7 @@ namespace Client.Envir
                 if (p.Reason == DisconnectReason.WrongVersion)
                 {
                     CEnvir.WrongVersion = true;
-                    
+
                     DXMessageBox.Show("Disconnected from server\nReason: Wrong Version.", "Disconnected", DialogAction.Close).Modal = false;
                 }
 
@@ -386,7 +387,7 @@ namespace Client.Envir
             if (login == null) return;
 
             login.ActivationBox.ActivationAttempted = false;
-            
+
             switch (p.Result)
             {
                 case ActivationResult.Disabled:
@@ -543,7 +544,7 @@ namespace Client.Envir
                     login.RequestActivationBox.Visible = false;
 
                     CEnvir.TestServer = p.TestServer;
-                    
+
                     if (Config.RememberDetails)
                     {
                         Config.RememberedEMail = login.LoginBox.EMailTextBox.TextBox.Text;
@@ -569,7 +570,7 @@ namespace Client.Envir
                     CEnvir.BlockList = p.BlockList;
 
                     if (!string.IsNullOrEmpty(p.Message)) DXMessageBox.Show(p.Message, "Login Message");
-                    
+
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -598,6 +599,7 @@ namespace Client.Envir
             };
 
             CEnvir.Storage = CEnvir.MainStorage;
+            CEnvir.PartsStorage = CEnvir.MainPartsStorage;
 
             scene.SelectBox.UpdateCharacters();
         }
@@ -608,7 +610,7 @@ namespace Client.Envir
             if (select == null) return;
 
             select.CharacterBox.CreateAttempted = false;
-            
+
             switch (p.Result)
             {
                 case NewCharacterResult.Disabled:
@@ -653,7 +655,7 @@ namespace Client.Envir
 
                     select.SelectBox.CharacterList.Add(p.Character);
                     select.SelectBox.UpdateCharacters();
-                    select.SelectBox.SelectedButton = select.SelectBox.SelectButtons[select.SelectBox.CharacterList.Count -1];
+                    select.SelectBox.SelectedButton = select.SelectBox.SelectButtons[select.SelectBox.CharacterList.Count - 1];
 
                     DXMessageBox.Show("Character has been created.", "Character Creation");
                     break;
@@ -692,80 +694,83 @@ namespace Client.Envir
         {
             try
             {
-                
-            SelectScene select = DXControl.ActiveScene as SelectScene;
-            if (select == null) return;
 
-            select.SelectBox.StartGameAttempted = false;
+                SelectScene select = DXControl.ActiveScene as SelectScene;
+                if (select == null) return;
+
+                select.SelectBox.StartGameAttempted = false;
 
 
-            DXMessageBox box;
-            DateTime expiry;
-            switch (p.Result)
-            {
-                case StartGameResult.Disabled:
-                    DXMessageBox.Show("Starting the game is currently disabled.", "Start Game");
-                    break;
-                case StartGameResult.Deleted:
-                    DXMessageBox.Show("You cannot start the game on a deleted character.", "Start Game");
-                    break;
-                case StartGameResult.Delayed:
-                    expiry = CEnvir.Now.Add(p.Duration);
+                DXMessageBox box;
+                DateTime expiry;
+                switch (p.Result)
+                {
+                    case StartGameResult.Disabled:
+                        DXMessageBox.Show("Starting the game is currently disabled.", "Start Game");
+                        break;
+                    case StartGameResult.Deleted:
+                        DXMessageBox.Show("You cannot start the game on a deleted character.", "Start Game");
+                        break;
+                    case StartGameResult.Delayed:
+                        expiry = CEnvir.Now.Add(p.Duration);
 
-                    box = DXMessageBox.Show($"This character has recently logged out please wait.\n" +
-                                            $"Duration: {Math.Floor(p.Duration.TotalHours):#,##0} Hours, {p.Duration.Minutes} Minutes, {p.Duration.Seconds} Seconds", "Start Game");
+                        box = DXMessageBox.Show($"This character has recently logged out please wait.\n" +
+                                                $"Duration: {Math.Floor(p.Duration.TotalHours):#,##0} Hours, {p.Duration.Minutes} Minutes, {p.Duration.Seconds} Seconds", "Start Game");
 
-                    box.ProcessAction = () =>
-                    {
-                        if (CEnvir.Now > expiry)
+                        box.ProcessAction = () =>
                         {
-                            if (select.SelectBox.CanStartGame)
-                                select.SelectBox.StartGame();
-                            box.ProcessAction = null;
-                            return;
-                        }
+                            if (CEnvir.Now > expiry)
+                            {
+                                if (select.SelectBox.CanStartGame)
+                                    select.SelectBox.StartGame();
+                                box.ProcessAction = null;
+                                return;
+                            }
 
-                        TimeSpan remaining = expiry - CEnvir.Now;
+                            TimeSpan remaining = expiry - CEnvir.Now;
 
-                        box.Label.Text = $"This character has recently logged out please wait.\n" +
-                                         $"Duration: {Math.Floor(remaining.TotalHours):#,##0} Hours, {remaining.Minutes:#,##0} Minutes, {remaining.Seconds} Seconds";
-                    };
-                    break;
-                case StartGameResult.UnableToSpawn:
-                    DXMessageBox.Show("Unable to start the game, failed to spawn character.", "Start Game");
-                    break;
-                case StartGameResult.NotFound:
-                    DXMessageBox.Show("Unable to start the game, character not found.", "Start Game");
-                    break;
-                case StartGameResult.Success:
-                    select.Dispose();
-                    DXSoundManager.StopAllSounds();
+                            box.Label.Text = $"This character has recently logged out please wait.\n" +
+                                             $"Duration: {Math.Floor(remaining.TotalHours):#,##0} Hours, {remaining.Minutes:#,##0} Minutes, {remaining.Seconds} Seconds";
+                        };
+                        break;
+                    case StartGameResult.UnableToSpawn:
+                        DXMessageBox.Show("Unable to start the game, failed to spawn character.", "Start Game");
+                        break;
+                    case StartGameResult.NotFound:
+                        DXMessageBox.Show("Unable to start the game, character not found.", "Start Game");
+                        break;
+                    case StartGameResult.Success:
+                        select.Dispose();
+                        DXSoundManager.StopAllSounds();
 
-                    GameScene scene = new GameScene(Config.GameSize);
-                    DXControl.ActiveScene = scene;
+                        GameScene scene = new GameScene(Config.GameSize);
+                        DXControl.ActiveScene = scene;
 
-                    scene.MapControl.MapInfo = Globals.MapInfoList.Binding.FirstOrDefault(x => x.Index == p.StartInformation.MapIndex);
-                    GameScene.Game.QuestLog = p.StartInformation.Quests;
+                        scene.MapControl.MapInfo = Globals.MapInfoList.Binding.FirstOrDefault(x => x.Index == p.StartInformation.MapIndex);
+                        scene.MapControl.InstanceInfo = Globals.InstanceInfoList.Binding.FirstOrDefault(x => x.Index == p.StartInformation.InstanceIndex);
 
-                    GameScene.Game.NPCAdoptCompanionBox.AvailableCompanions = p.StartInformation.AvailableCompanions;
-                    GameScene.Game.NPCAdoptCompanionBox.RefreshUnlockButton();
+                        GameScene.Game.QuestLog = p.StartInformation.Quests;
 
-                    GameScene.Game.NPCCompanionStorageBox.Companions = p.StartInformation.Companions;
-                    GameScene.Game.NPCCompanionStorageBox.UpdateScrollBar();
-                    
-                    GameScene.Game.Companion = GameScene.Game.NPCCompanionStorageBox.Companions.FirstOrDefault(x => x.Index == p.StartInformation.Companion);
+                        GameScene.Game.NPCAdoptCompanionBox.AvailableCompanions = p.StartInformation.AvailableCompanions;
+                        GameScene.Game.NPCAdoptCompanionBox.RefreshUnlockButton();
 
-                    scene.User = new UserObject(p.StartInformation);
+                        GameScene.Game.NPCCompanionStorageBox.Companions = p.StartInformation.Companions;
+                        GameScene.Game.NPCCompanionStorageBox.UpdateScrollBar();
 
-                    GameScene.Game.BuffBox.BuffsChanged();
-                    GameScene.Game.RankingBox.Observable = p.StartInformation.Observable;
+                        GameScene.Game.Companion = GameScene.Game.NPCCompanionStorageBox.Companions.FirstOrDefault(x => x.Index == p.StartInformation.Companion);
 
-                    GameScene.Game.StorageSize = p.StartInformation.StorageSize;
+                        scene.User = new UserObject(p.StartInformation);
 
-                    if (!string.IsNullOrEmpty(p.Message)) DXMessageBox.Show(p.Message, "Start Game");
+                        GameScene.Game.BuffBox.BuffsChanged();
+                        GameScene.Game.RankingBox.Observable = p.StartInformation.Observable;
 
+                        GameScene.Game.StorageSize = p.StartInformation.StorageSize;
 
-                    break;
+                        if (!string.IsNullOrEmpty(p.Message)) DXMessageBox.Show(p.Message, "Start Game");
+
+                        GameScene.Game.CompanionFilterBox.Refresh();
+
+                        break;
                 }
             }
             catch (Exception e)
@@ -777,6 +782,8 @@ namespace Client.Envir
         public void Process(S.MapChanged p)
         {
             GameScene.Game.MapControl.MapInfo = Globals.MapInfoList.Binding.FirstOrDefault(x => x.Index == p.MapIndex);
+
+            GameScene.Game.MapControl.InstanceInfo = Globals.InstanceInfoList.Binding.FirstOrDefault(x => x.Index == p.InstanceIndex);
 
             MapObject.User.NameChanged();
         }
@@ -812,7 +819,7 @@ namespace Client.Envir
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
                 if (ob.ObjectID != p.ObjectID) continue;
-                
+
                 ob.Remove();
                 return;
             }
@@ -846,7 +853,7 @@ namespace Client.Envir
             {
                 if (ob.ObjectID != p.ObjectID) continue;
 
-                SpellObject spell = (SpellObject) ob;
+                SpellObject spell = (SpellObject)ob;
                 spell.Power = p.Power;
                 spell.UpdateLibraries();
                 return;
@@ -867,6 +874,8 @@ namespace Client.Envir
                 player.HorseShape = p.HorseArmour;
                 player.ArmourImage = p.ArmourImage;
                 player.ShieldShape = p.Shield;
+                player.EmblemShape = p.EmblemShape;
+                player.WingsShape = p.WingsShape;
 
                 player.Light = p.Light;
                 if (player == MapObject.User)
@@ -925,7 +934,7 @@ namespace Client.Envir
                 if (ob.ObjectID != p.ObjectID) continue;
                 if (ob.Race == ObjectType.Monster)
                 {
-                    switch (((MonsterObject) ob).Image)
+                    switch (((MonsterObject)ob).Image)
                     {
 
                         case MonsterImage.VoraciousGhost:
@@ -1005,9 +1014,9 @@ namespace Client.Envir
                 if (ob.ObjectID != p.ObjectID) continue;
 
                 if (ob.Race != ObjectType.Player) return;
-                
-                PlayerObject player = (PlayerObject) ob;
-                
+
+                PlayerObject player = (PlayerObject)ob;
+
                 player.Horse = p.Horse;
 
                 if (player.Interupt)
@@ -1023,7 +1032,7 @@ namespace Client.Envir
 
         public void Process(S.ObjectStruck p)
         {
-            
+
 
 
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
@@ -1033,27 +1042,27 @@ namespace Client.Envir
                 if (ob == MapObject.User) //{
                 {
                     GameScene.Game.CanRun = false;
-                 //   MapObject.User.NextRunTime = CEnvir.Now.AddMilliseconds(600);
-                 //MapObject.User.NextActionTime = CEnvir.Now.AddMilliseconds(300);
+                    //   MapObject.User.NextRunTime = CEnvir.Now.AddMilliseconds(600);
+                    //MapObject.User.NextActionTime = CEnvir.Now.AddMilliseconds(300);
 
-                   /* if (MapObject.User.ServerTime > DateTime.MinValue) //fix desyncing attack timers and being struck
-                    {
-                        switch (MapObject.User.CurrentAction)
-                        {
-                            case MirAction.Attack:
-                            case MirAction.RangeAttack:
-                                MapObject.User.AttackTime += TimeSpan.FromMilliseconds(300);
-                                break;
-                            case MirAction.Spell:
-                                MapObject.User.NextMagicTime += TimeSpan.FromMilliseconds(300);
-                                break;
-                        }
-                    }*/
+                    /* if (MapObject.User.ServerTime > DateTime.MinValue) //fix desyncing attack timers and being struck
+                     {
+                         switch (MapObject.User.CurrentAction)
+                         {
+                             case MirAction.Attack:
+                             case MirAction.RangeAttack:
+                                 MapObject.User.AttackTime += TimeSpan.FromMilliseconds(300);
+                                 break;
+                             case MirAction.Spell:
+                                 MapObject.User.NextMagicTime += TimeSpan.FromMilliseconds(300);
+                                 break;
+                         }
+                     }*/
                 }
 
-             //   Point loc = ob.ActionQueue.Count > 0 ? ob.ActionQueue[ob.ActionQueue.Count - 1].Location : ob.CurrentLocation;
+                //   Point loc = ob.ActionQueue.Count > 0 ? ob.ActionQueue[ob.ActionQueue.Count - 1].Location : ob.CurrentLocation;
 
-               // ob.ActionQueue.Add(new ObjectAction(MirAction.Struck, p.Direction, loc, p.AttackerID, p.Element));
+                // ob.ActionQueue.Add(new ObjectAction(MirAction.Struck, p.Direction, loc, p.AttackerID, p.Element));
 
                 ob.Struck(p.AttackerID, p.Element);
 
@@ -1062,7 +1071,7 @@ namespace Client.Envir
         }
         public void Process(S.ObjectDash p)
         {
-            
+
 
             if (MapObject.User.ObjectID == p.ObjectID && !GameScene.Game.Observer)
                 MapObject.User.ServerTime = DateTime.MinValue;
@@ -1072,7 +1081,7 @@ namespace Client.Envir
                 if (ob.ObjectID != p.ObjectID) continue;
 
                 ob.StanceTime = CEnvir.Now.AddSeconds(3);
-                ob.ActionQueue.Add(new ObjectAction(MirAction.Standing, p.Direction, Functions.Move(p.Location, p.Direction, - p.Distance)));
+                ob.ActionQueue.Add(new ObjectAction(MirAction.Standing, p.Direction, Functions.Move(p.Location, p.Direction, -p.Distance)));
 
                 for (int i = 1; i <= p.Distance; i++)
                     ob.ActionQueue.Add(new ObjectAction(MirAction.Moving, p.Direction, Functions.Move(p.Location, p.Direction, i - p.Distance), 1, p.Magic));
@@ -1148,7 +1157,7 @@ namespace Client.Envir
             {
                 if (MapObject.User.CurrentLocation != p.CurrentLocation || MapObject.User.Direction != p.Direction)
                     GameScene.Game.Displacement(p.Direction, p.CurrentLocation);
-                
+
                 MapObject.User.ServerTime = DateTime.MinValue;
 
                 MapObject.User.AttackTargets = new List<MapObject>();
@@ -1158,7 +1167,7 @@ namespace Client.Envir
                     MapObject attackTarget = GameScene.Game.MapControl.Objects.FirstOrDefault(x => x.ObjectID == target);
 
                     if (attackTarget == null) continue;
-                    
+
                     MapObject.User.AttackTargets.Add(attackTarget);
                 }
 
@@ -1200,7 +1209,7 @@ namespace Client.Envir
                 ob.Skeleton = true;
 
                 ob.ActionQueue.Add(new ObjectAction(MirAction.Dead, p.Direction, p.Location));
-                
+
                 return;
             }
         }
@@ -1215,7 +1224,7 @@ namespace Client.Envir
                     case Effect.TeleportOut:
                         ob.Effects.Add(new MirEffect(110, 10, TimeSpan.FromMilliseconds(100), LibraryFile.Magic, 30, 60, Color.White)
                         {
-                            MapTarget =  ob.CurrentLocation,
+                            MapTarget = ob.CurrentLocation,
                             Blend = true,
                             Reversed = true,
                             BlendRate = 0.6F
@@ -1328,13 +1337,13 @@ namespace Client.Envir
 
                     case Effect.ThunderBolt:
 
-                            ob.Effects.Add(new MirEffect(1450, 3, TimeSpan.FromMilliseconds(150), LibraryFile.Magic, 150, 50, Globals.LightningColour)
-                            {
-                                Blend = true,
-                                Target = ob
-                            });
+                        ob.Effects.Add(new MirEffect(1450, 3, TimeSpan.FromMilliseconds(150), LibraryFile.Magic, 150, 50, Globals.LightningColour)
+                        {
+                            Blend = true,
+                            Target = ob
+                        });
 
-                            DXSoundManager.Play(SoundIndex.LightningStrikeEnd);
+                        DXSoundManager.Play(SoundIndex.LightningStrikeEnd);
                         break;
 
                     #endregion
@@ -1457,14 +1466,14 @@ namespace Client.Envir
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
                 if (ob.ObjectID != p.ObjectID) continue;
-                
+
                 if (ob.Race == ObjectType.Monster)
                 {
-                    MonsterObject mob = (MonsterObject) ob;
+                    MonsterObject mob = (MonsterObject)ob;
                     p.Stats.Add(mob.MonsterInfo.Stats);
                 }
 
-                ob.Stats= p.Stats;
+                ob.Stats = p.Stats;
                 return;
             }
         }
@@ -1557,10 +1566,15 @@ namespace Client.Envir
                 return;
             }
         }
+        public void Process(S.InformMaxExperience p)
+        {
+            MapObject.User.MaxExperience = p.MaxExperience;
+        }
         public void Process(S.LevelChanged p)
         {
             MapObject.User.Level = p.Level;
             MapObject.User.Experience = p.Experience;
+            MapObject.User.MaxExperience = p.MaxExperience;
 
             GameScene.Game.ReceiveChat("Level Increased", MessageType.System);
         }
@@ -1581,7 +1595,7 @@ namespace Client.Envir
 
             if (weapon != null && weapon.Info.Effect != ItemEffect.PickAxe && (weapon.Flags & UserItemFlags.Refinable) != UserItemFlags.Refinable && (weapon.Flags & UserItemFlags.NonRefinable) != UserItemFlags.NonRefinable && weapon.Level < Globals.WeaponExperienceList.Count)
             {
-                weapon.Experience += p.Amount/10;
+                weapon.Experience += p.Amount / 10;
 
                 if (weapon.Experience >= Globals.WeaponExperienceList[weapon.Level])
                 {
@@ -1592,9 +1606,9 @@ namespace Client.Envir
                     message += ", Your weapon is ready for refine";
                 }
                 else
-                    message += $", Weapon Experience {p.Amount/10:#,##0.#}";
+                    message += $", Weapon Experience {p.Amount / 10:#,##0.#}";
             }
-            
+
             GameScene.Game.ReceiveChat(message + ".", MessageType.Combat);
         }
         public void Process(S.ObjectLeveled p)
@@ -1615,7 +1629,7 @@ namespace Client.Envir
         }
         public void Process(S.ObjectRevive p)
         {
-            
+
 
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
@@ -1640,7 +1654,7 @@ namespace Client.Envir
 
         public void Process(S.ItemsGained p)
         {
-            
+
 
             foreach (ClientUserItem item in p.Items)
             {
@@ -1660,7 +1674,7 @@ namespace Client.Envir
 
                 GameScene.Game.ReceiveChat(text, MessageType.Combat);
             }
-            
+
             GameScene.Game.AddItems(p.Items);
         }
         public void Process(S.ItemMove p)
@@ -1675,8 +1689,11 @@ namespace Client.Envir
                 case GridType.Equipment:
                     fromCell = GameScene.Game.CharacterBox.Grid[p.FromSlot];
                     break;
-              case GridType.Storage:
+                case GridType.Storage:
                     fromCell = GameScene.Game.StorageBox.Grid.Grid[p.FromSlot];
+                    break;
+                case GridType.PartsStorage:
+                    fromCell = GameScene.Game.StorageBox.PartGrid.Grid[p.FromSlot];
                     break;
                 case GridType.GuildStorage:
                     fromCell = GameScene.Game.GuildBox.StorageGrid.Grid[p.FromSlot];
@@ -1700,6 +1717,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     toCell = GameScene.Game.StorageBox.Grid.Grid[p.ToSlot];
+                    break;
+                case GridType.PartsStorage:
+                    toCell = GameScene.Game.StorageBox.PartGrid.Grid[p.ToSlot];
                     break;
                 case GridType.GuildStorage:
                     toCell = GameScene.Game.GuildBox.StorageGrid.Grid[p.ToSlot];
@@ -1777,7 +1797,7 @@ namespace Client.Envir
                     toCell.Item.Count += fromCell.Item.Count;
                     fromCell.Item = null;
                     toCell.RefreshItem();
-                    
+
                     return;
                 }
 
@@ -1823,6 +1843,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     grid = GameScene.Game.StorageBox.Grid.Grid;
+                    break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
                     break;
                 case GridType.GuildStorage:
                     grid = GameScene.Game.GuildBox.StorageGrid.Grid;
@@ -1887,6 +1910,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -1946,6 +1972,9 @@ namespace Client.Envir
                 case GridType.Storage:
                     grid = GameScene.Game.StorageBox.Grid.Grid;
                     break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                    break;
                 case GridType.CompanionInventory:
                     grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                     break;
@@ -1997,6 +2026,9 @@ namespace Client.Envir
                 case GridType.Storage:
                     grid = GameScene.Game.StorageBox.Grid.Grid;
                     break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                    break;
                 case GridType.CompanionInventory:
                     grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                     break;
@@ -2026,6 +2058,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     grid = GameScene.Game.StorageBox.Grid.Grid;
+                    break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
                     break;
                 case GridType.CompanionInventory:
                     grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -2060,7 +2095,7 @@ namespace Client.Envir
         }
         public void Process(S.ItemSplit p)
         {
-            
+
 
             DXItemCell fromCell;
 
@@ -2071,6 +2106,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     fromCell = GameScene.Game.StorageBox.Grid.Grid[p.Slot];
+                    break;
+                case GridType.PartsStorage:
+                    fromCell = GameScene.Game.StorageBox.PartGrid.Grid[p.Slot];
                     break;
                 case GridType.GuildStorage:
                     fromCell = GameScene.Game.GuildBox.StorageGrid.Grid[p.Slot];
@@ -2096,6 +2134,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     toCell = GameScene.Game.StorageBox.Grid.Grid[p.NewSlot];
+                    break;
+                case GridType.PartsStorage:
+                    toCell = GameScene.Game.StorageBox.PartGrid.Grid[p.NewSlot];
                     break;
                 case GridType.GuildStorage:
                     toCell = GameScene.Game.GuildBox.StorageGrid.Grid[p.NewSlot];
@@ -2139,6 +2180,9 @@ namespace Client.Envir
                 case GridType.Storage:
                     cell = GameScene.Game.StorageBox.Grid.Grid[p.Slot];
                     break;
+                case GridType.PartsStorage:
+                    cell = GameScene.Game.StorageBox.PartGrid.Grid[p.Slot];
+                    break;
                 /*    case GridType.GuildStorage:
                       fromCell = GameScene.Game.GuildPanel.StorageControl.Grid[p.FromSlot];
                       break;*/
@@ -2174,6 +2218,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     cell = GameScene.Game.StorageBox.Grid.Grid[p.Target.Slot];
+                    break;
+                case GridType.PartsStorage:
+                    cell = GameScene.Game.StorageBox.PartGrid.Grid[p.Target.Slot];
                     break;
                 case GridType.CompanionInventory:
                     cell = GameScene.Game.CompanionBox.InventoryGrid.Grid[p.Target.Slot];
@@ -2237,6 +2284,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.GuildStorage:
                         if (GameScene.Game.Observer) continue;
 
@@ -2293,6 +2343,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -2353,6 +2406,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -2411,6 +2467,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -2481,6 +2540,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -2539,6 +2601,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -2599,6 +2664,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -2657,6 +2725,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -2714,6 +2785,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -2776,7 +2850,7 @@ namespace Client.Envir
         }
         public void Process(S.NPCClose p)
         {
-            
+
 
             GameScene.Game.NPCBox.Visible = false;
         }
@@ -2800,6 +2874,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -2809,7 +2886,7 @@ namespace Client.Envir
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                
+
                 DXItemCell fromCell = grid[cellLinkInfo.Slot];
                 fromCell.Locked = false;
             }
@@ -2822,7 +2899,7 @@ namespace Client.Envir
         public void Process(S.GroupMember p)
         {
             GameScene.Game.GroupBox.Members.Add(new ClientPlayerInfo { ObjectID = p.ObjectID, Name = p.Name });
-            
+
 
             GameScene.Game.ReceiveChat($"-{p.Name} has joined the group.", MessageType.Group);
 
@@ -2838,11 +2915,11 @@ namespace Client.Envir
         public void Process(S.GroupRemove p)
         {
             ClientPlayerInfo info = GameScene.Game.GroupBox.Members.First(x => x.ObjectID == p.ObjectID);
-            
+
             GameScene.Game.ReceiveChat($"-{info.Name} has left the group.", MessageType.Group);
 
             HashSet<uint> checks = new HashSet<uint>();
-            
+
             if (p.ObjectID == MapObject.User.ObjectID)
             {
                 foreach (ClientPlayerInfo member in GameScene.Game.GroupBox.Members)
@@ -2869,18 +2946,18 @@ namespace Client.Envir
         }
         public void Process(S.GroupInvite p)
         {
-            
+
 
             DXMessageBox messageBox = new DXMessageBox($"Do you want to group with {p.Name}?", "Group Invitation", DXMessageBoxButtons.YesNo);
-            
+
             messageBox.YesButton.MouseClick += (o, e) => CEnvir.Enqueue(new C.GroupResponse { Accept = true });
             messageBox.NoButton.MouseClick += (o, e) => CEnvir.Enqueue(new C.GroupResponse { Accept = false });
             messageBox.CloseButton.MouseClick += (o, e) => CEnvir.Enqueue(new C.GroupResponse { Accept = false });
             messageBox.Modal = false;
             messageBox.CloseButton.Visible = false;
-            
+
         }
-        
+
         public void Process(S.BuffAdd p)
         {
             MapObject.User.Buffs.Add(p.Buff);
@@ -2898,7 +2975,7 @@ namespace Client.Envir
                 MapObject.User.VisibleBuffs.Remove(buff.Type);
                 break;
             }
-            
+
             GameScene.Game.BuffBox.BuffsChanged();
         }
         public void Process(S.BuffChanged p)
@@ -2915,7 +2992,7 @@ namespace Client.Envir
         }
         public void Process(S.BuffPaused p)
         {
-            
+
 
             MapObject.User.Buffs.First(x => x.Index == p.Index).Pause = p.Paused;
 
@@ -2933,7 +3010,7 @@ namespace Client.Envir
 
         public void Process(S.Inspect p)
         {
-            
+
 
             GameScene.Game.InspectBox.NewInformation(p);
 
@@ -2961,6 +3038,8 @@ namespace Client.Envir
             GameScene.Game.Observer = true;
 
             scene.MapControl.MapInfo = Globals.MapInfoList.Binding.FirstOrDefault(x => x.Index == p.StartInformation.MapIndex);
+            scene.MapControl.InstanceInfo = Globals.InstanceInfoList.Binding.FirstOrDefault(x => x.Index == p.StartInformation.InstanceIndex);
+
             GameScene.Game.QuestLog = p.StartInformation.Quests;
 
             GameScene.Game.NPCAdoptCompanionBox.AvailableCompanions = p.StartInformation.AvailableCompanions;
@@ -2981,14 +3060,14 @@ namespace Client.Envir
         }
         public void Process(S.ObservableSwitch p)
         {
-            
+
 
             GameScene.Game.RankingBox.Observable = p.Allow;
         }
 
         public void Process(S.MarketPlaceHistory p)
         {
-            
+
             switch (p.Display)
             {
                 case 1:
@@ -3001,7 +3080,7 @@ namespace Client.Envir
                     GameScene.Game.MarketPlaceBox.AveragePriceBox.TextBox.Text = p.SaleCount > 0 ? p.AveragePrice.ToString("#,##0") : "No Records";
                     GameScene.Game.MarketPlaceBox.LastPriceBox.TextBox.Text = p.SaleCount > 0 ? p.LastPrice.ToString("#,##0") : "No Records";
                     break;
-                    
+
             }
         }
         public void Process(S.MarketPlaceConsign p)
@@ -3020,15 +3099,15 @@ namespace Client.Envir
         }
         public void Process(S.MarketPlaceSearchCount p)
         {
-            
-            
+
+
             Array.Resize(ref GameScene.Game.MarketPlaceBox.SearchResults, p.Count);
 
             GameScene.Game.MarketPlaceBox.RefreshList();
         }
         public void Process(S.MarketPlaceSearchIndex p)
         {
-            
+
 
             if (GameScene.Game.MarketPlaceBox.SearchResults == null) return;
 
@@ -3038,9 +3117,9 @@ namespace Client.Envir
         }
         public void Process(S.MarketPlaceConsignChanged p)
         {
-            
 
-            ClientMarketPlaceInfo info = GameScene.Game.MarketPlaceBox.ConsignItems.FirstOrDefault(x=> x.Index == p.Index);
+
+            ClientMarketPlaceInfo info = GameScene.Game.MarketPlaceBox.ConsignItems.FirstOrDefault(x => x.Index == p.Index);
 
             if (info == null) return;
 
@@ -3070,7 +3149,7 @@ namespace Client.Envir
         }
         public void Process(S.MarketPlaceStoreBuy p)
         {
-            
+
 
             GameScene.Game.MarketPlaceBox.StoreBuyButton.Enabled = true;
         }
@@ -3078,14 +3157,14 @@ namespace Client.Envir
 
         public void Process(S.MailList p)
         {
-            
-            
+
+
             GameScene.Game.MailBox.MailList.AddRange(p.Mail);
             GameScene.Game.MailBox.UpdateIcon();
         }
         public void Process(S.MailNew p)
         {
-            
+
 
 
             GameScene.Game.MailBox.MailList.Insert(0, p.Mail);
@@ -3095,8 +3174,8 @@ namespace Client.Envir
         }
         public void Process(S.MailDelete p)
         {
-            
-            
+
+
             ClientMailInfo mail = GameScene.Game.MailBox.MailList.FirstOrDefault(x => x.Index == p.Index);
 
             if (mail == null) return;
@@ -3111,7 +3190,7 @@ namespace Client.Envir
 
         public void Process(S.MailItemDelete p)
         {
-            
+
 
             ClientMailInfo mail = GameScene.Game.MailBox.MailList.FirstOrDefault(x => x.Index == p.Index);
 
@@ -3146,14 +3225,14 @@ namespace Client.Envir
         }
         public void Process(S.MailSend p)
         {
-            
+
 
             GameScene.Game.SendMailBox.SendAttempted = false;
         }
 
         public void Process(S.ChangeAttackMode p)
         {
-            
+
 
             GameScene.Game.User.AttackMode = p.Mode;
 
@@ -3162,7 +3241,7 @@ namespace Client.Envir
         }
         public void Process(S.ChangePetMode p)
         {
-            
+
 
             GameScene.Game.User.PetMode = p.Mode;
 
@@ -3172,7 +3251,7 @@ namespace Client.Envir
 
         public void Process(S.WeightUpdate p)
         {
-            
+
 
             GameScene.Game.User.BagWeight = p.BagWeight;
             GameScene.Game.User.WearWeight = p.WearWeight;
@@ -3184,7 +3263,7 @@ namespace Client.Envir
 
         public void Process(S.TradeRequest p)
         {
-            
+
 
             DXMessageBox messageBox = new DXMessageBox($"{p.Name} wishes to trade with you, Do you want to accept?", "Trade Request", DXMessageBoxButtons.YesNo);
 
@@ -3194,25 +3273,25 @@ namespace Client.Envir
         }
         public void Process(S.TradeOpen p)
         {
-            
-            
+
+
             GameScene.Game.TradeBox.Visible = true;
             GameScene.Game.TradeBox.IsTrading = true;
             GameScene.Game.TradeBox.PlayerLabel.Text = p.Name;
         }
         public void Process(S.TradeClose p)
         {
-            
+
 
             GameScene.Game.TradeBox.Visible = false;
             GameScene.Game.TradeBox.Clear();
         }
         public void Process(S.TradeAddItem p)
         {
-            
+
 
             DXItemCell fromCell;
-            
+
             switch (p.Cell.GridType)
             {
                 case GridType.Inventory:
@@ -3223,6 +3302,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     fromCell = GameScene.Game.StorageBox.Grid.Grid[p.Cell.Slot];
+                    break;
+                case GridType.PartsStorage:
+                    fromCell = GameScene.Game.StorageBox.PartGrid.Grid[p.Cell.Slot];
                     break;
                 /*    case GridType.GuildStorage:
                       fromCell = GameScene.Game.GuildPanel.StorageControl.Grid[p.FromSlot];
@@ -3244,7 +3326,7 @@ namespace Client.Envir
             }
 
             if (fromCell.Link != null) return;
-            
+
             foreach (DXItemCell cell in GameScene.Game.TradeBox.UserGrid.Grid)
             {
                 if (cell.Item != null) continue;
@@ -3257,7 +3339,7 @@ namespace Client.Envir
         }
         public void Process(S.TradeItemAdded p)
         {
-            
+
 
             foreach (DXItemCell cell in GameScene.Game.TradeBox.PlayerGrid.Grid)
             {
@@ -3269,26 +3351,26 @@ namespace Client.Envir
         }
         public void Process(S.TradeAddGold p)
         {
-            
+
 
             GameScene.Game.TradeBox.UserGoldLabel.Text = p.Gold.ToString("#,##0");
         }
         public void Process(S.TradeGoldAdded p)
         {
-            
+
 
             GameScene.Game.TradeBox.PlayerGoldLabel.Text = p.Gold.ToString("#,##0");
         }
         public void Process(S.TradeUnlock p)
         {
-            
+
 
             GameScene.Game.TradeBox.ConfirmButton.Enabled = true;
         }
 
         public void Process(S.GuildCreate p)
         {
-            
+
 
             GameScene.Game.GuildBox.CreateAttempted = false;
         }
@@ -3323,7 +3405,7 @@ namespace Client.Envir
         }
         public void Process(S.GuildNoticeChanged p)
         {
-            
+
 
             GameScene.Game.GuildBox.GuildInfo.Notice = p.Notice;
 
@@ -3332,7 +3414,7 @@ namespace Client.Envir
         }
         public void Process(S.GuildGetItem p)
         {
-            
+
 
 
             DXItemCell[] grid;
@@ -3347,6 +3429,9 @@ namespace Client.Envir
                     break;
                 case GridType.Storage:
                     grid = GameScene.Game.StorageBox.Grid.Grid;
+                    break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
                     break;
                 case GridType.GuildStorage:
                     grid = GameScene.Game.GuildBox.StorageGrid.Grid;
@@ -3368,8 +3453,8 @@ namespace Client.Envir
         }
         public void Process(S.GuildNewItem p)
         {
-            
-            
+
+
             GameScene.Game.GuildBox.StorageGrid.Grid[p.Slot].Item = p.Item;
         }
         public void Process(S.GuildUpdate p)
@@ -3379,7 +3464,7 @@ namespace Client.Envir
 
             GameScene.Game.GuildBox.GuildInfo.TotalContribution = p.TotalContribution;
             GameScene.Game.GuildBox.GuildInfo.DailyContribution = p.DailyContribution;
-            
+
 
             GameScene.Game.GuildBox.GuildInfo.MemberLimit = p.MemberLimit;
             GameScene.Game.GuildBox.GuildInfo.StorageLimit = p.StorageLimit;
@@ -3413,7 +3498,7 @@ namespace Client.Envir
 
                 if (info.Index == GameScene.Game.GuildBox.GuildInfo.UserIndex)
                     GameScene.Game.GuildBox.PermissionChanged();
-                
+
                 ClientObjectData data;
                 if (!GameScene.Game.DataDictionary.TryGetValue(member.ObjectID, out data)) continue;
 
@@ -3426,7 +3511,7 @@ namespace Client.Envir
         }
         public void Process(S.GuildKick p)
         {
-            
+
 
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
@@ -3444,7 +3529,7 @@ namespace Client.Envir
         }
         public void Process(S.GuildIncreaseMember p)
         {
-            
+
 
             GameScene.Game.GuildBox.IncreaseMemberButton.Enabled = true;
         }
@@ -3454,14 +3539,14 @@ namespace Client.Envir
         }
         public void Process(S.GuildInviteMember p)
         {
-            
+
 
             GameScene.Game.GuildBox.AddMemberTextBox.Enabled = true;
             GameScene.Game.GuildBox.AddMemberButton.Enabled = true;
         }
         public void Process(S.GuildTax p)
         {
-            
+
 
             GameScene.Game.GuildBox.GuildTaxBox.Enabled = true;
             GameScene.Game.GuildBox.SetTaxButton.Enabled = true;
@@ -3469,7 +3554,7 @@ namespace Client.Envir
 
         public void Process(S.GuildMemberOffline p)
         {
-            
+
 
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
@@ -3482,7 +3567,7 @@ namespace Client.Envir
         }
         public void Process(S.GuildInvite p)
         {
-            
+
 
             DXMessageBox messageBox = new DXMessageBox($"{p.Name} has invited you to the guild {p.GuildName}\n" +
                                                        $"Do you want to join the guild?", "Guild Invitation", DXMessageBoxButtons.YesNo);
@@ -3492,11 +3577,11 @@ namespace Client.Envir
             messageBox.CloseButton.MouseClick += (o, e) => CEnvir.Enqueue(new C.GuildResponse { Accept = false });
             messageBox.Modal = false;
             messageBox.CloseButton.Visible = false;
-            
+
         }
         public void Process(S.GuildMemberOnline p)
         {
-            
+
 
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
@@ -3509,7 +3594,7 @@ namespace Client.Envir
         }
         public void Process(S.GuildMemberContribution p)
         {
-            
+
 
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
@@ -3521,17 +3606,17 @@ namespace Client.Envir
 
             GameScene.Game.GuildBox.GuildInfo.TotalContribution += p.Contribution;
             GameScene.Game.GuildBox.GuildInfo.DailyContribution += p.Contribution;
-            
+
             if (GameScene.Game.GuildBox.Visible)
                 GameScene.Game.GuildBox.RefreshGuildDisplay();
         }
         public void Process(S.GuildDayReset p)
         {
-            
+
 
             foreach (ClientGuildMemberInfo member in GameScene.Game.GuildBox.GuildInfo.Members)
                 member.DailyContribution = 0;
-            
+
             GameScene.Game.GuildBox.GuildInfo.DailyGrowth = 0;
             GameScene.Game.GuildBox.GuildInfo.DailyContribution = 0;
 
@@ -3540,11 +3625,11 @@ namespace Client.Envir
         }
         public void Process(S.GuildFundsChanged p)
         {
-            
-            
+
+
             GameScene.Game.GuildBox.GuildInfo.GuildFunds += p.Change;
             GameScene.Game.GuildBox.GuildInfo.DailyGrowth += p.Change;
-            
+
             if (GameScene.Game.GuildBox.Visible)
                 GameScene.Game.GuildBox.RefreshGuildDisplay();
         }
@@ -3587,7 +3672,7 @@ namespace Client.Envir
         public void Process(S.GuildConquestStarted p)
         {
             GameScene.Game.ConquestWars.Add(CEnvir.CastleInfoList.Binding.First(x => x.Index == p.Index));
-            
+
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
                 ob.NameChanged();
         }
@@ -3611,14 +3696,14 @@ namespace Client.Envir
         public void Process(S.GuildConquestDate p)
         {
             CastleInfo castle = CEnvir.CastleInfoList.Binding.First(x => x.Index == p.Index);
-            
+
             castle.WarDate = p.WarDate;
         }
 
 
         public void Process(S.ReviveTimers p)
         {
-            
+
 
             GameScene.Game.ItemReviveTime = CEnvir.Now + p.ItemReviveTime;
             GameScene.Game.ReincarnationPillTime = CEnvir.Now + p.ReincarnationPillTime;
@@ -3714,7 +3799,7 @@ namespace Client.Envir
 
                 if (item.Info.Effect == ItemEffect.ItemPart)
                     displayInfo = Globals.ItemInfoList.Binding.First(x => x.Index == item.AddedStats[Stat.ItemIndex]);
-                
+
                 item.New = true;
                 string text = item.Count > 1 ? $"Your companion gained {displayInfo.ItemName} x{item.Count}." : $"Your companion gained {displayInfo.ItemName}.";
 
@@ -3741,7 +3826,7 @@ namespace Client.Envir
 
             GameScene.Game.CompanionBox.Refresh();
         }
-        
+
         public void Process(S.MarriageInvite p)
         {
             DXMessageBox messageBox = new DXMessageBox($"{p.Name} proposed to you.\n" +
@@ -3752,7 +3837,7 @@ namespace Client.Envir
             messageBox.CloseButton.MouseClick += (o, e) => CEnvir.Enqueue(new C.MarriageResponse { Accept = false });
             messageBox.Modal = false;
             messageBox.CloseButton.Visible = false;
-            
+
         }
         public void Process(S.MarriageInfo p)
         {
@@ -3770,19 +3855,19 @@ namespace Client.Envir
 
         public void Process(S.MarriageRemoveRing p)
         {
-            
+
 
             GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.RingL].Item.Flags &= ~UserItemFlags.Marriage;
         }
         public void Process(S.MarriageMakeRing p)
         {
-            
+
 
             GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.RingL].Item.Flags |= UserItemFlags.Marriage;
         }
         public void Process(S.MarriageOnlineChanged p)
         {
-            
+
 
             ClientObjectData data;
 
@@ -3795,7 +3880,7 @@ namespace Client.Envir
             GameScene.Game.BigMapBox.Update(data);
             GameScene.Game.MiniMapBox.Update(data);
         }
-        
+
         public void Process(S.DataObjectPlayer p)
         {
             ClientObjectData data = new ClientObjectData
@@ -3867,7 +3952,7 @@ namespace Client.Envir
             ClientObjectData data;
 
             if (!GameScene.Game.DataDictionary.TryGetValue(p.ObjectID, out data)) return;
-            
+
             GameScene.Game.DataDictionary.Remove(p.ObjectID);
 
             GameScene.Game.BigMapBox.Remove(data);
@@ -3878,7 +3963,7 @@ namespace Client.Envir
             ClientObjectData data;
 
             if (!GameScene.Game.DataDictionary.TryGetValue(p.ObjectID, out data)) return;
-            
+
             data.Location = p.CurrentLocation;
             data.MapIndex = p.MapIndex;
 
@@ -3890,7 +3975,7 @@ namespace Client.Envir
             ClientObjectData data;
 
             if (!GameScene.Game.DataDictionary.TryGetValue(p.ObjectID, out data)) return;
-            
+
             data.Health = p.Health;
             data.Mana = p.Mana;
 
@@ -4006,6 +4091,9 @@ namespace Client.Envir
                 case GridType.Storage:
                     grid = GameScene.Game.StorageBox.Grid.Grid;
                     break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                    break;
                 case GridType.CompanionInventory:
                     grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                     break;
@@ -4044,6 +4132,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -4086,6 +4177,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -4111,7 +4205,7 @@ namespace Client.Envir
             }
 
             #endregion
-            
+
             #region Red
 
             if (p.Red != null)
@@ -4126,6 +4220,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -4168,6 +4265,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -4208,6 +4308,9 @@ namespace Client.Envir
                         break;
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
                         break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
@@ -4250,6 +4353,9 @@ namespace Client.Envir
                     case GridType.Storage:
                         grid = GameScene.Game.StorageBox.Grid.Grid;
                         break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
                     case GridType.CompanionInventory:
                         grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
                         break;
@@ -4275,6 +4381,91 @@ namespace Client.Envir
             }
 
             #endregion
+        }
+        public void Process(S.NPCAccessoryRefine p)
+        {
+            if (p.Target != null)
+                p.Links.Add(p.Target);
+            if (p.OreTarget != null)
+                p.Links.Add(p.OreTarget);
+
+            foreach (CellLinkInfo cellLinkInfo in p.Links)
+            {
+                DXItemCell[] grid;
+
+                switch (cellLinkInfo.GridType)
+                {
+                    case GridType.Inventory:
+                        grid = GameScene.Game.InventoryBox.Grid.Grid;
+                        break;
+                    case GridType.Equipment:
+                        grid = GameScene.Game.CharacterBox.Grid;
+                        break;
+                    case GridType.Storage:
+                        grid = GameScene.Game.StorageBox.Grid.Grid;
+                        break;
+                    case GridType.PartsStorage:
+                        grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                        break;
+                    case GridType.CompanionInventory:
+                        grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
+                        break;
+                    case GridType.CompanionEquipment:
+                        grid = GameScene.Game.CompanionBox.EquipmentGrid;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                DXItemCell fromCell = grid[cellLinkInfo.Slot];
+                fromCell.Locked = false;
+            }
+        }
+
+        public void Process(S.ItemAcessoryRefined p)
+        {
+            DXItemCell[] grid;
+
+            switch (p.GridType)
+            {
+                case GridType.Inventory:
+                    grid = GameScene.Game.InventoryBox.Grid.Grid;
+                    break;
+                case GridType.Equipment:
+                    grid = GameScene.Game.CharacterBox.Grid;
+                    break;
+                case GridType.Storage:
+                    grid = GameScene.Game.StorageBox.Grid.Grid;
+                    break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                    break;
+                case GridType.CompanionInventory:
+                    grid = GameScene.Game.CompanionBox.InventoryGrid.Grid;
+                    break;
+                case GridType.CompanionEquipment:
+                    grid = GameScene.Game.CompanionBox.EquipmentGrid;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            DXItemCell fromCell = grid[p.Slot];
+
+            fromCell.Item.AddedStats.Add(p.NewStats);
+
+            if (p.NewStats.Count == 0)
+            {
+                GameScene.Game.ReceiveChat($"Nothing happen to your {fromCell.Item.Info.ItemName}", MessageType.Hint);
+                return;
+            }
+
+
+
+            fromCell.RefreshItem();
+        }
+
+        public void Process(S.JoinInstance p)
+        {
         }
     }
 }

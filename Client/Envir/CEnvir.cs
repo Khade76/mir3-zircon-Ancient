@@ -23,6 +23,8 @@ using System.Security.Policy;
 using System.Security.Permissions;
 using System.Security.Cryptography.X509Certificates;
 using Client.Envir.Translations;
+using Sentry;
+using System.Reflection;
 
 namespace Client.Envir
 {
@@ -47,14 +49,14 @@ namespace Client.Envir
 
         public static Dictionary<LibraryFile, MirLibrary> LibraryList = new Dictionary<LibraryFile, MirLibrary>();
 
-        public static ClientUserItem[] Storage, MainStorage;
-        
+        public static ClientUserItem[] Storage, MainStorage, PartsStorage, MainPartsStorage;
+
         public static List<ClientBlockInfo> BlockList = new List<ClientBlockInfo>();
         public static DBCollection<KeyBindInfo> KeyBinds;
         public static DBCollection<WindowSetting> WindowSettings;
         public static DBCollection<CastleInfo> CastleInfoList;
         public static Session Session;
-        
+
         public static ConcurrentQueue<string> ChatLog = new ConcurrentQueue<string>();
 
         public static bool Loaded;
@@ -144,7 +146,7 @@ namespace Client.Envir
             RenderGame();
 
             if (Config.LimitFPS)
-                Thread.Sleep(1);;
+                Thread.Sleep(1); ;
         }
         private static void UpdateGame()
         {
@@ -162,7 +164,7 @@ namespace Client.Envir
             }
 
             Connection?.Process();
-          //  DXControl.ActiveScene?.Process();
+            //  DXControl.ActiveScene?.Process();
             DXControl.ActiveScene?.Process();
 
             string debugText = $"FPS: {FPSCount}";
@@ -187,31 +189,31 @@ namespace Client.Envir
 
 
             DXControl.DebugLabel.Text = debugText;
-            
+
             if (Connection != null)
             {
                 const decimal KB = 1024;
-                const decimal MB = KB*1024;
+                const decimal MB = KB * 1024;
 
                 string sent, received;
 
 
                 if (Connection.TotalBytesSent > MB)
-                    sent = $"{Connection.TotalBytesSent/MB:#,##0.0}MB";
+                    sent = $"{Connection.TotalBytesSent / MB:#,##0.0}MB";
                 else if (Connection.TotalBytesSent > KB)
-                    sent = $"{Connection.TotalBytesSent/KB:#,##0}KB";
+                    sent = $"{Connection.TotalBytesSent / KB:#,##0}KB";
                 else
                     sent = $"{Connection.TotalBytesSent:#,##0}B";
 
                 if (Connection.TotalBytesReceived > MB)
-                    received = $"{Connection.TotalBytesReceived/MB:#,##0.0}MB";
+                    received = $"{Connection.TotalBytesReceived / MB:#,##0.0}MB";
                 else if (Connection.TotalBytesReceived > KB)
-                    received = $"{Connection.TotalBytesReceived/KB:#,##0}KB";
+                    received = $"{Connection.TotalBytesReceived / KB:#,##0}KB";
                 else
                     received = $"{Connection.TotalBytesReceived:#,##0}B";
 
                 DXControl.PingLabel.Text = $"Ping: {Connection.Ping}, Sent: {sent}, Received: {received}";
-                DXControl.PingLabel.Location = new Point(DXControl.DebugLabel.DisplayArea.Right +5, DXControl.DebugLabel.DisplayArea.Y);
+                DXControl.PingLabel.Location = new Point(DXControl.DebugLabel.DisplayArea.Right + 5, DXControl.DebugLabel.DisplayArea.Y);
             }
             else
             {
@@ -233,7 +235,7 @@ namespace Client.Envir
 
                 if (location.X < 0) location.X = 0;
                 if (location.Y < 0) location.Y = 0;
-                
+
                 DXControl.HintLabel.Location = location;
             }
             else
@@ -261,9 +263,9 @@ namespace Client.Envir
                 DXManager.Device.Clear(ClearFlags.Target, Color.Black, 1, 0);
                 DXManager.Device.BeginScene();
                 DXManager.Sprite.Begin(SpriteFlags.AlphaBlend);
-                
+
                 DXControl.ActiveScene?.Draw();
-                
+
                 DXManager.Sprite.End();
                 DXManager.Device.EndScene();
 
@@ -276,7 +278,7 @@ namespace Client.Envir
             }
             catch (Exception ex)
             {
-                SaveError(ex.ToString());
+                SaveException(ex);
 
                 DXManager.AttemptRecovery();
             }
@@ -297,11 +299,17 @@ namespace Client.Envir
         {
             Task.Run(() =>
             {
-                Session = new Session(SessionMode.Users, @".\Data\"){ BackUp = false};
+                Session = new Session(SessionMode.Users, @".\Data\") { BackUp = false };
+
+                Session.Initialize(
+                    Assembly.GetAssembly(typeof(ItemInfo)),
+                    Assembly.GetAssembly(typeof(WindowSetting))
+                );
 
                 Globals.ItemInfoList = Session.GetCollection<ItemInfo>();
                 Globals.MagicInfoList = Session.GetCollection<MagicInfo>();
                 Globals.MapInfoList = Session.GetCollection<MapInfo>();
+                Globals.InstanceInfoList = Session.GetCollection<InstanceInfo>();
                 Globals.NPCPageList = Session.GetCollection<NPCPage>();
                 Globals.MonsterInfoList = Session.GetCollection<MonsterInfo>();
                 Globals.StoreInfoList = Session.GetCollection<StoreInfo>();
@@ -311,7 +319,7 @@ namespace Client.Envir
                 Globals.QuestTaskList = Session.GetCollection<QuestTask>();
                 Globals.CompanionInfoList = Session.GetCollection<CompanionInfo>();
                 Globals.CompanionLevelInfoList = Session.GetCollection<CompanionLevelInfo>();
-                
+
                 KeyBinds = Session.GetCollection<KeyBindInfo>();
                 WindowSettings = Session.GetCollection<WindowSetting>();
                 CastleInfoList = Session.GetCollection<CastleInfo>();
@@ -373,13 +381,20 @@ namespace Client.Envir
         public static void FillStorage(List<ClientUserItem> items, bool observer)
         {
             Storage = new ClientUserItem[1000];
+            PartsStorage = new ClientUserItem[1000];
 
             if (!observer)
+            {
                 MainStorage = Storage;
+                MainPartsStorage = PartsStorage;
+            }
 
 
             foreach (ClientUserItem item in items)
-                Storage[item.Slot] = item;
+                if (item.Slot >= 2000)
+                    PartsStorage[item.Slot - Globals.PartsStorageOffset] = item;
+                else
+                    Storage[item.Slot] = item;
         }
         public static void Enqueue(Packet packet)
         {
@@ -445,6 +460,11 @@ namespace Client.Envir
                 case KeyBindAction.GameStoreWindow:
                     bind.Category = "Windows";
                     bind.Key1 = Keys.Y;
+                    break;
+                case KeyBindAction.DungeonFinderWindow:
+                    bind.Category = "Windows";
+                    bind.Key1 = Keys.D;
+                    bind.Shift1 = true;
                     break;
                 case KeyBindAction.CompanionWindow:
                     bind.Category = "Windows";
@@ -780,7 +800,7 @@ namespace Client.Envir
                 const string LogPath = @".\Errors\";
 
                 LastError = ex;
-                string state = $"State = {Target?.DisplayRectangle}"; 
+                string state = $"State = {Target?.DisplayRectangle}";
 
                 if (!Directory.Exists(LogPath))
                     Directory.CreateDirectory(LogPath);
@@ -789,6 +809,12 @@ namespace Client.Envir
             }
             catch
             { }
+        }
+
+        public static void SaveException(Exception ex)
+        {
+            SaveError(ex.ToString());
+            if (Config.SentryEnabled) SentrySdk.CaptureException(ex);
         }
 
         public static void Unload()

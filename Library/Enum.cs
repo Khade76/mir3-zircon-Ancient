@@ -108,6 +108,7 @@ namespace Library
         HorseArmour = 13,
         Emblem = 14,
         Shield = 15,
+        Wings = 16,
     }
 
     public enum CompanionSlot
@@ -163,6 +164,10 @@ namespace Library
         WeaponCraftPurple,
         WeaponCraftGreen,
         WeaponCraftGrey,
+        RefineCorundumOre,
+        AccessoryRefineCombTarget,
+        AccessoryRefineCombItems,
+        PartsStorage,
     }
 
     public enum BuffType
@@ -323,6 +328,7 @@ namespace Library
         ItemPart,
         Emblem,
         Shield,
+        Wings
     }
 
     public enum MirAction : byte
@@ -428,6 +434,7 @@ namespace Library
         AccessoryRefineLevel,
         AccessoryReset,
         WeaponCraft,
+        AccessoryRefine,
     }
 
     public enum MagicSchool

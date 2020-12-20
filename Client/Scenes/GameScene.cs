@@ -179,6 +179,7 @@ namespace Client.Scenes
         public InspectDialog InspectBox;
         public RankingDialog RankingBox;
         public MarketPlaceDialog MarketPlaceBox;
+        public DungeonFinderDialog DungeonFinderBox;
         public MailDialog MailBox;
         public ReadMailDialog ReadMailBox;
         public SendMailDialog SendMailBox;
@@ -188,12 +189,14 @@ namespace Client.Scenes
         public QuestDialog QuestBox;
         public QuestTrackerDialog QuestTrackerBox;
         public CompanionDialog CompanionBox;
+        public CompanionFilterDialog CompanionFilterBox;
         public BlockDialog BlockBox;
         public MonsterDialog MonsterBox;
         public MagicBarDialog MagicBarBox;
         public EditCharacterDialog EditCharacterBox;
         public FortuneCheckerDialog FortuneCheckerBox;
         public NPCWeaponCraftWindow NPCWeaponCraftBox;
+        public NPCAccessoryRefineDialog NPCAccessoryRefineBox;
 
         public ClientUserItem[] Inventory = new ClientUserItem[Globals.InventorySize];
         public ClientUserItem[] Equipment = new ClientUserItem[Globals.EquipmentSize];
@@ -543,6 +546,11 @@ namespace Client.Scenes
                 Parent = this,
                 Visible = false,
             };
+            DungeonFinderBox = new DungeonFinderDialog
+            {
+                Parent = this,
+                Visible = false,
+            };
             EditCharacterBox = new EditCharacterDialog
             {
                 Parent = this,
@@ -595,7 +603,11 @@ namespace Client.Scenes
                 Parent = this,
                 Visible = false,
             };
-
+            CompanionFilterBox = new CompanionFilterDialog
+            {
+                Parent = this,
+                Visible = false,
+            };
             BlockBox = new BlockDialog
             {
                 Parent = this,
@@ -623,6 +635,12 @@ namespace Client.Scenes
             {
                 Visible = false,
                 Parent = this,
+            };
+
+            NPCAccessoryRefineBox = new NPCAccessoryRefineDialog
+            {
+                Parent = this,
+                Visible = false,
             };
 
             SetDefaultLocations();
@@ -991,6 +1009,9 @@ namespace Client.Scenes
                             MarketPlaceBox.Visible = true;
                             MarketPlaceBox.StoreTab.TabButton.InvokeMouseClick();
                         }
+                        break;
+                    case KeyBindAction.DungeonFinderWindow:
+                        DungeonFinderBox.Visible = !DungeonFinderBox.Visible;
                         break;
                     case KeyBindAction.CompanionWindow:
                         CompanionBox.Visible = !CompanionBox.Visible;
@@ -3511,7 +3532,7 @@ namespace Client.Scenes
         {
             if (User == null) return;
 
-            User.MaxExperience = User.Level < Globals.ExperienceList.Count ? Globals.ExperienceList[User.Level] : 0;
+            //User.MaxExperience = User.Level < Globals.ExperienceList.Count ? Globals.ExperienceList[User.Level] : 0;
             MainPanel.LevelLabel.Text = User.Level.ToString();
 
             foreach (NPCGoodsCell cell in NPCGoodsBox.Cells)
@@ -4361,6 +4382,14 @@ namespace Client.Scenes
                         MagicBarBox.Dispose();
 
                     MagicBarBox = null;
+                }
+
+                if (NPCAccessoryRefineBox != null)
+                {
+                    if (!NPCAccessoryRefineBox.IsDisposed)
+                        NPCAccessoryRefineBox.Dispose();
+
+                    NPCAccessoryRefineBox = null;
                 }
 
                 Inventory = null;
