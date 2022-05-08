@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Library.SystemModels;
+﻿using Library.SystemModels;
 using MirDB;
 
 namespace Server.DBModels
@@ -14,10 +9,14 @@ namespace Server.DBModels
         [Association("CompanionUnlocks")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -29,10 +28,14 @@ namespace Server.DBModels
 
         public CompanionInfo CompanionInfo
         {
-            get { return _CompanionInfo; }
+            get
+            {
+                return _CompanionInfo;
+            }
             set
             {
-                if (_CompanionInfo == value) return;
+                if (_CompanionInfo == value)
+                    return;
 
                 var oldValue = _CompanionInfo;
                 _CompanionInfo = value;

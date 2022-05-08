@@ -19,20 +19,23 @@ namespace Server.Models.Monsters
         {
             Visible = false;
         }
-        
+
         public override void Process()
         {
             base.Process();
 
-            if (Dead || SEnvir.Now < ShockTime || Visible) return;
+            if (Dead || SEnvir.Now < ShockTime || Visible)
+                return;
 
-            if (SEnvir.Now <= VisibleTime) return;
+            if (SEnvir.Now <= VisibleTime)
+                return;
 
             VisibleTime = SEnvir.Now.AddSeconds(3);
-            
+
             bool visible = Target != null && Functions.InRange(Target.CurrentLocation, CurrentLocation, 5);
 
-            if (!visible) return;
+            if (!visible)
+                return;
 
             Visible = true;
             CellTime = SEnvir.Now.AddMilliseconds(500);

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Library;
+﻿using Library;
 using Server.Envir;
 
 namespace Server.Models.Monsters
@@ -17,7 +12,8 @@ namespace Server.Models.Monsters
         {
             int result = base.Attacked(attacker, power, element, canReflect, ignoreShield, canCrit);
 
-            if (!CanSpawn || result <= 0) return result;
+            if (!CanSpawn || result <= 0)
+                return result;
 
             CanSpawn = false;
 

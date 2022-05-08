@@ -109,6 +109,20 @@ namespace Library.SystemModels
         }
         private int _Shape;
 
+        public int EffectShape
+        {
+            get { return _EffectShape; }
+            set
+            {
+                if (_EffectShape == value) return;
+
+                var oldValue = _EffectShape;
+                _EffectShape = value;
+
+                OnChanged(oldValue, value, "EffectShape");
+            }
+        }
+        private int _EffectShape;
 
         public ItemEffect Effect
         {
@@ -421,6 +435,12 @@ namespace Library.SystemModels
         [Association("Drops", true)]
         public DBBindingList<DropInfo> Drops { get; set; }
         
+        [Association("Crafting", true)]
+        public DBBindingList<CraftItemInfo> Crafting { get; set; }
+
+        [Association("LootBox", true)]
+        public DBBindingList<LootBoxInfo> LootBox { get; set; }
+
 
         [IgnoreProperty]
         public bool ShouldLinkInfo => StackSize > 1 || ItemType == ItemType.Consumable || ItemType == ItemType.Scroll;

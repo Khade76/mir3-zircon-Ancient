@@ -11,7 +11,7 @@ namespace Server.Models.Monsters
         public override bool CanAttack => false;
 
         public DateTime DespawnTime;
-        
+
 
         public NetherworldGate()
         {
@@ -30,7 +30,7 @@ namespace Server.Models.Monsters
 
             DespawnTime = SEnvir.Now.AddMinutes(20);
 
-            foreach (SConnection con in SEnvir.Connections)
+            foreach (SConnection con in SEnvir.AuthenticatedConnections)
                 con.ReceiveChat(string.Format(con.Language.NetherGateOpen, CurrentMap.Info.Description, CurrentLocation), MessageType.System);
         }
 
@@ -43,7 +43,7 @@ namespace Server.Models.Monsters
                 if (SpawnInfo != null)
                     SpawnInfo.AliveCount--;
 
-                foreach (SConnection con in SEnvir.Connections)
+                foreach (SConnection con in SEnvir.AuthenticatedConnections)
                     con.ReceiveChat(con.Language.NetherGateClosed, MessageType.System);
 
                 SpawnInfo = null;
@@ -54,7 +54,7 @@ namespace Server.Models.Monsters
             if (SEnvir.Now >= SearchTime && SEnvir.MysteryShipMapRegion != null && SEnvir.MysteryShipMapRegion.PointList.Count > 0)
             {
                 SearchTime = SEnvir.Now.AddSeconds(3);
-                Map map = SEnvir.GetMap(SEnvir.MysteryShipMapRegion.Map, CurrentMap.Instance, CurrentMap.InstanceIndex);
+                Map map = SEnvir.GetMap(SEnvir.MysteryShipMapRegion.Map);
 
                 if (map == null)
                 {
@@ -66,17 +66,20 @@ namespace Server.Models.Monsters
                 {
                     MapObject ob = CurrentMap.Objects[i];
 
-                    if (ob == this) continue;
+                    if (ob == this)
+                        continue;
 
-                    if (ob is Guard) continue;
+                    if (ob is Guard)
+                        continue;
 
                     switch (ob.Race)
                     {
                         case ObjectType.Player:
-                        case ObjectType.Monster:
-                            if (ob.InSafeZone) continue;
+                            if (ob.InSafeZone)
+                                continue;
 
-                            if (ob.Dead || !Functions.InRange(ob.CurrentLocation, CurrentLocation, MonsterInfo.ViewRange)) continue;
+                            if (ob.Dead || !Functions.InRange(ob.CurrentLocation, CurrentLocation, MonsterInfo.ViewRange))
+                                continue;
 
 
                             ob.Teleport(map, SEnvir.MysteryShipMapRegion.PointList[SEnvir.Random.Next(SEnvir.MysteryShipMapRegion.PointList.Count)]);
@@ -96,10 +99,11 @@ namespace Server.Models.Monsters
 
         public override void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public override void DeActivate()
         {

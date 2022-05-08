@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using DevExpress.XtraBars;
 using Library.SystemModels;
 
@@ -24,7 +17,7 @@ namespace Server.Views
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            
+
             SMain.SetUpView(StoreInfoGridView);
         }
 

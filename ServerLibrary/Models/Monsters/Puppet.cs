@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.Network;
-using Server.DBModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -18,7 +14,7 @@ namespace Server.Models.Monsters
 
         public override bool CanMove => false;
         public override bool CanAttack => false;
-        
+
         public Stats DarkStoneStats;
 
         public DateTime ExplodeTime = SEnvir.Now.AddSeconds(5);
@@ -26,21 +22,23 @@ namespace Server.Models.Monsters
         public override void Process()
         {
             base.Process();
-            
-            if (Player?.Node == null)
+
+            if (Player.HasNoNode())
             {
                 Despawn();
                 return;
             }
 
-            if (Dead || SEnvir.Now < ExplodeTime || Player.Dead) return;
+            if (Dead || SEnvir.Now < ExplodeTime || Player.Dead)
+                return;
 
             SetHP(0);
         }
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             SetHP(0);
         }
@@ -74,10 +72,11 @@ namespace Server.Models.Monsters
 
         public override void Activate()
         {
-            if (Activated) return;
-            
+            if (Activated)
+                return;
+
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public override void DeActivate()
         {
@@ -87,7 +86,8 @@ namespace Server.Models.Monsters
         {
             base.Die();
 
-            if (Player?.Node == null) return;
+            if (Player.HasNoNode())
+                return;
 
             List<MapObject> targets = Player.GetTargets(CurrentMap, CurrentLocation, 2);
             foreach (MapObject target in targets)
@@ -119,9 +119,10 @@ namespace Server.Models.Monsters
         }
         public override Packet GetInfoPacket(PlayerObject ob)
         {
-            if (Player?.Node == null) return null;
+            if (Player.HasNoNode())
+                return null;
 
-            S.ObjectPlayer packet = (S.ObjectPlayer) Player.GetInfoPacket(null);
+            S.ObjectPlayer packet = (S.ObjectPlayer)Player.GetInfoPacket(null);
 
             packet.ObjectID = ObjectID;
             packet.Location = CurrentLocation;

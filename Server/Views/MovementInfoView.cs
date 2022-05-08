@@ -14,7 +14,7 @@ namespace Server.Views
             MovementGridControl.DataSource = SMain.Session.GetCollection<MovementInfo>().Binding;
 
 
-
+            QuestInfoLookUpEdit.DataSource = SMain.Session.GetCollection<QuestInfo>().Binding;
             MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
             ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
             SpawnLookUpEdit.DataSource = SMain.Session.GetCollection<RespawnInfo>().Binding;

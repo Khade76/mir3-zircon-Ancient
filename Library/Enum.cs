@@ -108,7 +108,10 @@ namespace Library
         HorseArmour = 13,
         Emblem = 14,
         Shield = 15,
-        Wings = 16,
+        MTXArmour = 16,
+        MTXWings = 17,
+        MTXWeapons = 18,
+        MTXHelmets = 19,
     }
 
     public enum CompanionSlot
@@ -168,6 +171,11 @@ namespace Library
         AccessoryRefineCombTarget,
         AccessoryRefineCombItems,
         PartsStorage,
+        BookTarget,
+        BookMaterial,
+        CraftItem,
+        CraftIngredients,
+        SkinStorage,
     }
 
     public enum BuffType
@@ -194,7 +202,7 @@ namespace Library
         Ranking = 12,
         Developer = 13,
         Veteran = 14,
-
+        
         MapEffect = 15,
         Guild = 16,
 
@@ -204,11 +212,13 @@ namespace Library
         Might = 101,
         Endurance = 102,
         ReflectDamage = 103,
+        Invincibility = 104,
 
         Renounce = 200,
         MagicShield = 201,
         JudgementOfHeaven = 202,
-
+        SuperiorMagicShield = 203,
+        MagicShieldPhysical = 204,
 
         Heal = 300,
         Invisibility = 301,
@@ -236,6 +246,11 @@ namespace Library
         FrostBite = 411,
 
         MagicWeakness = 500,
+        LifeStealHeal = 501,
+        Admin = 18,
+        DesecratedArmour = 502,
+        AuraofDread = 503,
+        
     }
 
     public enum RequiredType : byte
@@ -261,7 +276,12 @@ namespace Library
     {
         Common,
         Superior,
+        Rare,
         Elite,
+        Legendary,
+        Warrior,
+        Wizard,
+        Taoist,
     }
 
     public enum LightSetting : byte
@@ -272,11 +292,20 @@ namespace Library
         Twilight,
     }
 
+    public enum WeatherSetting : byte
+    {
+        None,
+        Default,
+        Fog,
+        BurningFog,
+    }
+
     public enum FightSetting : byte
     {
         None,
         Safe,
         Fight,
+        Event,
     }
 
     public enum ObjectType : byte
@@ -328,7 +357,15 @@ namespace Library
         ItemPart,
         Emblem,
         Shield,
-        Wings
+        [Description("Armour Skin")]
+        MTXArmour,
+        [Description("Wing Skin")]
+        MTXWings,
+        [Description("Weapon Skin")]
+        MTXWeapons,
+        [Description("Helmet Skin")]
+        MTXHelmets,
+        LootBox,
     }
 
     public enum MirAction : byte
@@ -390,6 +427,9 @@ namespace Library
         DragonRepulseStart,
         DragonRepulseMiddle,
         DragonRepulseEnd,
+        ChannellingStart,
+        ChannellingMiddle,
+        ChannellingEnd,
 
     }
     
@@ -398,6 +438,7 @@ namespace Library
     {
         None,
         Revive,
+        EventRevive,
     }
 
     public enum MessageType
@@ -435,6 +476,8 @@ namespace Library
         AccessoryReset,
         WeaponCraft,
         AccessoryRefine,
+        BookCombine,
+        HorseManage,
     }
 
     public enum MagicSchool
@@ -495,6 +538,8 @@ namespace Library
         AdvancedPotionMastery = 122,
         MassBeckon = 123,
         SeismicSlam = 124,
+        Invincibility = 125,
+        CrushingWave = 126,
 
         FireBall = 201,
         LightningBall = 202,
@@ -536,6 +581,10 @@ namespace Library
         AdvancedRenounce = 238,
         FrostBite = 239,
         Asteroid = 240,
+        ElementalHurricane = 245,
+        SuperiorMagicShield = 246,
+        Blizzard = 247,
+        MagicShieldPhysical = 248,
 
         Heal = 300,
         SpiritSword = 301,
@@ -577,6 +626,9 @@ namespace Library
         DemonExplosion = 337,
         Infection = 338,
         DemonicRecovery = 339,
+        Neutralize = 340,
+        AugmentNeutralize = 341,
+        DarkSoulPrison = 342,
 
         WillowDance = 401,
         VineTreeDance = 402,
@@ -618,6 +670,8 @@ namespace Library
         AdvancedBloodyFlower = 438,
         Massacre = 439,
         ArtOfShadows = 440,
+        Concentration = 441,
+        SwordOfVengeance = 442,
 
         MonsterScortchedEarth = 501,
         MonsterIceStorm = 502,
@@ -647,6 +701,11 @@ namespace Library
 
         PinkFireBall = 530,
         GreenSludgeBall = 540,
+        IceShower = 241,
+        GreaterScorchedEarth = 242,
+        GreaterMassCyclone = 243,
+        GreaterLightningBeam = 244,
+        MonsterParalysisCloud = 531,
 
     }
 
@@ -811,6 +870,7 @@ namespace Library
         NumaStoneThrower,
         NumaRoyalGuard,
         NumaArmoredSoldier,
+        NumaKing,
 
         IcyRanger,
         IcyGoddess,
@@ -934,6 +994,190 @@ namespace Library
         MonasteryMon4,
         MonasteryMon5,
         MonasteryMon6,
+
+        CoralMob0,
+        CoralMob1,
+        CoralMob2,
+        CoralMob3,
+        CoralMob4,
+        CoralMob5,
+        CoralMob6,
+        CoralBoss,
+
+        ArcherGuard,
+        SamGuard,
+        OldGuard,
+        TribalGuard,
+
+        RakingCat,
+        Croc,
+        Duck,
+        Bunny,
+        Mushroom,
+        NewBug,
+
+        FoxWar,
+        FoxTao,
+        FoxWiz,
+
+        newMon1,
+        newMon2,
+        newMon3,
+        newMon4,
+        newMon5,
+        newMon6,
+
+        RogueMSin,
+        RogueFSin,
+        UmaMace,
+
+        MonT1,
+        MonT2,
+        MonT3,
+        MonT4,
+        MonT5,
+        MonT6,
+        MonT7,
+        MonT8,
+        MonT9,
+        MonT10,
+        MonT11,
+        MonT12,
+        MonT13,
+        MonT14,
+        MonT15,
+        MonT16,
+        MonT17,
+        MonT18,
+        MonT19,
+        MonT20,
+        MonT21,
+        MonT22,
+        MonT23,
+        MonT24,
+        MonT25,
+        MonT26,
+        MonT27,
+        MonT28,
+        MonT29,
+        MonT30,
+        MonT31,
+        MonT32,
+        MonT33,
+        MonT34,
+        MonT35,
+        MonT36,
+        MonT37,
+        MonT38,
+        MonT39,
+        MonT40,
+        MonT41,
+        MonT42,
+        MonT43,
+        MonT44,
+        MonT45,
+        MonT46,
+        MonT47,
+        MonT48,
+        MonT49,
+        MonT50,
+        MonT51,
+        MonT52,
+        MonT53,
+        MonT54,
+        MonT55,
+        MonT56,
+        MonT57,
+        MonT58,
+        MonT59,
+        MonT60,
+        MonT61,
+        MonT62,
+        MonT63,
+        MonT64,
+        MonT65,
+        MonT66,
+        MonT67,
+        MonT68,
+        MonT69,
+        MonT70,
+        MonT71,
+        MonT72,
+        MonT73,
+        MonT74,
+        MonT75,
+        MonT76,
+        MonT77,
+        MonT78,
+        MonT79,
+        MonT80,
+        Flags,
+        OutPost1,
+
+        Fence1,
+        Fence2,
+        Fence3,
+        SWGuard,
+        SWArcher,
+        Horse_Brown,
+        Horse_White,
+        Horse_Red,
+        Horse_Black,
+        Horse_Dark,
+        Horse_WhiteUni,
+        Horse_RedUni,
+        Horse_Blue,
+        Horse_ArmBrown,
+        Horse_ArmWhite,
+        Horse_ArmRed,
+        Horse_ArmBlack,
+        Horse_SnowLion,
+        Horse_Lion,
+
+        OmaWarrior,
+        Reindeer,
+        SnowYeti,
+        XmasTree,
+        Santa,
+        SnowMan,
+        Snowman2,
+        FrozenTree,
+        SantaSleigh,
+        SantaSleigh2,
+        SantaSleigh3,
+        BoneGeneral,
+        AntGeneral,
+        SpiderQueen,
+        SpiderKing,
+        RedEvilApe,
+        PurpleKektal,
+        MinoChief,
+        GreatNumaMage,
+        Mon39_0,
+        Mon40_6,
+        Mon40_7,
+        Mon40_8, 
+        Mon54_0, //Reinforced Castle Door (Right)
+        Mon54_1, //Castle Door (Right)
+        Mon54_2, //Castle Door (Left)
+        Mon54_3, //Reinforced Castle Door (Left)
+        Mon54_4,
+        Mon54_5,
+        Mon54_6,
+        Mon54_7,
+        Mon54_8, //Numa Gate
+        Mon66_0,
+        Mon66_1,
+        Mon66_2,
+        Mon66_3,
+        Mon66_4,
+        Mon66_5,
+        Mon66_6,
+        Mon66_7,
+        SeaCaveGate,
+        FlowerGate,
+        Mon67_2
+
     }
 
     
@@ -974,7 +1218,8 @@ namespace Library
         FlashOfLight,
 
         DemonExplosion,
-        FrostBiteEnd
+        FrostBiteEnd,
+        MirrorImage
     }
 
     [Flags]
@@ -990,6 +1235,7 @@ namespace Library
         Silenced = 64,
         Abyss = 128,
         Infection = 256,
+        Darkness = 512,
     }
 
     public enum SpellEffect
@@ -1002,6 +1248,7 @@ namespace Library
         FireWall,
         MonsterFireWall,
         Tempest,
+        MonsterTempest,
 
         TrapOctagon,
 
@@ -1010,6 +1257,7 @@ namespace Library
         Rubble,
 
         MonsterDeathCloud,
+        ParalysisCloud,
     }
 
     public enum MarketPlaceSort
@@ -1062,10 +1310,7 @@ namespace Library
     public enum RefineQuality : byte
     {
         Rush,
-        Quick,
-        Standard,
-        Careful,
-        Precise,
+        Standard
     }
 
     public enum ItemEffect : byte
@@ -1080,6 +1325,7 @@ namespace Library
         UmaKingHorn = 6,
         ItemPart = 7,
         Carrot = 8,
+        HorseTicket = 9,
 
         DestructionElixir = 10,
         HasteElixir = 11,
@@ -1129,6 +1375,10 @@ namespace Library
         StatExtractor = 90,
         SpiritBlade = 91,
         RefineExtractor = 92,
+
+        HuntGold = 100,
+        FamePoints = 101,
+        Skin = 102,
     }
 
     [Flags]
@@ -1154,6 +1404,16 @@ namespace Library
         White,
         Red,
         Black,
+        WhiteUni,
+        RedUni,
+        Dark,
+        Blue,
+        ArmBrown,
+        ArmWhite,
+        ArmRed,
+        ArmBlack,
+        SnowLion,
+        MountainLion,
     }
 
     [Flags]
@@ -1185,6 +1445,15 @@ namespace Library
 
         NewRepeatable = 8,
         RepeatableComplete = 16,
+    }
+
+    public enum QuestType
+    {
+        Main = 0,
+        Side = 1,
+        Daily = 2,
+        Repeatable = 3,
+        Event = 4,
     }
 
     public enum MovementEffect
@@ -1313,6 +1582,28 @@ namespace Library
         QuartzTurtleSub = 205,
 
         Sacrafice = 210,
+
+        NumaCavalry = 220,
+        NumaHighMage = 221,
+        NumaStoneThrower = 222,
+        NumaRoyalGuard = 223,
+        NumaArmoredSoldier = 224,
+
+        SawToothLizard = 230,
+        VenomSpitter = 231,
+        SonicLizard = 232,
+        GiantLizard = 233,
+        CrazedLizard = 234,
+        OrdLord = 240,
+
+    }
+    public enum CraftType
+    {
+        Smithing = 0,
+        Clothing = 1,
+        Jewelry = 2,
+        Consumables = 3,
+        Rusted = 4,
     }
 
     #region Packet Enums
@@ -1736,6 +2027,15 @@ namespace Library
         FlashOfLightEnd,
         EvasionStart,
         RagingWindStart,
+
+        GreaterscorchedEarthStart,
+        GreaterscorchedEarthEnd,
+
+        GreatermasscycloneStart,
+        GreatermasscycloneEnd,
+
+        GreaterLightningbeamStart,
+        GreaterLightningbeamEnd,
 
         #endregion
 
@@ -2238,7 +2538,9 @@ namespace Library
         NumaArmoredSoldierStruck,
         NumaArmoredSoldierDie,
 
-
+        NumakingAttack,
+        NumakingStruck,
+        NumakingDie,
 
         IcyRangerAttack,
         IcyRangerStruck,
@@ -2393,6 +2695,45 @@ namespace Library
         ThunderKickStart,
         RakeStart,
 
-    }
+    #region NewAudio
+
+        XMas1,
+        XMas2,
+        XMas3,
+        XMas4,
+        XMas5,
     #endregion
+    }
+#endregion
+}
+
+public static class EnumExtensions
+{
+
+    // This extension method is broken out so you can use a similar pattern with 
+    // other MetaData elements in the future. This is your base method for each.
+    public static T GetAttribute<T>(this Enum value) where T : Attribute
+    {
+        var type = value.GetType();
+        var memberInfo = type.GetMember(value.ToString());
+        var attributes = memberInfo[0].GetCustomAttributes(typeof(T), false);
+        return attributes.Length > 0
+          ? (T)attributes[0]
+          : null;
+    }
+
+    // This method creates a specific call to the above method, requesting the
+    // Description MetaData attribute.
+    public static string DescriptionToString(this Enum value)
+    {
+        var attribute = value.GetAttribute<DescriptionAttribute>();
+        return attribute == null ? value.ToString() : attribute.Description;
+    }// This method creates a specific call to the above method, requesting the
+    // Description MetaData attribute.
+    public static string CategoryToString(this Enum value)
+    {
+        var attribute = value.GetAttribute<CategoryAttribute>();
+        return attribute == null ? value.ToString() : attribute.Category;
+    }
+
 }

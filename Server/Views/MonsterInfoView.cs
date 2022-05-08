@@ -13,8 +13,9 @@ namespace Server.Views
 
             MonsterInfoGridControl.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding;
 
-            RegionLookUpEdit.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
+            MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapInfo>().Binding;
             ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
+            DropListLookUpEdit.DataSource = SMain.Session.GetCollection<DropListInfo>().Binding;
 
             MonsterImageComboBox.Items.AddEnum<MonsterImage>();
             StatComboBox.Items.AddEnum<Stat>();

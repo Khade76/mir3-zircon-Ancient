@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using DevExpress.XtraBars;
 using DevExpress.XtraGrid.Views.Grid;
-using Library;
 using Library.Network;
-using Library.SystemModels;
 
 namespace Server.Views
 {
@@ -34,7 +32,7 @@ namespace Server.Views
             DiagnosticGridView.OptionsSelection.MultiSelect = true;
             DiagnosticGridView.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CellSelect;
         }
-        
+
 
         private void DiagnosticButton_DownChanged(object sender, ItemClickEventArgs e)
         {

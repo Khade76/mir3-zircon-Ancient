@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using DevExpress.XtraBars;
 using Library;
 using Library.SystemModels;
-using Server.Envir;
 
 namespace Server.Views
 {
@@ -20,7 +18,9 @@ namespace Server.Views
 
             ItemInfoGridControl.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
             MonsterLookUpEdit.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding;
+            DropListLookUpEdit.DataSource = SMain.Session.GetCollection<DropListInfo>().Binding;
             SetLookUpEdit.DataSource = SMain.Session.GetCollection<SetInfo>().Binding;
+            ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
 
             ItemTypeImageComboBox.Items.AddEnum<ItemType>();
             RequiredClassImageComboBox.Items.AddEnum<RequiredClass>();
@@ -63,7 +63,7 @@ namespace Server.Views
         {
             StringBuilder builder = new StringBuilder();
 
-            
+
             builder.Append((info?.ItemName ?? "Name") + ", ");
             builder.Append((info?.ItemType.ToString() ?? "Type") + ", ");
 

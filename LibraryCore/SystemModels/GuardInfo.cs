@@ -3,6 +3,7 @@
 namespace Library.SystemModels
 {
     public sealed class GuardInfo : DBObject
+
     {
         [Association("Guards")]
         public MapInfo Map

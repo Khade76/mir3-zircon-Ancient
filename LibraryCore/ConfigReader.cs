@@ -19,9 +19,9 @@ namespace Library
 
         private static readonly Dictionary<Type, Dictionary<string, Dictionary<string, string>>> ConfigContents = new Dictionary<Type, Dictionary<string, Dictionary<string, string>>>();
         
-        public static void Load(Assembly assembly)
+        public static void Load()
         {
-            Type[] types = assembly.GetTypes();
+            Type[] types = Assembly.GetEntryAssembly().GetTypes();
             
             foreach (Type type in types)
             {
@@ -36,12 +36,13 @@ namespace Library
                 ReadConfig(type, config.Path, ob);
             }
         }
-        public static void Save(Assembly assembly)
+        public static void Save()
         {
-            Type[] types = assembly.GetTypes();
+            Type[] types = Assembly.GetEntryAssembly().GetTypes();
 
             foreach (Type type in types)
             {
+
                 ConfigPath config = type.GetCustomAttribute<ConfigPath>();
 
                 if (config == null) continue;
@@ -96,10 +97,6 @@ namespace Library
 
                 if (lastSection == null) continue;
 
-                ConfigPropertyIgnore ignore = property.GetCustomAttribute<ConfigPropertyIgnore>();
-
-                if (ignore != null) continue;
-
                 MethodInfo method = typeof(ConfigReader).GetMethod("Read", new[] { typeof(Type), typeof(string), typeof(string), property.PropertyType });
 
                 property.SetValue(ob, method.Invoke(null, new[] { type, lastSection, property.Name, property.GetValue(ob) }));
@@ -119,10 +116,6 @@ namespace Library
                 if (config != null) lastSection = config.Section;
 
                 if (lastSection == null) continue;
-
-                ConfigPropertyIgnore ignore = property.GetCustomAttribute<ConfigPropertyIgnore>();
-
-                if (ignore != null) continue;
 
                 MethodInfo method = typeof(ConfigReader).GetMethod("Write", new[] { typeof(Type), typeof(string), typeof(string), property.PropertyType });
 
@@ -652,11 +645,4 @@ namespace Library
             Section = section;
         }
     }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ConfigPropertyIgnore : Attribute
-    {
-        public ConfigPropertyIgnore() { }
-    }
-
 }

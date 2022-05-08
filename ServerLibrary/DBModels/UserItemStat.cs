@@ -9,10 +9,14 @@ namespace Server.DBModels
         [Association("AddedStats")]
         public UserItem Item
         {
-            get { return _Item; }
+            get
+            {
+                return _Item;
+            }
             set
             {
-                if (_Item == value) return;
+                if (_Item == value)
+                    return;
 
                 var oldValue = _Item;
                 _Item = value;
@@ -24,10 +28,14 @@ namespace Server.DBModels
 
         public Stat Stat
         {
-            get { return _Stat; }
+            get
+            {
+                return _Stat;
+            }
             set
             {
-                if (_Stat == value) return;
+                if (_Stat == value)
+                    return;
 
                 var oldValue = _Stat;
                 _Stat = value;
@@ -39,10 +47,14 @@ namespace Server.DBModels
 
         public int Amount
         {
-            get { return _Amount; }
+            get
+            {
+                return _Amount;
+            }
             set
             {
-                if (_Amount == value) return;
+                if (_Amount == value)
+                    return;
 
                 var oldValue = _Amount;
                 _Amount = value;
@@ -54,10 +66,14 @@ namespace Server.DBModels
 
         public StatSource StatSource
         {
-            get { return _StatSource; }
+            get
+            {
+                return _StatSource;
+            }
             set
             {
-                if (_StatSource == value) return;
+                if (_StatSource == value)
+                    return;
 
                 var oldValue = _StatSource;
                 _StatSource = value;

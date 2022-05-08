@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library.SystemModels;
 using MirDB;
 using Server.Envir;
@@ -10,14 +6,18 @@ using Server.Envir;
 namespace Server.DBModels
 {
     [UserObject]
-    public sealed class GameStoreSale: DBObject
+    public sealed class GameStoreSale : DBObject
     {
         public ItemInfo Item
         {
-            get { return _Item; }
+            get
+            {
+                return _Item;
+            }
             set
             {
-                if (_Item == value) return;
+                if (_Item == value)
+                    return;
 
                 var oldValue = _Item;
                 _Item = value;
@@ -29,10 +29,14 @@ namespace Server.DBModels
 
         public DateTime Date
         {
-            get { return _Date; }
+            get
+            {
+                return _Date;
+            }
             set
             {
-                if (_Date == value) return;
+                if (_Date == value)
+                    return;
 
                 var oldValue = _Date;
                 _Date = value;
@@ -44,10 +48,14 @@ namespace Server.DBModels
 
         public int Price
         {
-            get { return _Price; }
+            get
+            {
+                return _Price;
+            }
             set
             {
-                if (_Price == value) return;
+                if (_Price == value)
+                    return;
 
                 var oldValue = _Price;
                 _Price = value;
@@ -59,10 +67,14 @@ namespace Server.DBModels
 
         public long Count
         {
-            get { return _Count; }
+            get
+            {
+                return _Count;
+            }
             set
             {
-                if (_Count == value) return;
+                if (_Count == value)
+                    return;
 
                 var oldValue = _Count;
                 _Count = value;
@@ -75,10 +87,14 @@ namespace Server.DBModels
         [Association("StoreSales")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -90,10 +106,14 @@ namespace Server.DBModels
 
         public bool HuntGold
         {
-            get { return _HuntGold; }
+            get
+            {
+                return _HuntGold;
+            }
             set
             {
-                if (_HuntGold == value) return;
+                if (_HuntGold == value)
+                    return;
 
                 var oldValue = _HuntGold;
                 _HuntGold = value;

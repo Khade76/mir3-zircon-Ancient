@@ -9,10 +9,14 @@ namespace Server.DBModels
         [Association("BeltLinks")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -21,13 +25,17 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _Character;
-        
+
         public int Slot
         {
-            get { return _Slot; }
+            get
+            {
+                return _Slot;
+            }
             set
             {
-                if (_Slot == value) return;
+                if (_Slot == value)
+                    return;
 
                 var oldValue = _Slot;
                 _Slot = value;
@@ -39,10 +47,14 @@ namespace Server.DBModels
 
         public int LinkInfoIndex
         {
-            get { return _LinkInfoIndex; }
+            get
+            {
+                return _LinkInfoIndex;
+            }
             set
             {
-                if (_LinkInfoIndex == value) return;
+                if (_LinkInfoIndex == value)
+                    return;
 
                 var oldValue = _LinkInfoIndex;
                 _LinkInfoIndex = value;
@@ -51,14 +63,18 @@ namespace Server.DBModels
             }
         }
         private int _LinkInfoIndex;
-        
+
 
         public int LinkItemIndex
         {
-            get { return _LinkItemIndex; }
+            get
+            {
+                return _LinkItemIndex;
+            }
             set
             {
-                if (_LinkItemIndex == value) return;
+                if (_LinkItemIndex == value)
+                    return;
 
                 var oldValue = _LinkItemIndex;
                 _LinkItemIndex = value;

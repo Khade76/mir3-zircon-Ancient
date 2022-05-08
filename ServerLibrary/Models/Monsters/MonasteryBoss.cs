@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Library;
-using Server.Envir;
+﻿using Library;
 
 namespace Server.Models.Monsters
 {
-    class MonasteryBoss : PinkBat
+    internal class MonasteryBoss : PinkBat
     {
         private bool HasDied;
 
@@ -16,7 +10,8 @@ namespace Server.Models.Monsters
         {
             base.Die();
 
-            if (HasDied) return;
+            if (HasDied)
+                return;
 
             HasDied = true;
 

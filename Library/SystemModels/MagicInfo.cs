@@ -215,6 +215,36 @@ namespace Library.SystemModels
         }
         private int _NeedLevel3;
 
+        public int NeedLevel4
+        {
+            get { return _NeedLevel4; }
+            set
+            {
+                if (_NeedLevel4 == value) return;
+
+                var oldValue = _NeedLevel4;
+                _NeedLevel4 = value;
+
+                OnChanged(oldValue, value, "NeedLevel4");
+            }
+        }
+        private int _NeedLevel4;
+
+        public int NeedLevel5
+        {
+            get { return _NeedLevel5; }
+            set
+            {
+                if (_NeedLevel5 == value) return;
+
+                var oldValue = _NeedLevel5;
+                _NeedLevel5 = value;
+
+                OnChanged(oldValue, value, "NeedLevel5");
+            }
+        }
+        private int _NeedLevel5;
+
         public int Experience1
         {
             get { return _Experience1; }
@@ -260,6 +290,35 @@ namespace Library.SystemModels
         }
         private int _experience3;
 
+        public int Experience4
+        {
+            get { return _experience4; }
+            set
+            {
+                if (_experience4 == value) return;
+
+                var oldValue = _experience4;
+                _experience4 = value;
+
+                OnChanged(oldValue, value, "Experience4");
+            }
+        }
+        private int _experience4;
+
+        public int Experience5
+        {
+            get { return _experience5; }
+            set
+            {
+                if (_experience5 == value) return;
+
+                var oldValue = _experience5;
+                _experience5 = value;
+
+                OnChanged(oldValue, value, "Experience5");
+            }
+        }
+        private int _experience5;
 
         public int Delay
         {

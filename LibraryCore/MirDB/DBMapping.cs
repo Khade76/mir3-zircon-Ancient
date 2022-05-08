@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 namespace MirDB
@@ -10,13 +9,11 @@ namespace MirDB
     {
         public Type Type { get; }
 
-        public Assembly[] Assemblies { get; }
         public List<DBValue> Properties { get; } = new List<DBValue>();
 
-        public DBMapping(Assembly[] assemblies, Type type)
+        public DBMapping(Type type)
         {
             Type = type;
-            Assemblies = assemblies;
 
             PropertyInfo[] properties = Type.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty);
 
@@ -28,12 +25,10 @@ namespace MirDB
                 Properties.Add(new DBValue(property));
             }
         }
-        public DBMapping(Assembly[] assemblies, BinaryReader reader)
+        public DBMapping(BinaryReader reader)
         {
-            Assemblies = assemblies;
-
             string typeName = reader.ReadString();
-            Type = Assemblies.Select(x => x.GetType(typeName)).FirstOrDefault(x => x != null);
+            Type = Assembly.GetEntryAssembly().GetType(typeName) ?? Assembly.GetCallingAssembly().GetType(typeName);
 
             if (Type == null)
             {

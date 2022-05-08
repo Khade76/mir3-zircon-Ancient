@@ -12,7 +12,7 @@ namespace Server.Views
             InitializeComponent();
 
             ItemInfoStatGridControl.DataSource = SMain.Session.GetCollection<WeaponCraftStatInfo>().Binding;
-            
+
             StatImageComboBox.Items.AddEnum<Stat>();
         }
 

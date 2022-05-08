@@ -19,20 +19,24 @@ namespace Library
 
         public static DBCollection<ItemInfo> ItemInfoList;
         public static DBCollection<MagicInfo> MagicInfoList;
-        public static DBCollection<MapInfo> MapInfoList;
-        public static DBCollection<InstanceInfo> InstanceInfoList;
+        //public static DBCollection<MapInfo> MapInfoList;
         public static DBCollection<NPCPage> NPCPageList;
         public static DBCollection<MonsterInfo> MonsterInfoList;
         public static DBCollection<StoreInfo> StoreInfoList;
+        public static DBCollection<FamePointInfo> FamePointInfoList;
         public static DBCollection<NPCInfo> NPCInfoList;
         public static DBCollection<MovementInfo> MovementInfoList;
         public static DBCollection<QuestInfo> QuestInfoList;
         public static DBCollection<QuestTask> QuestTaskList;
         public static DBCollection<CompanionInfo> CompanionInfoList;
         public static DBCollection<CompanionLevelInfo> CompanionLevelInfoList;
-        public static DBCollection<CurrencyInfo> CurrencyInfoList;
+        public static DBCollection<CraftLevelInfo> CraftingLevelsInfoList;
+        public static DBCollection<CraftItemInfo> CraftingItemInfoList;
+        public static DBCollection<MiniGameInfo> MiniGameInfoList;
+        public static DBCollection<HorseInfo> HorseInfoList;
 
-        public static Random Random = new Random();
+
+        public static Random Random  = new Random();
 
         public static readonly Regex EMailRegex = new Regex(@"\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*", RegexOptions.Compiled);
         public static readonly Regex PasswordRegex = new Regex(@"^[\S]{" + MinPasswordLength + "," + MaxPasswordLength + "}$", RegexOptions.Compiled);
@@ -49,9 +53,16 @@ namespace Library
                             PhantomColour = Color.Purple,
 
                             BrownNameColour = Color.Brown,
-                            RedNameColour = Color.Red;
-
-        public const string ClientName = "Legend of Mir 3";
+                            RedNameColour = Color.Red,
+                            CommonColour = Color.White,
+                            AddedColour = Color.LightSkyBlue,
+                            SuperiorColour = Color.PaleGreen,
+                            RareColour = Color.RoyalBlue,
+                            EliteColour = Color.MediumPurple,
+                            LegendaryColour = Color.DarkOrange,
+                            WarriorColour = Color.DarkRed,
+                            TaoistColour = Color.LawnGreen,
+                            WizardColour = Color.Violet;
 
         public const int
             MinPasswordLength = 5,
@@ -64,12 +75,12 @@ namespace Library
 
             MinCharacterNameLength = 3,
             MaxCharacterNameLength = 15,
-            MaxCharacterCount = 4,
+            MaxCharacterCount = 6,
 
             MinGuildNameLength = 2,
-            MaxGuildNameLength = 15,
+            MaxGuildNameLength = 20,
 
-            MaxChatLength = 120,
+            MaxChatLength = 250,
             MaxGuildNoticeLength = 4000,
 
             MaxBeltCount = 10,
@@ -79,27 +90,30 @@ namespace Library
 
             DuraLossRate = 15,
 
-            GroupLimit = 15,
+            GroupLimit = 16,
 
             CloakRange = 3,
-            MarketPlaceFee = 0,
-            AccessoryLevelCost = 0,
+            MarketPlaceFee = 1000,
+            AccessoryLevelCost = 2500,
             AccessoryResetCost = 1000000,
 
             CraftWeaponPercentCost = 1000000,
 
             CommonCraftWeaponPercentCost = 30000000,
             SuperiorCraftWeaponPercentCost = 60000000,
-            EliteCraftWeaponPercentCost = 80000000;
+            MinAdded = 3,
+            EliteCraftWeaponPercentCost = 80000000,
+            MaxDailyQuestResets = 2,
+            BaseSmeltingFail = 20;          
 
         public static decimal MarketPlaceTax = 0.07M;  //2.5x Item cost
 
 
         public static long
-            GuildCreationCost = 7500000,
+            GuildCreationCost = 10000000,
             GuildMemberCost = 1000000,
             GuildStorageCost = 350000,
-            GuildWarCost = 200000;
+            GuildWarCost = 250000;
 
         public static long
             MasterRefineCost = 50000,
@@ -131,113 +145,114 @@ namespace Library
 
         public static List<decimal> ExperienceList = new List<decimal>
         {
-            0,
-            100,
-            200,
-            300,
-            400,
-            600,
-            900,
-            1200,
-            1700,
-            2500,
-            6000,
-            8000,
-            10000,
-            15000,
-            30000,
-            40000,
-            50000,
-            70000,
-            100000,
-            120000,
-            140000,
-            250000,
-            300000,
-            350000,
-            400000,
-            500000,
-            700000,
-            1000000,
-            1400000,
-            1800000,
-            2000000,
-            2400000,
-            2800000,
-            3200000,
-            3600000,
-            4000000,
-            4800000,
-            5600000,
-            8200000,
-            9000000,
-            11000000,
-            14000000,
-            18000000,
-            22000000,
-            25000000,
-            30000000,
-            35000000,
-            40000000,
-            50000000,
-            60000000,
-            70000000,
-            85000000,
-            110000000,
-            135000000,
-            145000000,
-            150000000,
-            175000000,
-            180000000,
-            200000000,
-            220000000,
-            230000000,
-            240000000,
-            250000000,
-            260000000,
-            270000000,
-            280000000,
-            300000000,
-            320000000,
-            340000000,
-            360000000,
-            380000000,
-            400000000,
-            800000000,
-            1400000000,
-            2200000000,
-            6530000000,
-            12000000000,
-            30000000000,
-            75000000000,
-            150000000000,
-            175000000000,
-            300000000000,
-            430000000000,
-            570000000000,
-            700000000000,
-            800000000000,
-            900000000000,
-            3000000000000,
-            6000000000000,
-            9000000000000,
-            13000000000000,
-            17000000000000,
-            1440000000000,
-            1460000000000,
-            1490000000000,
-            1620000000000,
-            1660000000000,
-            1720000000000,
-            1800000000000,
-            1880000000000,
-            2000000000000,
-        };
+            0, // level 1
+            100, // level 2
+            200, // level 3
+            300, // level 4
+            400, // level 5
+            600, // level 6
+            900, // level 7
+            1200, // level 8
+            1700, // level 9
+            2500, // level 10
+            6000, // level 11
+            8000, // level 12
+            10000, // level 13
+            15000, // level 14
+            30000, // level 15
+            40000, // level 16
+            50000, // level 17
+            70000, // level 18
+            100000, // level 19
+            120000, // level 20
+            140000, // level 21
+            250000, // level 22
+            300000, // level 23
+            350000, // level 24
+            400000, // level 25
+            500000, // level 26
+            700000, // level 27
+            1000000, // level 28
+            1400000, // level 29
+            1800000, // level 30
+            2000000, // level 31
+            2400000, // level 32
+            2800000, // level 33
+            3200000, // level 34
+            3600000, // level 35
+            4000000, // level 36
+            4800000, // level 37
+            5600000, // level 38
+            8200000, // level 39
+            9000000, // level 40
+            11000000, // level 41
+            14000000, // level 42
+            25000000, // level 43
+            45000000, // level 44
+            70000000, // level 45
+            90000000, // level 46
+            110000000, // level 47
+            130000000, // level 48
+            150000000, // level 49
+            170000000, // level 50
+            210000000, // level 51
+            230000000, // level 51
+            270000000, // level 52
+            310000000, // level 53
+            330000000, // level 54
+            350000000, // level 55
+            370000000, // level 56
+            400000000, // level 57
+            430000000, // level 58
+            460000000, // level 59
+            495000000, // level 60
+            530000000, // level 61
+            565000000, // level 62
+            600000000, // level 63
+            640000000, // level 64
+            680000000, // level 65
+            720000000, // level 66
+            760000000, // level 67
+            800000000, // level 68
+            1600000000, // level 69
+            1800000000, // level 70
+            2000000000, // level 71
+            2200000000, // level 72
+            2400000000, // level 73
+            3200000000, // level 74
+            3600000000, // level 75
+            4000000000, // level 76
+            4500000000, // level 77
+            5000000000, // level 78
+            15000000000, // level 79
+            45000000000, // level 80
+            50000000000, // level 81
+            55000000000, // level 82
+            60000000000, // level 83
+            100000000000, // level 84
+            120000000000, // level 85
+            135000000000, // level 86
+            170000000000, // level 87
+            300000000000, // level 88
+            400000000000, // level 89
+            440000000000, // level 90
+            460000000000, // level 91
+            490000000000, // level 92
+            620000000000, // level 93
+            660000000000, // level 94
+            720000000000, // level 95
+            800000000000, // level 96
+            880000000000, // level 97
+            99999999999999, // level 98
+
+
+
+       };
 
         public static List<decimal> OldExperienceList = new List<decimal>
         {
             0, // Lv 0
-            100,
+            100, // Lv 1
             200,
             300,
             400,
@@ -246,7 +261,7 @@ namespace Library
             1200,
             1700,
             2500,
-            6000,
+            6000, // Lv 10
             8000,
             10000,
             15000,
@@ -256,7 +271,7 @@ namespace Library
             70000,
             100000,
             120000,
-            140000,
+            140000, // Lv 20
             250000,
             300000,
             350000,
@@ -266,7 +281,7 @@ namespace Library
             1000000,
             1400000,
             1800000,
-            2000000,
+            2000000, // Lv 30
             2400000,
             2800000,
             3200000,
@@ -276,7 +291,7 @@ namespace Library
             5600000,
             8200000,
             9000000,
-            11000000,
+            11000000, // Lv 40
             14000000,
             25000000,
             45000000,
@@ -286,7 +301,7 @@ namespace Library
             130000000,
             150000000,
             170000000,
-            210000000,
+            210000000, // Lv 50
             230000000,
             250000000,
             270000000,
@@ -296,6 +311,7 @@ namespace Library
             370000000,
             400000000,
             400000000,
+            400000000, // Lv 60
             400000000,
             400000000,
             400000000,
@@ -305,8 +321,7 @@ namespace Library
             400000000,
             400000000,
             400000000,
-            400000000,
-            400000000,
+            400000000, // Lv 70
             400000000,
             800000000,
             1400000000,
@@ -316,7 +331,7 @@ namespace Library
             4000000000,
             4500000000,
             5000000000,
-            15000000000,
+            15000000000, // Lv 80
             45000000000,
             50000000000,
             55000000000,
@@ -326,7 +341,7 @@ namespace Library
             135000000000,
             150000000000,
             170000000000,
-            300000000000,
+            300000000000, // Lv 90
             400000000000,
             440000000000,
             460000000000,
@@ -336,7 +351,7 @@ namespace Library
             720000000000,
             800000000000,
             880000000000,
-            1000000000000,
+            1000000000000, // Lv 100
         };
 
         public static List<decimal> WeaponExperienceList = new List<decimal>
@@ -378,12 +393,14 @@ namespace Library
             2090000,
         };
 
-        public const int InventorySize = 48,
-                         EquipmentSize = 17,
+
+        public const int InventorySize = 49,
+                         EquipmentSize = 20,
                          CompanionInventorySize = 40,
                          CompanionEquipmentSize = 4,
                          PartsStorageOffset = 2000,
                          EquipmentOffSet = 1000,
+                         SkinStorageOffset = 3000,
                          StorageSize = 100;
 
         public const int AttackDelay = 1500,
@@ -404,10 +421,7 @@ namespace Library
         public static Dictionary<RefineQuality, TimeSpan> RefineTimes = new Dictionary<RefineQuality, TimeSpan>
         {
             [RefineQuality.Rush] = TimeSpan.FromMinutes(1),
-            [RefineQuality.Quick] = TimeSpan.FromMinutes(30),
             [RefineQuality.Standard] = TimeSpan.FromHours(1),
-            [RefineQuality.Careful] = TimeSpan.FromHours(6),
-            [RefineQuality.Precise] = TimeSpan.FromDays(1),
         };
     }
 
@@ -430,6 +444,8 @@ namespace Library
         public Color NameColour { get; set; }
         public string GuildName { get; set; }
         public string GuildRank { get; set; }
+        public int FlagShape { get; set; }
+        public Color FlagColour { get; set; }
 
         public MirClass Class { get; set; }
         public MirGender Gender { get; set; }
@@ -437,7 +453,9 @@ namespace Library
         public MirDirection Direction { get; set; }
 
         public int MapIndex { get; set; }
-        public int InstanceIndex { get; set; }
+
+        public long Gold { get; set; }
+        public int GameGold { get; set; }
 
         public int Level { get; set; }
         public int HairType { get; set; }
@@ -447,10 +465,9 @@ namespace Library
         public int Shield { get; set; }
         public Color ArmourColour { get; set; }
         public int ArmourImage { get; set; }
+        public int WingShape { get; set; }
+        public int WeaponEffect { get; set; }
 
-        public int EmblemShape { get; set; }
-        public int WingsShape { get; set; }
-        
         public decimal Experience { get; set; }
 
         public int CurrentHP { get; set; }
@@ -467,12 +484,11 @@ namespace Library
         public List<ClientUserItem> Items { get; set; }
         public List<ClientBeltLink> BeltLinks { get; set; }
         public List<ClientAutoPotionLink> AutoPotionLinks { get; set; }
-
+        public List<ClientUserCrafting> CraftInfo { get; set; }
         public List<ClientUserMagic> Magics { get; set; }
         public List<ClientBuffInfo> Buffs { get; set; }
-
-        public List<ClientUserCurrency> Currencies { get; set; }
-
+        public List<ClientMapInfo> MapInfos { get; set; }
+        public List<ClientMiniGames> CMiniGames { get; set; }
         public PoisonType Poison { get; set; }
 
         public bool InSafeZone { get; set; }
@@ -491,23 +507,28 @@ namespace Library
         public List<CompanionInfo> AvailableCompanions = new List<CompanionInfo>();
 
         public List<ClientUserCompanion> Companions { get; set; }
+        public List<int> HorseUnlocks { get; set; }
+        public List<HorseInfo> AvailableHorses = new List<HorseInfo>();
+
+        public List<int> Horses { get; set; }
 
         public int Companion { get; set; }
 
         public int StorageSize { get; set; }
+        public int DailyQuestResets { get; set; }
 
-        public string FiltersClass { get; set; }
-        public string FiltersRarity { get; set; }
-        public string FiltersItemType { get; set; }
+        public DBCollection<MapInfo> MapInfoList;
 
         [CompleteObject]
         public void OnComplete()
         {
             foreach (int index in CompanionUnlocks)
                 AvailableCompanions.Add(Globals.CompanionInfoList.Binding.First(x => x.Index == index));
+            foreach (int index in HorseUnlocks)
+                AvailableHorses.Add(Globals.HorseInfoList.Binding.First(x => x.Index == index));
         }
     }
-
+    
     public sealed class ClientUserItem
     {
         public ItemInfo Info;
@@ -519,7 +540,7 @@ namespace Library
         public int MaxDurability { get; set; }
 
         public long Count { get; set; }
-
+        
         public int Slot { get; set; }
 
         public int Level { get; set; }
@@ -538,6 +559,9 @@ namespace Library
         public UserItemFlags Flags { get; set; }
         public TimeSpan ExpireTime { get; set; }
 
+        public Rarity Rarity { get; set; }
+        public bool CraftInfoOnly;
+
 
         [IgnorePropertyPacket]
         public int Weight
@@ -550,7 +574,7 @@ namespace Library
                     case ItemType.Amulet:
                         return Info.Weight;
                     default:
-                        return (int)Math.Min(int.MaxValue, Info.Weight * Count);
+                        return (int) Math.Min(int.MaxValue, Info.Weight * Count);
                 }
             }
         }
@@ -574,6 +598,8 @@ namespace Library
             CurrentDurability = info.Durability;
             Level = 1;
             AddedStats = new Stats();
+            Rarity = info.Rarity;
+            CraftInfoOnly = false;
         }
         public ClientUserItem(ClientUserItem item, long count)
         {
@@ -586,7 +612,7 @@ namespace Library
             MaxDurability = item.MaxDurability;
 
             Count = count;
-
+            
             Slot = item.Slot;
 
             Level = item.Level;
@@ -601,8 +627,10 @@ namespace Library
 
             New = item.New;
             NextSpecialRepair = item.NextSpecialRepair;
-
+            
             AddedStats = new Stats(item.AddedStats);
+            Rarity = item.Info.Rarity;
+            CraftInfoOnly = false;
         }
 
 
@@ -642,11 +670,11 @@ namespace Library
             if (Info.Durability == 0 || CurrentDurability >= MaxDurability) return 0;
 
             int rate = special ? 2 : 1;
+            
+            decimal p = Math.Floor(MaxDurability*(Info.Price/2M/Info.Durability) + Info.Price/2M);
+            p = p*(AddedStats.Count*0.1M + 1M);
 
-            decimal p = Math.Floor(MaxDurability * (Info.Price / 2M / Info.Durability) + Info.Price / 2M);
-            p = p * (AddedStats.Count * 0.1M + 1M);
-
-            return (int)(p * Count - Price(Count)) * rate;
+            return (int) (p*Count - Price(Count))*rate;
 
 
         }
@@ -668,14 +696,18 @@ namespace Library
         {
             if ((Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable || (Flags & UserItemFlags.Worthless) == UserItemFlags.Worthless) return false;
 
-            switch (Info.Rarity)
+            switch (Rarity)
             {
                 case Rarity.Common:
                     if (Info.RequiredAmount <= 15) return false;
                     break;
                 case Rarity.Superior:
                     break;
+                case Rarity.Rare:
+                    break;
                 case Rarity.Elite:
+                    break;
+                case Rarity.Legendary:
                     break;
             }
 
@@ -697,7 +729,7 @@ namespace Library
         }
         public int FragmentCost()
         {
-            switch (Info.Rarity)
+            switch (Rarity)
             {
                 case Rarity.Common:
                     switch (Info.ItemType)
@@ -710,12 +742,12 @@ namespace Library
                         case ItemType.Ring:
                         case ItemType.Shoes:
                             return Info.RequiredAmount * 10000 / 9;
-                        /* case ItemType.Helmet:
-                         case ItemType.Necklace:
-                         case ItemType.Bracelet:
-                         case ItemType.Ring:
-                         case ItemType.Shoes:
-                             return Info.RequiredAmount * 7000 / 9;*/
+                       /* case ItemType.Helmet:
+                        case ItemType.Necklace:
+                        case ItemType.Bracelet:
+                        case ItemType.Ring:
+                        case ItemType.Shoes:
+                            return Info.RequiredAmount * 7000 / 9;*/
                         default:
                             return 0;
                     }
@@ -730,12 +762,12 @@ namespace Library
                         case ItemType.Ring:
                         case ItemType.Shoes:
                             return Info.RequiredAmount * 10000 / 2;
-                        /*  case ItemType.Helmet:
-                          case ItemType.Necklace:
-                          case ItemType.Bracelet:
-                          case ItemType.Ring:
-                          case ItemType.Shoes:
-                              return Info.RequiredAmount * 10000 / 10;*/
+                      /*  case ItemType.Helmet:
+                        case ItemType.Necklace:
+                        case ItemType.Bracelet:
+                        case ItemType.Ring:
+                        case ItemType.Shoes:
+                            return Info.RequiredAmount * 10000 / 10;*/
                         default:
                             return 0;
                     }
@@ -762,7 +794,7 @@ namespace Library
         }
         public int FragmentCount()
         {
-            switch (Info.Rarity)
+            switch (Rarity)
             {
                 case Rarity.Common:
                     switch (Info.ItemType)
@@ -775,16 +807,16 @@ namespace Library
                         case ItemType.Ring:
                         case ItemType.Shoes:
                             return Math.Max(1, Info.RequiredAmount / 2 + 5);
-                        /*  case ItemType.Helmet:
-                              return Math.Max(1, (Info.RequiredAmount - 30) / 6);
-                          case ItemType.Necklace:
-                              return Math.Max(1, Info.RequiredAmount / 8);
-                          case ItemType.Bracelet:
-                              return Math.Max(1, Info.RequiredAmount / 15);
-                          case ItemType.Ring:
-                              return Math.Max(1, Info.RequiredAmount / 9);
-                          case ItemType.Shoes:
-                              return Math.Max(1, (Info.RequiredAmount - 35) / 6);*/
+                      /*  case ItemType.Helmet:
+                            return Math.Max(1, (Info.RequiredAmount - 30) / 6);
+                        case ItemType.Necklace:
+                            return Math.Max(1, Info.RequiredAmount / 8);
+                        case ItemType.Bracelet:
+                            return Math.Max(1, Info.RequiredAmount / 15);
+                        case ItemType.Ring:
+                            return Math.Max(1, Info.RequiredAmount / 9);
+                        case ItemType.Shoes:
+                            return Math.Max(1, (Info.RequiredAmount - 35) / 6);*/
                         default:
                             return 0;
                     }
@@ -799,16 +831,16 @@ namespace Library
                         case ItemType.Ring:
                         case ItemType.Shoes:
                             return Math.Max(1, Info.RequiredAmount / 2 + 5);
-                        /*  case ItemType.Helmet:
-                              return Math.Max(1, (Info.RequiredAmount - 30) / 6);
-                          case ItemType.Necklace:
-                              return Math.Max(1, Info.RequiredAmount / 10);
-                          case ItemType.Bracelet:
-                              return Math.Max(1, Info.RequiredAmount / 15);
-                          case ItemType.Ring:
-                              return Math.Max(1, Info.RequiredAmount / 10);
-                          case ItemType.Shoes:
-                              return Math.Max(1, (Info.RequiredAmount - 35) / 6);*/
+                      /*  case ItemType.Helmet:
+                            return Math.Max(1, (Info.RequiredAmount - 30) / 6);
+                        case ItemType.Necklace:
+                            return Math.Max(1, Info.RequiredAmount / 10);
+                        case ItemType.Bracelet:
+                            return Math.Max(1, Info.RequiredAmount / 15);
+                        case ItemType.Ring:
+                            return Math.Max(1, Info.RequiredAmount / 10);
+                        case ItemType.Shoes:
+                            return Math.Max(1, (Info.RequiredAmount - 35) / 6);*/
                         default:
                             return 0;
                     }
@@ -834,7 +866,7 @@ namespace Library
             }
         }
     }
-
+    
     public sealed class ClientBeltLink
     {
         public int Slot { get; set; }
@@ -850,7 +882,7 @@ namespace Library
         public int Mana { get; set; }
         public bool Enabled { get; set; }
     }
-
+    
     public class ClientUserMagic
     {
         public int Index { get; set; }
@@ -868,7 +900,7 @@ namespace Library
         public TimeSpan Cooldown { get; set; }
 
         public DateTime NextCast;
-
+        
 
         [IgnorePropertyPacket]
         public int Cost => Info.BaseCost + Level * Info.LevelCost / 3;
@@ -888,7 +920,7 @@ namespace Library
         public int Slot { get; set; }
         public long Count { get; set; }
     }
-
+    
     public class ClientBuffInfo
     {
         public int Index { get; set; }
@@ -928,17 +960,16 @@ namespace Library
         public MirClass Class { get; set; }
         public int Level { get; set; }
         public decimal Experience { get; set; }
-        public decimal MaxExperience { get; set; }
         public bool Online { get; set; }
         public bool Observable { get; set; }
         public int Rebirth { get; set; }
     }
-
+    
     public class ClientMarketPlaceInfo
     {
         public int Index { get; set; }
         public ClientUserItem Item { get; set; }
-
+        
         public int Price { get; set; }
 
         public string Seller { get; set; }
@@ -973,7 +1004,7 @@ namespace Library
 
         public long GuildFunds { get; set; }
         public long DailyGrowth { get; set; }
-
+        
         public long TotalContribution { get; set; }
         public long DailyContribution { get; set; }
 
@@ -988,6 +1019,8 @@ namespace Library
         public List<ClientGuildMemberInfo> Members { get; set; }
 
         public List<ClientUserItem> Storage { get; set; }
+        public int FlagShape { get; set; }
+        public Color FlagColour { get; set; }
 
         [IgnorePropertyPacket]
         public GuildPermission Permission => Members.FirstOrDefault(x => x.Index == UserIndex)?.Permission ?? GuildPermission.None;
@@ -1033,9 +1066,6 @@ namespace Library
 
         public int SelectedReward { get; set; }
 
-        public DateTime DateTaken { get; set; }
-        public DateTime DateCompleted { get; set; }
-
         [IgnorePropertyPacket]
         public bool IsComplete => Tasks.Count == Quest.Tasks.Count && Tasks.All(x => x.Completed);
 
@@ -1077,6 +1107,12 @@ namespace Library
         public int BackShape { get; set; }
     }
 
+    public class ClientUserHorse
+    {
+        public int HorseNum { get; set; }
+        [IgnorePropertyPacket]
+        public HorseInfo HorseInfo { get; set; }
+    }
     public class ClientUserCompanion
     {
         public int Index { get; set; }
@@ -1084,7 +1120,7 @@ namespace Library
 
         public int CompanionIndex { get; set; }
         public CompanionInfo CompanionInfo;
-
+        
         public int Level { get; set; }
         public int Hunger { get; set; }
         public int Experience { get; set; }
@@ -1122,7 +1158,7 @@ namespace Library
 
     }
 
-    public class ClientPlayerInfo
+    public class ClientPlayerInfo 
     {
         public uint ObjectID { get; set; }
 
@@ -1137,7 +1173,7 @@ namespace Library
 
         public string Name;
 
-        //Guild/Group
+        //Guild/Grorup
         public MonsterInfo MonsterInfo;
         public ItemInfo ItemInfo;
 
@@ -1151,6 +1187,8 @@ namespace Library
         public Stats Stats { get; set; }
 
         public bool Dead;
+        public int level;
+        public bool Supermob;
     }
 
     public class ClientBlockInfo
@@ -1178,19 +1216,59 @@ namespace Library
             CheckDate = Time.Now - CheckTime;
         }
     }
-
-    public class CompanionFiltersInfo
+    public sealed class ClientUserCrafting
     {
-        public string FilterClass { get; set; }
-        public string FilterRarity { get; set; }
-        public string FilterItemType { get; set; }
+        public CraftType Type { get; set; }
+        public int Level { get; set; }
+        public int Exp { get; set; }
     }
 
-    public class ClientUserCurrency
+    public sealed class ClientMapInfo
     {
-        public int CurrencyIndex { get; set; }
-        public CurrencyInfo Info;
-        public long Amount { get; set; }
+        public string FileName { get; set; }
+        public string Description { get; set; }
+        public int MiniMap { get; set; }
+        public LightSetting Light { get; set; }
+        public FightSetting Fight { get; set; }
+        public bool AllowRT { get; set; }
+        public int SkillDelay { get; set; }
+        public bool CanHorse { get; set; }
+        public bool AllowTT { get; set; }
+        public bool CanMine { get; set; }
+        public bool CanMarriageRecall { get; set; }
+        public bool AllowRecall { get; set; }
+        public int MinimumLevel { get; set; }
+        public int MaximumLevel { get; set; }
+        public MapInfo ReconnectMap { get; set; }
+        public SoundIndex Music { get; set; }
+        public int MonsterHealth { get; set; }
+        public int MonsterDamage { get; set; }
+        public int DropRate { get; set; }
+        public int ExperienceRate { get; set; }
+        public int KillStreakExperienceRate { get; set; }
+        public DateTime KillStreakEndTime { get; set; }
+        public Boolean KillSteakActive { get; set; }
+        public int InstanceIndex { get; set; }
+        public int GoldRate { get; set; }
+        public int MaxMonsterHealth { get; set; }
+        public int MaxMonsterDamage { get; set; }
+        public int MaxDropRate { get; set; }
+        public int MaxExperienceRate { get; set; }
+        public int MaxGoldRate { get; set; }
+        public List<MapRegion> Regions { get; set; }
+        public List<MineInfo> Mining { get; set; }
+        public bool AllowGEO { get; set; }
+
+    }
+
+    public sealed class ClientMiniGames
+    {
+        public int index { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public bool Started { get; set; }
+
+
     }
 }
 

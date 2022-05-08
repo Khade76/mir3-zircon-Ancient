@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using Library;
 using Library.SystemModels;
 using MirDB;
@@ -15,10 +11,14 @@ namespace Server.DBModels
         [Association("Companions")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -27,14 +27,18 @@ namespace Server.DBModels
             }
         }
         private AccountInfo _Account;
-        
+
         [Association("Companion")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -46,10 +50,14 @@ namespace Server.DBModels
 
         public CompanionInfo Info
         {
-            get { return _Info; }
+            get
+            {
+                return _Info;
+            }
             set
             {
-                if (_Info == value) return;
+                if (_Info == value)
+                    return;
 
                 var oldValue = _Info;
                 _Info = value;
@@ -58,14 +66,18 @@ namespace Server.DBModels
             }
         }
         private CompanionInfo _Info;
-        
-        
+
+
         public string Name
         {
-            get { return _Name; }
+            get
+            {
+                return _Name;
+            }
             set
             {
-                if (_Name == value) return;
+                if (_Name == value)
+                    return;
 
                 var oldValue = _Name;
                 _Name = value;
@@ -74,13 +86,17 @@ namespace Server.DBModels
             }
         }
         private string _Name;
-        
+
         public int Level
         {
-            get { return _Level; }
+            get
+            {
+                return _Level;
+            }
             set
             {
-                if (_Level == value) return;
+                if (_Level == value)
+                    return;
 
                 var oldValue = _Level;
                 _Level = value;
@@ -92,10 +108,14 @@ namespace Server.DBModels
 
         public int Hunger
         {
-            get { return _Hunger; }
+            get
+            {
+                return _Hunger;
+            }
             set
             {
-                if (_Hunger == value) return;
+                if (_Hunger == value)
+                    return;
 
                 var oldValue = _Hunger;
                 _Hunger = value;
@@ -107,10 +127,14 @@ namespace Server.DBModels
 
         public int Experience
         {
-            get { return _Experience; }
+            get
+            {
+                return _Experience;
+            }
             set
             {
-                if (_Experience == value) return;
+                if (_Experience == value)
+                    return;
 
                 var oldValue = _Experience;
                 _Experience = value;
@@ -122,10 +146,14 @@ namespace Server.DBModels
 
         public Stats Level3
         {
-            get { return _Level3; }
+            get
+            {
+                return _Level3;
+            }
             set
             {
-                if (_Level3 == value) return;
+                if (_Level3 == value)
+                    return;
 
                 var oldValue = _Level3;
                 _Level3 = value;
@@ -137,10 +165,14 @@ namespace Server.DBModels
 
         public Stats Level5
         {
-            get { return _Level5; }
+            get
+            {
+                return _Level5;
+            }
             set
             {
-                if (_Level5 == value) return;
+                if (_Level5 == value)
+                    return;
 
                 var oldValue = _Level5;
                 _Level5 = value;
@@ -149,13 +181,17 @@ namespace Server.DBModels
             }
         }
         private Stats _Level5;
-        
+
         public Stats Level7
         {
-            get { return _Level7; }
+            get
+            {
+                return _Level7;
+            }
             set
             {
-                if (_Level7 == value) return;
+                if (_Level7 == value)
+                    return;
 
                 var oldValue = _Level7;
                 _Level7 = value;
@@ -167,10 +203,14 @@ namespace Server.DBModels
 
         public Stats Level10
         {
-            get { return _Level10; }
+            get
+            {
+                return _Level10;
+            }
             set
             {
-                if (_Level10 == value) return;
+                if (_Level10 == value)
+                    return;
 
                 var oldValue = _Level10;
                 _Level10 = value;
@@ -182,10 +222,14 @@ namespace Server.DBModels
 
         public Stats Level11
         {
-            get { return _Level11; }
+            get
+            {
+                return _Level11;
+            }
             set
             {
-                if (_Level11 == value) return;
+                if (_Level11 == value)
+                    return;
 
                 var oldValue = _Level11;
                 _Level11 = value;
@@ -194,13 +238,17 @@ namespace Server.DBModels
             }
         }
         private Stats _Level11;
-        
+
         public Stats Level13
         {
-            get { return _Level13; }
+            get
+            {
+                return _Level13;
+            }
             set
             {
-                if (_Level13 == value) return;
+                if (_Level13 == value)
+                    return;
 
                 var oldValue = _Level13;
                 _Level13 = value;
@@ -212,10 +260,14 @@ namespace Server.DBModels
 
         public Stats Level15
         {
-            get { return _Level15; }
+            get
+            {
+                return _Level15;
+            }
             set
             {
-                if (_Level15 == value) return;
+                if (_Level15 == value)
+                    return;
 
                 var oldValue = _Level15;
                 _Level15 = value;
@@ -227,7 +279,10 @@ namespace Server.DBModels
 
 
         [Association("Items", true)]
-        public DBBindingList<UserItem> Items { get; set; }
+        public DBBindingList<UserItem> Items
+        {
+            get; set;
+        }
 
 
         protected override void OnDeleted()

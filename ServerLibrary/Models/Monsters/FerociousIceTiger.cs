@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -15,13 +12,16 @@ namespace Server.Models.Monsters
 
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
 
             int x = Math.Abs(Target.CurrentLocation.X - CurrentLocation.X);
             int y = Math.Abs(Target.CurrentLocation.Y - CurrentLocation.Y);
 
-            if (x > 3 || y > 3) return false;
+            if (x > 3 || y > 3)
+                return false;
 
             return true;
         }
@@ -39,7 +39,7 @@ namespace Server.Models.Monsters
             if (SEnvir.Random.Next(5) == 0 || Spinning)
             {
                 Broadcast(new S.ObjectRangeAttack { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation, Targets = new List<uint>() });
-                
+
                 foreach (MapObject ob in GetTargets(CurrentMap, CurrentLocation, 3))
                 {
                     int damage = GetDC();
@@ -63,8 +63,8 @@ namespace Server.Models.Monsters
 
                 }
 
-                 ActionTime = SEnvir.Now.AddMilliseconds(600);
-                 AttackTime = SEnvir.Now.AddMilliseconds(640);
+                ActionTime = SEnvir.Now.AddMilliseconds(600);
+                AttackTime = SEnvir.Now.AddMilliseconds(640);
 
                 Spinning = true;
             }

@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.SystemModels;
-using S = Library.Network.ServerPackets;
 using MirDB;
 using Server.Envir;
+using S = Library.Network.ServerPackets;
 
 namespace Server.DBModels
 {
@@ -16,10 +14,14 @@ namespace Server.DBModels
     {
         public string GuildName
         {
-            get { return _GuildName; }
+            get
+            {
+                return _GuildName;
+            }
             set
             {
-                if (_GuildName == value) return;
+                if (_GuildName == value)
+                    return;
 
                 var oldValue = _GuildName;
                 _GuildName = value;
@@ -31,10 +33,14 @@ namespace Server.DBModels
 
         public int MemberLimit
         {
-            get { return _MemberLimit; }
+            get
+            {
+                return _MemberLimit;
+            }
             set
             {
-                if (_MemberLimit == value) return;
+                if (_MemberLimit == value)
+                    return;
 
                 var oldValue = _MemberLimit;
                 _MemberLimit = value;
@@ -43,13 +49,17 @@ namespace Server.DBModels
             }
         }
         private int _MemberLimit;
-        
+
         public int StorageSize
         {
-            get { return _StorageSize; }
+            get
+            {
+                return _StorageSize;
+            }
             set
             {
-                if (_StorageSize == value) return;
+                if (_StorageSize == value)
+                    return;
 
                 var oldValue = _StorageSize;
                 _StorageSize = value;
@@ -61,10 +71,14 @@ namespace Server.DBModels
 
         public long GuildFunds
         {
-            get { return _GuildFunds; }
+            get
+            {
+                return _GuildFunds;
+            }
             set
             {
-                if (_GuildFunds == value) return;
+                if (_GuildFunds == value)
+                    return;
 
                 var oldValue = _GuildFunds;
                 _GuildFunds = value;
@@ -76,10 +90,14 @@ namespace Server.DBModels
 
         public int GuildLevel
         {
-            get { return _GuildLevel; }
+            get
+            {
+                return _GuildLevel;
+            }
             set
             {
-                if (_GuildLevel == value) return;
+                if (_GuildLevel == value)
+                    return;
 
                 var oldValue = _GuildLevel;
                 _GuildLevel = value;
@@ -91,10 +109,14 @@ namespace Server.DBModels
 
         public string GuildNotice
         {
-            get { return _GuildNotice; }
+            get
+            {
+                return _GuildNotice;
+            }
             set
             {
-                if (_GuildNotice == value) return;
+                if (_GuildNotice == value)
+                    return;
 
                 var oldValue = _GuildNotice;
                 _GuildNotice = value;
@@ -106,10 +128,14 @@ namespace Server.DBModels
 
         public decimal GuildTax
         {
-            get { return _GuildTax; }
+            get
+            {
+                return _GuildTax;
+            }
             set
             {
-                if (_GuildTax == value) return;
+                if (_GuildTax == value)
+                    return;
 
                 var oldValue = _GuildTax;
                 _GuildTax = value;
@@ -121,10 +147,14 @@ namespace Server.DBModels
 
         public long TotalContribution
         {
-            get { return _TotalContribution; }
+            get
+            {
+                return _TotalContribution;
+            }
             set
             {
-                if (_TotalContribution == value) return;
+                if (_TotalContribution == value)
+                    return;
 
                 var oldValue = _TotalContribution;
                 _TotalContribution = value;
@@ -136,10 +166,14 @@ namespace Server.DBModels
 
         public long DailyContribution
         {
-            get { return _DailyContribution; }
+            get
+            {
+                return _DailyContribution;
+            }
             set
             {
-                if (_DailyContribution == value) return;
+                if (_DailyContribution == value)
+                    return;
 
                 var oldValue = _DailyContribution;
                 _DailyContribution = value;
@@ -151,10 +185,14 @@ namespace Server.DBModels
 
         public long DailyGrowth
         {
-            get { return _DailyGrowth; }
+            get
+            {
+                return _DailyGrowth;
+            }
             set
             {
-                if (_DailyGrowth == value) return;
+                if (_DailyGrowth == value)
+                    return;
 
                 var oldValue = _DailyGrowth;
                 _DailyGrowth = value;
@@ -166,10 +204,14 @@ namespace Server.DBModels
 
         public string DefaultRank
         {
-            get { return _DefaultRank; }
+            get
+            {
+                return _DefaultRank;
+            }
             set
             {
-                if (_DefaultRank == value) return;
+                if (_DefaultRank == value)
+                    return;
 
                 var oldValue = _DefaultRank;
                 _DefaultRank = value;
@@ -181,10 +223,14 @@ namespace Server.DBModels
 
         public GuildPermission DefaultPermission
         {
-            get { return _DefaultPermission; }
+            get
+            {
+                return _DefaultPermission;
+            }
             set
             {
-                if (_DefaultPermission == value) return;
+                if (_DefaultPermission == value)
+                    return;
 
                 var oldValue = _DefaultPermission;
                 _DefaultPermission = value;
@@ -196,10 +242,14 @@ namespace Server.DBModels
 
         public bool StarterGuild
         {
-            get { return _StarterGuild; }
+            get
+            {
+                return _StarterGuild;
+            }
             set
             {
-                if (_StarterGuild == value) return;
+                if (_StarterGuild == value)
+                    return;
 
                 var oldValue = _StarterGuild;
                 _StarterGuild = value;
@@ -208,16 +258,57 @@ namespace Server.DBModels
             }
         }
         private bool _StarterGuild;
-        
-        
+
+        public int FlagShape
+        {
+            get
+            {
+                return _FlagShape;
+            }
+            set
+            {
+                if (_FlagShape == value)
+                    return;
+
+                var oldValue = _FlagShape;
+                _FlagShape = value;
+
+                OnChanged(oldValue, value, "FlagShape");
+            }
+        }
+        private int _FlagShape;
+
+        public Color FlagColour
+        {
+            get
+            {
+                return _FlagColour;
+            }
+            set
+            {
+                if (_FlagColour == value)
+                    return;
+
+                var oldValue = _FlagColour;
+                _FlagColour = value;
+
+                OnChanged(oldValue, value, "FlagColour");
+            }
+        }
+        private Color _FlagColour;
+
 
         [Association("Conquest", true)]
         public UserConquest Conquest
         {
-            get { return _Conquest; }
+            get
+            {
+                return _Conquest;
+            }
             set
             {
-                if (_Conquest == value) return;
+                if (_Conquest == value)
+                    return;
 
                 var oldValue = _Conquest;
                 _Conquest = value;
@@ -229,10 +320,14 @@ namespace Server.DBModels
 
         public CastleInfo Castle
         {
-            get { return _Castle; }
+            get
+            {
+                return _Castle;
+            }
             set
             {
-                if (_Castle == value) return;
+                if (_Castle == value)
+                    return;
 
                 var oldValue = _Castle;
                 _Castle = value;
@@ -241,23 +336,29 @@ namespace Server.DBModels
             }
         }
         private CastleInfo _Castle;
-        
+
 
 
         public UserItem[] Storage = new UserItem[1000];
 
         [Association("Members", true)]
-        public DBBindingList<GuildMemberInfo> Members { get; set; }
+        public DBBindingList<GuildMemberInfo> Members
+        {
+            get; set;
+        }
 
         [Association("Items", true)]
-        public DBBindingList<UserItem> Items { get; set; }
+        public DBBindingList<UserItem> Items
+        {
+            get; set;
+        }
 
-        
+
         public ClientGuildInfo ToClientInfo()
         {
             return new ClientGuildInfo
             {
-                GuildName =  GuildName,
+                GuildName = GuildName,
 
                 DailyGrowth = DailyGrowth,
                 GuildFunds = GuildFunds,
@@ -266,20 +367,22 @@ namespace Server.DBModels
 
                 MemberLimit = MemberLimit,
                 StorageLimit = StorageSize,
-                
+
                 Notice = GuildNotice,
 
                 DefaultPermission = DefaultPermission,
                 DefaultRank = DefaultRank,
-                
+
                 Tax = (int)(GuildTax * 100),
 
                 Members = Members.Select(x => x.ToClientInfo()).ToList(),
 
                 Storage = Items.Select(x => x.ToClientInfo()).ToList(),
+                FlagShape = FlagShape,
+                FlagColour = FlagColour,
             };
         }
-        
+
         protected override void OnLoaded()
         {
             base.OnLoaded();
@@ -332,6 +435,8 @@ namespace Server.DBModels
                 DefaultRank = DefaultRank,
 
                 Members = new List<ClientGuildMemberInfo>(),
+                FlagShape = FlagShape,
+                FlagColour = FlagColour,
 
                 ObserverPacket = false,
             };

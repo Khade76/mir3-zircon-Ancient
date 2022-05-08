@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.Network;
 using Library.SystemModels;
 using Server.DBModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
-using C = Library.Network.ClientPackets;
 
 namespace Server.Models.Monsters
 {
@@ -30,10 +27,6 @@ namespace Server.Models.Monsters
         public UserItem[] Inventory;
         public UserItem[] Equipment;
 
-        public List<MirClass> FilterClass;
-        public List<Rarity> FilterRarity;
-        public List<ItemType> FilterItemType;
-
         private int HeadShape, BackShape;
 
         public Companion(UserCompanion companion)
@@ -48,7 +41,8 @@ namespace Server.Models.Monsters
 
             foreach (UserItem item in companion.Items)
             {
-                if (item.Slot < Globals.EquipmentOffSet) continue;
+                if (item.Slot < Globals.EquipmentOffSet)
+                    continue;
 
                 if (item.Slot - Globals.EquipmentOffSet >= Equipment.Length)
                 {
@@ -72,7 +66,8 @@ namespace Server.Models.Monsters
 
             foreach (UserItem item in companion.Items)
             {
-                if (item.Slot >= Globals.EquipmentOffSet) continue;
+                if (item.Slot >= Globals.EquipmentOffSet)
+                    continue;
 
                 if (item.Slot >= Inventory.Length)
                 {
@@ -82,10 +77,6 @@ namespace Server.Models.Monsters
 
                 Inventory[item.Slot] = item;
             }
-
-            FilterClass = new List<MirClass>();
-            FilterRarity = new List<Rarity>();
-            FilterItemType = new List<ItemType>();
         }
 
 
@@ -94,7 +85,7 @@ namespace Server.Models.Monsters
             if (!CompanionOwner.VisibleObjects.Contains(this))
                 Recall();
 
-            if (TargetItem?.Node == null || TargetItem.CurrentMap != CurrentMap || !Functions.InRange(CurrentLocation, TargetItem.CurrentLocation, ViewRange))
+            if (TargetItem.HasNoNode() || TargetItem.CurrentMap != CurrentMap || !Functions.InRange(CurrentLocation, TargetItem.CurrentLocation, ViewRange))
                 TargetItem = null;
 
             ProcessSearch();
@@ -114,7 +105,8 @@ namespace Server.Models.Monsters
 
             foreach (UserItem item in Equipment)
             {
-                if (item == null) continue;
+                if (item == null)
+                    continue;
 
                 Stats.Add(item.Info.Stats);
                 Stats.Add(item.Stats);
@@ -122,7 +114,7 @@ namespace Server.Models.Monsters
 
             Stats[Stat.CompanionBagWeight] += LevelInfo.InventoryWeight;
             Stats[Stat.CompanionInventory] += LevelInfo.InventorySpace;
-            
+
             RefreshWeight();
         }
 
@@ -132,7 +124,8 @@ namespace Server.Models.Monsters
 
             foreach (UserItem item in Inventory)
             {
-                if (item == null) continue;
+                if (item == null)
+                    continue;
 
                 BagWeight += item.Weight;
 
@@ -156,7 +149,8 @@ namespace Server.Models.Monsters
 
             foreach (UserItem item in Equipment)
             {
-                if (item == null) continue;
+                if (item == null)
+                    continue;
 
                 if (item.Info.ItemType == ItemType.CompanionHead)
                 {
@@ -184,7 +178,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessSearch()
         {
-            if (!CanMove || SEnvir.Now < SearchTime) return;
+            if (!CanMove || SEnvir.Now < SearchTime)
+                return;
 
             int bestDistance = int.MaxValue;
 
@@ -192,30 +187,36 @@ namespace Server.Models.Monsters
 
             foreach (MapObject ob in CompanionOwner.VisibleObjects)
             {
-                if (ob.Race != ObjectType.Item) continue;
+                if (ob.Race != ObjectType.Item)
+                    continue;
 
                 int distance = Functions.Distance(ob.CurrentLocation, CurrentLocation);
 
-                if (distance > ViewRange) continue;
+                if (distance > ViewRange)
+                    continue;
 
-                if (distance > bestDistance) continue;
+                if (distance > bestDistance)
+                    continue;
 
 
                 ItemObject item = (ItemObject)ob;
 
-                if (item.Account != CompanionOwner.Character.Account || !item.MonsterDrop) continue;
+                if (item.Account != CompanionOwner.Character.Account || !item.MonsterDrop)
+                    continue;
 
                 long amount = 0;
 
-                if (item.Item.Info == Globals.GoldInfo && item.Account.GuildMember != null && item.Account.GuildMember.Guild.GuildTax > 0)
+                if (item.Item.Info.Effect == ItemEffect.Gold && item.Account.GuildMember != null && item.Account.GuildMember.Guild.GuildTax > 0)
                     amount = (long)Math.Ceiling(item.Item.Count * item.Account.GuildMember.Guild.GuildTax);
 
                 ItemCheck check = new ItemCheck(item.Item, item.Item.Count - amount, item.Item.Flags, item.Item.ExpireTime);
 
-                if (!CanGainItems(true, check)) continue;
+                if (!CanGainItems(true, check))
+                    continue;
 
 
-                if (distance != bestDistance) closest.Clear();
+                if (distance != bestDistance)
+                    closest.Clear();
 
                 closest.Add(item);
                 bestDistance = distance;
@@ -232,27 +233,31 @@ namespace Server.Models.Monsters
         }
         public override void ProcessRoam()
         {
-            if (TargetItem != null) return;
+            if (TargetItem != null)
+                return;
 
             MoveTo(Functions.Move(CompanionOwner.CurrentLocation, CompanionOwner.Direction, -1));
         }
         public override void ProcessTarget()
         {
-            if (TargetItem == null) return;
+            if (TargetItem == null)
+                return;
 
             MoveTo(TargetItem.CurrentLocation);
 
-            if (TargetItem.CurrentLocation != CurrentLocation) return;
+            if (TargetItem.CurrentLocation != CurrentLocation)
+                return;
 
             TargetItem.PickUpItem(this);
         }
 
         public override void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public override void DeActivate()
         {
@@ -268,7 +273,7 @@ namespace Server.Models.Monsters
             item.Auction = null;
             item.Companion = null;
             item.Guild = null;
-            
+
 
             item.Flags &= ~UserItemFlags.Locked;
         }
@@ -285,10 +290,12 @@ namespace Server.Models.Monsters
             switch (info.RequiredType)
             {
                 case RequiredType.CompanionLevel:
-                    if (UserCompanion.Level < info.RequiredAmount) return false;
+                    if (UserCompanion.Level < info.RequiredAmount)
+                        return false;
                     break;
                 case RequiredType.MaxCompanionLevel:
-                    if (UserCompanion.Level > info.RequiredAmount) return false;
+                    if (UserCompanion.Level > info.RequiredAmount)
+                        return false;
                     break;
             }
 
@@ -297,11 +304,13 @@ namespace Server.Models.Monsters
 
         public void AutoFeed()
         {
-            if (UserCompanion.Hunger > 0) return;
+            if (UserCompanion.Hunger > 0)
+                return;
 
-            UserItem item = Equipment[(int) CompanionSlot.Food];
+            UserItem item = Equipment[(int)CompanionSlot.Food];
 
-            if (item == null || !CanUseItem(item.Info)) return;
+            if (item == null || !CanUseItem(item.Info))
+                return;
 
 
             UserCompanion.Hunger = Math.Min(LevelInfo.MaxHunger, item.Info.Stats[Stat.CompanionHunger]);
@@ -356,27 +365,28 @@ namespace Server.Models.Monsters
                 result = true;
             }
 
-            if (UserCompanion.Level >= 11 && (UserCompanion.Level11 == null || UserCompanion.Level11.Count == 0))
-            {
-                UserCompanion.Level11 = GetSkill(11);
-                result = true;
-            }
+            /* if (UserCompanion.Level >= 11 && (UserCompanion.Level11 == null || UserCompanion.Level11.Count == 0))
+             {
+                 UserCompanion.Level11 = GetSkill(11);
+                 result = true;
+             }
 
-            if (UserCompanion.Level >= 13 && (UserCompanion.Level13 == null || UserCompanion.Level13.Count == 0))
-            {
-                UserCompanion.Level13 = GetSkill(13);
-                result = true;
-            }
+             if (UserCompanion.Level >= 13 && (UserCompanion.Level13 == null || UserCompanion.Level13.Count == 0))
+             {
+                 UserCompanion.Level13 = GetSkill(13);
+                 result = true;
+             }
 
-            if (UserCompanion.Level >= 15 && (UserCompanion.Level15 == null || UserCompanion.Level15.Count == 0))
-            {
-                UserCompanion.Level15 = GetSkill(15);
-                result = true;
-            }
+             if (UserCompanion.Level >= 15 && (UserCompanion.Level15 == null || UserCompanion.Level15.Count == 0))
+             {
+                 UserCompanion.Level15 = GetSkill(15);
+                 result = true;
+             }*/ //Pig Buffs
 
             CompanionOwner.CompanionRefreshBuff();
 
-            if (!result) return;
+            if (!result)
+                return;
 
             CompanionOwner.Enqueue(new S.CompanionSkillUpdate
             {
@@ -388,7 +398,111 @@ namespace Server.Models.Monsters
                 Level13 = UserCompanion.Level13,
                 Level15 = UserCompanion.Level15
             });
-            
+
+        }
+        public void ImproveSkills(int level)
+        {
+            bool result = false;
+            Stats newStats = new Stats();
+            switch (level)
+            {
+                case 3:
+                    if (UserCompanion.Level >= 3 && UserCompanion.Level3 != null)
+                    {
+                        newStats = GetSkill(3, UserCompanion.Level3);
+                        if (newStats != null)
+                        {
+                            UserCompanion.Level3 = newStats;
+                            result = true;
+                        }
+                    }
+                    break;
+                case 5:
+                    if (UserCompanion.Level >= 5 && UserCompanion.Level5 != null)
+                    {
+                        newStats = GetSkill(5, UserCompanion.Level5);
+                        if (newStats != null)
+                        {
+                            UserCompanion.Level5 = newStats;
+                            result = true;
+                        }
+                    }
+                    break;
+                case 7:
+                    if (UserCompanion.Level >= 7 && UserCompanion.Level7 != null)
+                    {
+                        newStats = GetSkill(7, UserCompanion.Level7);
+                        if (newStats != null)
+                        {
+                            UserCompanion.Level7 = newStats;
+                            result = true;
+                        }
+                    }
+                    break;
+                case 10:
+                    if (UserCompanion.Level >= 10 && UserCompanion.Level10 != null)
+                    {
+                        newStats = GetSkill(10, UserCompanion.Level10);
+                        if (newStats != null)
+                        {
+                            UserCompanion.Level10 = newStats;
+                            result = true;
+                        }
+                    }
+                    break;
+                    /*case 11:
+                        if (UserCompanion.Level >= 11 && UserCompanion.Level11 != null)
+                        {
+                            newStats = GetSkill(11, UserCompanion.Level11);
+                            if (newStats != null)
+                            {
+                                UserCompanion.Level11 = newStats;
+                                result = true;
+                            }
+                        }
+                        break;
+                    case 13:
+                        if (UserCompanion.Level >= 13 && UserCompanion.Level13 != null)
+                        {
+                            newStats = GetSkill(13, UserCompanion.Level13);
+                            if (newStats != null)
+                            {
+                                UserCompanion.Level13 = newStats;
+                                result = true;
+                            }
+                        }
+                        break;
+                    case 15:
+                        if (UserCompanion.Level >= 15 && UserCompanion.Level15 != null)
+                        {
+                            newStats = GetSkill(15, UserCompanion.Level15);
+                            if (newStats != null)
+                            {
+                                UserCompanion.Level15 = newStats;
+                                result = true;
+                            }
+                        }
+                        break;
+                 */ //Pig Buffs
+            }
+
+
+            CompanionOwner.CompanionRefreshBuff();
+
+            if (!result)
+                return;
+
+            CompanionOwner.Enqueue(new S.CompanionSkillUpdate
+            {
+                Level3 = UserCompanion.Level3,
+                Level5 = UserCompanion.Level5,
+                Level7 = UserCompanion.Level7,
+                Level10 = UserCompanion.Level10,
+                Level11 = UserCompanion.Level11,
+                Level13 = UserCompanion.Level13,
+                Level15 = UserCompanion.Level15
+            });
+
         }
         public Stats GetSkill(int level)
         {
@@ -396,7 +510,8 @@ namespace Server.Models.Monsters
 
             foreach (CompanionSkillInfo info in SEnvir.CompanionSkillInfoList.Binding)
             {
-                if (info.Level != level) continue;
+                if (info.Level != level)
+                    continue;
 
                 total += info.Weight;
             }
@@ -408,14 +523,41 @@ namespace Server.Models.Monsters
 
             foreach (CompanionSkillInfo info in SEnvir.CompanionSkillInfoList.Binding)
             {
-                if (info.Level != level) continue;
+                if (info.Level != level)
+                    continue;
 
                 value -= info.Weight;
 
-                if (value >= 0) continue;
+                if (value >= 0)
+                    continue;
 
-                lvStats[info.StatType] = SEnvir.Random.Next( info.MaxAmount) + 1;
+                lvStats[info.StatType] = SEnvir.Random.Next(info.MaxAmount) + 1;
 
+                break;
+            }
+
+
+            return lvStats;
+        }
+        public Stats GetSkill(int level, Stats stats)
+        {
+            int current = 0;
+            int newmax = 0;
+            Stats lvStats = new Stats();
+            CompanionSkillInfo skill = new CompanionSkillInfo();
+            foreach (var stat in stats.Values)
+            {
+                skill = SEnvir.CompanionSkillInfoList.Binding.FirstOrDefault(x => x.Level == level && x.StatType == stat.Key);
+
+                if (skill == null)
+                    return null;
+                current = stat.Value;
+
+                newmax = skill.MaxAmount;
+
+                if (newmax == current)
+                    return stats;
+                lvStats[skill.StatType] = SEnvir.Random.Next(newmax) + 1;
                 break;
             }
 
@@ -425,15 +567,17 @@ namespace Server.Models.Monsters
 
         protected override void MoveTo(Point target)
         {
-            if (!CanMove || CurrentLocation == target) return;
-            
+            if (!CanMove || CurrentLocation == target)
+                return;
+
             MirDirection direction = Functions.DirectionFromPoint(CurrentLocation, target);
 
             int rotation = SEnvir.Random.Next(2) == 0 ? 1 : -1;
 
             for (int d = 0; d < 8; d++)
             {
-                if (Walk(direction)) return;
+                if (Walk(direction))
+                    return;
 
                 direction = Functions.ShiftDirection(direction, rotation);
             }
@@ -441,7 +585,8 @@ namespace Server.Models.Monsters
         public override bool Walk(MirDirection direction)
         {
             Cell cell = CurrentMap.GetCell(Functions.Move(CurrentLocation, direction));
-            if (cell == null) return false;
+            if (cell == null)
+                return false;
 
             BuffRemove(BuffType.Invisibility);
             BuffRemove(BuffType.Transparency);
@@ -460,61 +605,22 @@ namespace Server.Models.Monsters
             return true;
         }
 
-        public bool FilterCompanionPicks(ItemCheck check)
-        {
-            if (check.Info.ItemName == "Gold") return true;
-
-            ItemType itemType;
-            Rarity itemRarity;
-            RequiredClass itemClass;
-            List<string> listClass = CompanionOwner.FiltersClass.Split(',').ToList();
-            List<string> listRarity = CompanionOwner.FiltersRarity.Split(',').ToList();
-            List<string> listType = CompanionOwner.FiltersItemType.Split(',').ToList();
-            bool hasFilterType, hasRarity, hasClass;
-
-            hasFilterType = true;
-            hasClass = true;
-            hasRarity = true;
-
-            if (check.Info.Effect == ItemEffect.ItemPart && check.Item.Stats[Stat.ItemIndex] > 0)
-            {
-                itemType = SEnvir.ItemInfoList.Binding.First(x => x.Index == check.Item.Stats[Stat.ItemIndex]).ItemType;
-                itemRarity = SEnvir.ItemInfoList.Binding.First(x => x.Index == check.Item.Stats[Stat.ItemIndex]).Rarity;
-                itemClass = SEnvir.ItemInfoList.Binding.First(x => x.Index == check.Item.Stats[Stat.ItemIndex]).RequiredClass;
-            } else
-            {
-                itemType = check.Info.ItemType;
-                itemRarity = check.Info.Rarity;
-                itemClass = check.Info.RequiredClass;
-            }
-            if (listType.Count > 0)
-            {
-                hasFilterType = listType.Contains(itemType.ToString());
-            }
-            if (listRarity.Count > 0)
-            {
-                hasRarity = listRarity.Contains(itemRarity.ToString());
-            }
-            if (listClass.Count > 0)
-            {
-                hasClass = itemClass == RequiredClass.All || listClass.Contains(itemClass.ToString());
-            }
-            return hasFilterType && hasRarity && hasClass;
-        }
-
         public bool CanGainItems(bool checkWeight, params ItemCheck[] checks)
         {
             int index = 0;
             foreach (ItemCheck check in checks)
             {
-                if ((check.Flags & UserItemFlags.QuestItem) == UserItemFlags.QuestItem) continue;
-                if (!FilterCompanionPicks(check)) return false;
+                if ((check.Flags & UserItemFlags.QuestItem) == UserItemFlags.QuestItem)
+                    continue;
 
                 long count = check.Count;
 
-                if (check.Info.Effect == ItemEffect.Experience) continue;
-
-                if (SEnvir.IsCurrencyItem(check.Info)) continue;
+                if (check.Info.Effect == ItemEffect.Experience)
+                    continue;
+                if (check.Info.Effect == ItemEffect.Gold)
+                    continue;
+                if (check.Info.Effect == ItemEffect.ItemPart)
+                    continue;
 
                 if (checkWeight)
                 {
@@ -522,10 +628,12 @@ namespace Server.Models.Monsters
                     {
                         case ItemType.Amulet:
                         case ItemType.Poison:
-                            if (BagWeight + check.Info.Weight > Stats[Stat.CompanionBagWeight]) return false;
+                            if (BagWeight + check.Info.Weight > Stats[Stat.CompanionBagWeight])
+                                return false;
                             break;
                         default:
-                            if (BagWeight + check.Info.Weight * count > Stats[Stat.CompanionBagWeight]) return false;
+                            if (BagWeight + check.Info.Weight * count > Stats[Stat.CompanionBagWeight])
+                                return false;
                             break;
                     }
                 }
@@ -534,22 +642,31 @@ namespace Server.Models.Monsters
                 {
                     foreach (UserItem oldItem in Inventory)
                     {
-                        if (oldItem == null) continue;
+                        if (oldItem == null)
+                            continue;
 
-                        if (oldItem.Info != check.Info || oldItem.Count >= check.Info.StackSize) continue;
+                        if (oldItem.Info != check.Info || oldItem.Count >= check.Info.StackSize)
+                            continue;
 
-                        if ((oldItem.Flags & UserItemFlags.Expirable) == UserItemFlags.Expirable) continue;
-                        if ((oldItem.Flags & UserItemFlags.Bound) != (check.Flags & UserItemFlags.Bound)) continue;
-                        if ((oldItem.Flags & UserItemFlags.Worthless) != (check.Flags & UserItemFlags.Worthless)) continue;
-                        if ((oldItem.Flags & UserItemFlags.NonRefinable) != (check.Flags & UserItemFlags.NonRefinable)) continue;
-                        if (!oldItem.Stats.Compare(check.Stats)) continue;
+                        if ((oldItem.Flags & UserItemFlags.Expirable) == UserItemFlags.Expirable)
+                            continue;
+                        if ((oldItem.Flags & UserItemFlags.Bound) != (check.Flags & UserItemFlags.Bound))
+                            continue;
+                        if ((oldItem.Flags & UserItemFlags.Worthless) != (check.Flags & UserItemFlags.Worthless))
+                            continue;
+                        if ((oldItem.Flags & UserItemFlags.NonRefinable) != (check.Flags & UserItemFlags.NonRefinable))
+                            continue;
+                        if (!oldItem.Stats.Compare(check.Stats))
+                            continue;
 
                         count -= check.Info.StackSize - oldItem.Count;
 
-                        if (count <= 0) break;
+                        if (count <= 0)
+                            break;
                     }
 
-                    if (count <= 0) break;
+                    if (count <= 0)
+                        break;
                 }
 
                 //Start Index
@@ -561,11 +678,13 @@ namespace Server.Models.Monsters
                     {
                         count -= check.Info.StackSize;
 
-                        if (count <= 0) break;
+                        if (count <= 0)
+                            break;
                     }
                 }
 
-                if (count > 0) return false;
+                if (count > 0)
+                    return false;
             }
 
             return true;
@@ -580,7 +699,8 @@ namespace Server.Models.Monsters
             {
                 if (item.UserTask != null)
                 {
-                    if (item.UserTask.Completed) continue;
+                    if (item.UserTask.Completed)
+                        continue;
 
                     item.UserTask.Amount = Math.Min(item.UserTask.Task.Amount, item.UserTask.Amount + item.Count);
 
@@ -590,6 +710,8 @@ namespace Server.Models.Monsters
                     {
                         for (int i = item.UserTask.Objects.Count - 1; i >= 0; i--)
                             item.UserTask.Objects[i].Despawn();
+
+                        CompanionOwner.Connection.ReceiveChat($"Completed Task Gain Item: {item.Info.ItemName}", MessageType.System);
                     }
 
                     item.UserTask = null;
@@ -601,10 +723,9 @@ namespace Server.Models.Monsters
                     continue;
                 }
 
-                if (SEnvir.IsCurrencyItem(item.Info))
+                if (item.Info.Effect == ItemEffect.Gold)
                 {
-                    var currency = CompanionOwner.GetCurrency(item.Info);
-                    currency.Amount += item.Count;
+                    CompanionOwner.Gold += item.Count;
                     item.IsTemporary = true;
                     item.Delete();
                     continue;
@@ -619,18 +740,63 @@ namespace Server.Models.Monsters
                 }
 
                 bool handled = false;
+                if (item.Info.Effect == ItemEffect.ItemPart)
+                {
+                    if (item.Info.Effect == ItemEffect.ItemPart)
+                    {
+                        foreach (UserItem oldItem in CompanionOwner.PartsStorage)
+                        {
+                            if (oldItem == null || oldItem.Info != item.Info)
+                                continue;
+
+                            if (!oldItem.Stats.Compare(item.Stats))
+                                continue;
+
+                            if (oldItem.Count < oldItem.Info.PartCount && (oldItem.Count += item.Count) >= oldItem.Info.PartCount)
+                                CompanionOwner.Connection.ReceiveChat($"You have enough parts to make a: {oldItem.Info.ItemName}", MessageType.System);
+                            oldItem.Count += item.Count;
+                            item.IsTemporary = true;
+                            item.Delete();
+                            handled = true;
+                            break;
+                        }
+                        if (handled)
+                            continue;
+                        for (int i = 0; i < CompanionOwner.PartsStorage.Length; i++)
+                        {
+                            if (CompanionOwner.PartsStorage[i] != null)
+                                continue;
+
+                            CompanionOwner.PartsStorage[i] = item;
+                            item.Slot = i;
+                            item.Character = CompanionOwner.Character;
+                            item.IsTemporary = false;
+                            handled = true;
+                            break;
+                        }
+                        if (handled)
+                            continue;
+                    }
+                }
+
                 if (item.Info.StackSize > 1 && (item.Flags & UserItemFlags.Expirable) != UserItemFlags.Expirable)
                 {
                     foreach (UserItem oldItem in Inventory)
                     {
-                        if (oldItem == null || oldItem.Info != item.Info || oldItem.Count >= oldItem.Info.StackSize) continue;
+                        if (oldItem == null || oldItem.Info != item.Info || oldItem.Count >= oldItem.Info.StackSize)
+                            continue;
 
 
-                        if ((oldItem.Flags & UserItemFlags.Expirable) == UserItemFlags.Expirable) continue;
-                        if ((oldItem.Flags & UserItemFlags.Bound) != (item.Flags & UserItemFlags.Bound)) continue;
-                        if ((oldItem.Flags & UserItemFlags.Worthless) != (item.Flags & UserItemFlags.Worthless)) continue;
-                        if ((oldItem.Flags & UserItemFlags.NonRefinable) != (item.Flags & UserItemFlags.NonRefinable)) continue;
-                        if (!oldItem.Stats.Compare(item.Stats)) continue;
+                        if ((oldItem.Flags & UserItemFlags.Expirable) == UserItemFlags.Expirable)
+                            continue;
+                        if ((oldItem.Flags & UserItemFlags.Bound) != (item.Flags & UserItemFlags.Bound))
+                            continue;
+                        if ((oldItem.Flags & UserItemFlags.Worthless) != (item.Flags & UserItemFlags.Worthless))
+                            continue;
+                        if ((oldItem.Flags & UserItemFlags.NonRefinable) != (item.Flags & UserItemFlags.NonRefinable))
+                            continue;
+                        if (!oldItem.Stats.Compare(item.Stats))
+                            continue;
 
                         if (oldItem.Count + item.Count <= item.Info.StackSize)
                         {
@@ -644,12 +810,14 @@ namespace Server.Models.Monsters
                         item.Count -= item.Info.StackSize - oldItem.Count;
                         oldItem.Count = item.Info.StackSize;
                     }
-                    if (handled) continue;
+                    if (handled)
+                        continue;
                 }
 
                 for (int i = 0; i < Stats[Stat.CompanionInventory]; i++)
                 {
-                    if (Inventory[i] != null) continue;
+                    if (Inventory[i] != null)
+                        continue;
 
                     Inventory[i] = item;
                     item.Slot = i;
@@ -692,7 +860,7 @@ namespace Server.Models.Monsters
                 Direction = Direction,
 
                 PetOwner = CompanionOwner.Name,
-                
+
                 Poison = Poison,
 
                 Buffs = Buffs.Where(x => x.Visible).Select(x => x.Type).ToList(),
@@ -702,7 +870,9 @@ namespace Server.Models.Monsters
                     Name = UserCompanion.Name,
                     HeadShape = HeadShape,
                     BackShape = BackShape,
-                }
+                },
+                Supermob = this.SuperMob,
+                eventTeam = EventTeam
             };
         }
         public override Packet GetDataPacket(PlayerObject ob)

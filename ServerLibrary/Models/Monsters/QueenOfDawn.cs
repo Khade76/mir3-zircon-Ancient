@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -19,7 +16,8 @@ namespace Server.Models.Monsters
         {
             base.ProcessAI();
 
-            if (Dead) return;
+            if (Dead)
+                return;
 
             if (SEnvir.Now > TingTime)
             {
@@ -29,7 +27,8 @@ namespace Server.Models.Monsters
 
                 foreach (MapObject ob in obs)
                 {
-                    if (!CanAttackTarget(ob)) continue;
+                    if (!CanAttackTarget(ob))
+                        continue;
 
                     ob.Teleport(CurrentMap, CurrentMap.GetRandomLocation());
                 }
@@ -37,7 +36,8 @@ namespace Server.Models.Monsters
         }
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!Functions.InRange(Target.CurrentLocation, CurrentLocation, 1) && SEnvir.Now > TeleportTime && CanAttack && SpawnInfo != null)
             {

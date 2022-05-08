@@ -7,14 +7,32 @@ namespace Server.Models
 {
     public class ItemCheck
     {
-        public UserItem Item { get; set; }
-        public ItemInfo Info { get; set; }
-        public long Count { get; set; }
+        public UserItem Item
+        {
+            get; set;
+        }
+        public ItemInfo Info
+        {
+            get; set;
+        }
+        public long Count
+        {
+            get; set;
+        }
 
-        public UserItemFlags Flags { get; set; }
-        public TimeSpan ExpireTime { get; set; }
+        public UserItemFlags Flags
+        {
+            get; set;
+        }
+        public TimeSpan ExpireTime
+        {
+            get; set;
+        }
 
-        public Stats Stats { get; set; }
+        public Stats Stats
+        {
+            get; set;
+        }
 
         public ItemCheck(UserItem item, long count, UserItemFlags flags, TimeSpan time)
         {

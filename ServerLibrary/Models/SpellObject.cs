@@ -37,29 +37,33 @@ namespace Server.Models
         {
             base.Process();
 
-            if (Owner != null && (Owner.Node == null || Owner.Dead))
+            if (Owner != null && (Owner.HasNoNode() || Owner.Dead))
             {
                 Despawn();
                 return;
             }
 
-            if (SEnvir.Now < TickTime) return;
-            
+            if (SEnvir.Now < TickTime)
+                return;
+
             if (TickCount-- <= 0)
             {
                 switch (Effect)
                 {
                     case SpellEffect.MonsterDeathCloud:
                         MonsterObject monster = Owner as MonsterObject;
-                        if (monster == null) break;
+                        if (monster == null)
+                            break;
 
                         for (int i = CurrentCell.Objects.Count - 1; i >= 0; i--)
                         {
-                            if (i >= CurrentCell.Objects.Count) continue;
+                            if (i >= CurrentCell.Objects.Count)
+                                continue;
 
                             MapObject ob = CurrentCell.Objects[i];
 
-                            if (!monster.CanAttackTarget(ob)) continue;
+                            if (!monster.CanAttackTarget(ob))
+                                continue;
 
 
                             monster.Attack(ob, 4000, Element.None);
@@ -67,6 +71,50 @@ namespace Server.Models
                         }
 
 
+                        break;
+                    case SpellEffect.ParalysisCloud:
+                        monster = Owner as MonsterObject;
+                        if (monster == null)
+                            break;
+
+                        for (int i = CurrentCell.Objects.Count - 1; i >= 0; i--)
+                        {
+                            if (i >= CurrentCell.Objects.Count)
+                                continue;
+
+                            MapObject ob = CurrentCell.Objects[i];
+
+                            if (!monster.CanAttackTarget(ob))
+                                continue;
+
+                            monster.Attack(ob, monster.GetDC(), Element.None);
+
+                            ob.ApplyPoison(new Poison
+                            {
+                                Owner = Owner,
+                                Type = PoisonType.Paralysis,
+                                Value = monster.GetSC(),
+                                TickFrequency = TimeSpan.FromSeconds(monster.PoisonFrequency),
+                                TickCount = monster.PoisonTicks,
+                            });
+                            ob.ApplyPoison(new Poison
+                            {
+                                Owner = Owner,
+                                Type = PoisonType.Red,
+                                Value = monster.GetSC(),
+                                TickFrequency = TimeSpan.FromSeconds(monster.PoisonFrequency * 2),
+                                TickCount = monster.PoisonTicks,
+                            });
+
+                            ob.ApplyPoison(new Poison
+                            {
+                                Owner = Owner,
+                                Type = PoisonType.Green,
+                                Value = monster.GetDC() / 10,
+                                TickFrequency = TimeSpan.FromSeconds(monster.PoisonFrequency * 2),
+                                TickCount = monster.PoisonTicks,
+                            });
+                        }
                         break;
                 }
 
@@ -80,17 +128,19 @@ namespace Server.Models
             switch (Effect)
             {
                 case SpellEffect.TrapOctagon:
-                    
+
                     for (int i = Targets.Count - 1; i >= 0; i--)
                     {
                         MapObject ob = Targets[i];
 
-                        if (ob.Node != null && ob.ShockTime != DateTime.MinValue) continue;
+                        if (ob.HasNode() && ob.ShockTime != DateTime.MinValue)
+                            continue;
 
                         Targets.Remove(ob);
                     }
 
-                    if (Targets.Count == 0) Despawn();
+                    if (Targets.Count == 0)
+                        Despawn();
                     break;
                 default:
 
@@ -108,8 +158,10 @@ namespace Server.Models
 
                     for (int i = CurrentCell.Objects.Count - 1; i >= 0; i--)
                     {
-                        if (i >= CurrentCell.Objects.Count) continue;
-                        if (CurrentCell.Objects[i] == this) continue;
+                        if (i >= CurrentCell.Objects.Count)
+                            continue;
+                        if (CurrentCell.Objects[i] == this)
+                            continue;
 
                         ProcessSpell(CurrentCell.Objects[i]);
 
@@ -136,20 +188,22 @@ namespace Server.Models
             switch (Effect)
             {
                 case SpellEffect.PoisonousCloud:
-                    if (!Owner.CanHelpTarget(ob)) return;
+                    if (!Owner.CanHelpTarget(ob))
+                        return;
 
-                    BuffInfo buff = ob.Buffs.FirstOrDefault(x=> x.Type == BuffType.PoisonousCloud);
+                    BuffInfo buff = ob.Buffs.FirstOrDefault(x => x.Type == BuffType.PoisonousCloud);
                     TimeSpan remaining = TickTime - SEnvir.Now;
 
                     if (buff != null)
-                        if (buff.RemainingTime > remaining) return;
+                        if (buff.RemainingTime > remaining)
+                            return;
 
                     ob.BuffAdd(BuffType.PoisonousCloud, remaining, new Stats { [Stat.Agility] = Power }, false, false, TimeSpan.Zero);
                     break;
                 case SpellEffect.FireWall:
-                case SpellEffect.Tempest:
                     PlayerObject player = Owner as PlayerObject;
-                    if (player == null || !player.CanAttackTarget(ob)) return;
+                    if (player == null || !player.CanAttackTarget(ob))
+                        return;
 
                     int damage = player.MagicAttack(new List<UserMagic> { Magic }, ob, true);
 
@@ -157,17 +211,60 @@ namespace Server.Models
                     {
                         foreach (SpellObject spell in player.SpellList)
                         {
-                            if (spell.Effect != Effect) continue;
+                            if (spell.Effect != Effect)
+                                continue;
 
                             spell.TickCount--;
-                        } 
+                        }
                     }
                     break;
                 case SpellEffect.MonsterFireWall:
                     MonsterObject monster = Owner as MonsterObject;
-                    if (monster == null || !monster.CanAttackTarget(ob)) return;
+                    if (monster == null || !monster.CanAttackTarget(ob))
+                        return;
 
                     monster.Attack(ob, monster.GetDC(), Element.Fire);
+                    break;
+            }
+            switch (Effect)
+            {
+                case SpellEffect.PoisonousCloud:
+                    if (!Owner.CanHelpTarget(ob))
+                        return;
+
+                    BuffInfo buff = ob.Buffs.FirstOrDefault(x => x.Type == BuffType.PoisonousCloud);
+                    TimeSpan remaining = TickTime - SEnvir.Now;
+
+                    if (buff != null)
+                        if (buff.RemainingTime > remaining)
+                            return;
+
+                    ob.BuffAdd(BuffType.PoisonousCloud, remaining, new Stats { [Stat.Agility] = Power }, false, false, TimeSpan.Zero);
+                    break;
+                case SpellEffect.Tempest:
+                    PlayerObject player = Owner as PlayerObject;
+                    if (player == null || !player.CanAttackTarget(ob))
+                        return;
+
+                    int damage = player.MagicAttack(new List<UserMagic> { Magic }, ob, true);
+
+                    if (damage > 0 && ob.Race == ObjectType.Player)
+                    {
+                        foreach (SpellObject spell in player.SpellList)
+                        {
+                            if (spell.Effect != Effect)
+                                continue;
+
+                            spell.TickCount--;
+                        }
+                    }
+                    break;
+                case SpellEffect.MonsterTempest:
+                    MonsterObject monster = Owner as MonsterObject;
+                    if (monster == null || !monster.CanAttackTarget(ob))
+                        return;
+
+                    monster.Attack(ob, monster.GetDC(), Element.Wind);
                     break;
             }
         }
@@ -176,7 +273,7 @@ namespace Server.Models
             base.OnSpawned();
 
             Owner?.SpellList.Add(this);
-            
+
             AddAllObjects();
 
             Activate();
@@ -197,7 +294,7 @@ namespace Server.Models
         public override void CleanUp()
         {
             base.CleanUp();
-            
+
             Owner = null;
             Magic = null;
 
@@ -227,12 +324,14 @@ namespace Server.Models
 
         public override void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
-            if (Effect == SpellEffect.SafeZone) return;
+            if (Effect == SpellEffect.SafeZone)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public override void DeActivate()
         {

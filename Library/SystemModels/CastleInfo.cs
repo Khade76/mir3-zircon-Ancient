@@ -84,6 +84,81 @@ namespace Library.SystemModels
         }
         private MapRegion _CastleRegion;
 
+        public MapRegion OutPost1
+        {
+            get { return _OutPost1; }
+            set
+            {
+                if (_OutPost1 == value) return;
+
+                var oldValue = _OutPost1;
+                _OutPost1 = value;
+
+                OnChanged(oldValue, value, "OutPost1");
+            }
+        }
+        private MapRegion _OutPost1;
+
+        public MapRegion OutPost2
+        {
+            get { return _OutPost2; }
+            set
+            {
+                if (_OutPost2 == value) return;
+
+                var oldValue = _OutPost2;
+                _OutPost2 = value;
+
+                OnChanged(oldValue, value, "OutPost2");
+            }
+        }
+        private MapRegion _OutPost2;
+
+        public MapRegion OutPost3
+        {
+            get { return _OutPost3; }
+            set
+            {
+                if (_OutPost3 == value) return;
+
+                var oldValue = _OutPost3;
+                _OutPost3 = value;
+
+                OnChanged(oldValue, value, "OutPost3");
+            }
+        }
+        private MapRegion _OutPost3;
+
+        public MapRegion OutPost4
+        {
+            get { return _OutPost4; }
+            set
+            {
+                if (_OutPost4 == value) return;
+
+                var oldValue = _OutPost4;
+                _OutPost4 = value;
+
+                OnChanged(oldValue, value, "OutPost4");
+            }
+        }
+        private MapRegion _OutPost4;
+
+        public MapRegion OutPost5
+        {
+            get { return _OutPost5; }
+            set
+            {
+                if (_OutPost5 == value) return;
+
+                var oldValue = _OutPost5;
+                _OutPost5 = value;
+
+                OnChanged(oldValue, value, "OutPost5");
+            }
+        }
+        private MapRegion _OutPost5;
+
         public MapRegion AttackSpawnRegion
         {
             get { return _AttackSpawnRegion; }
@@ -128,6 +203,51 @@ namespace Library.SystemModels
             }
         }
         private MonsterInfo _Monster;
+
+        public MonsterInfo OutPostMon
+        {
+            get => _OutPostMon;
+            set
+            {
+                if (_OutPostMon == value) return;
+
+                var oldValue = _OutPostMon;
+                _OutPostMon = value;
+
+                OnChanged(oldValue, value, "OutPostMon");
+            }
+        }
+        private MonsterInfo _OutPostMon;
+
+        public MonsterInfo OutPostGuard1
+        {
+            get => _OutPostGuard1;
+            set
+            {
+                if (_OutPostGuard1 == value) return;
+
+                var oldValue = _OutPostGuard1;
+                _OutPostGuard1 = value;
+
+                OnChanged(oldValue, value, "OutPostGuard1");
+            }
+        }
+        private MonsterInfo _OutPostGuard1;
+
+        public MonsterInfo OutPostGuard2
+        {
+            get => _OutPostGuard2;
+            set
+            {
+                if (_OutPostGuard2 == value) return;
+
+                var oldValue = _OutPostGuard2;
+                _OutPostGuard2 = value;
+
+                OnChanged(oldValue, value, "OutPostGuard2");
+            }
+        }
+        private MonsterInfo _OutPostGuard2;
 
         public decimal Discount
         {

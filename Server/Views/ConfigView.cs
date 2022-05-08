@@ -5,25 +5,22 @@ using DevExpress.XtraBars;
 using Library;
 using Library.SystemModels;
 using Server.Envir;
-using Server.Models;
 using S = Library.Network.ServerPackets;
 
 namespace Server.Views
 {
     public partial class ConfigView : DevExpress.XtraBars.Ribbon.RibbonForm
     {
+        private static int currentTickRate = 0;
+
         public ConfigView()
         {
             InitializeComponent();
-            this.SyncronizeButton.Click += SyncronizeButton_Click;
+
             MysteryShipRegionIndexEdit.Properties.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
             LairRegionIndexEdit.Properties.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
-        }
-
-        private void SyncronizeButton_Click(object sender, EventArgs e)
-        {
-            var form = new SyncForm();
-            form.ShowDialog();
+            SeaCaveRegionIndexEdit.Properties.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
+            FlowerMapRegionIndexEdit.Properties.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -49,7 +46,6 @@ namespace Server.Views
             UserCountPortEdit.EditValue = Config.UserCountPort;
             MaxPacketEdit.EditValue = Config.MaxPacket;
             PacketBanTimeEdit.EditValue = Config.PacketBanTime;
-
 
             //Control
             AllowNewAccountEdit.EditValue = Config.AllowNewAccount;
@@ -80,6 +76,9 @@ namespace Server.Views
             ClientPathEdit.EditValue = Config.ClientPath;
             ReleaseDateEdit.EditValue = Config.ReleaseDate;
             RabbitEventEndEdit.EditValue = Config.EasterEventEnd;
+            EnvironmentTickCountEdit.EditValue = Config.EnvironmentTickCount;
+
+            currentTickRate = Config.EnvironmentTickCount;
 
             //Mail
             MailServerEdit.EditValue = Config.MailServer;
@@ -105,7 +104,7 @@ namespace Server.Views
             IPNPrefixEdit.EditValue = Config.IPNPrefix;
             ReceiverEMailEdit.EditValue = Config.ReceiverEMail;
             ProcessGameGoldEdit.EditValue = Config.ProcessGameGold;
-            AllowBuyGameGoldEdit.EditValue = Config.AllowBuyGameGold;
+            AllowBuyGammeGoldEdit.EditValue = Config.AllowBuyGammeGold;
 
 
             //Players
@@ -123,17 +122,31 @@ namespace Server.Views
             PvPCurseDurationEdit.EditValue = Config.PvPCurseDuration;
             PvPCurseRateEdit.EditValue = Config.PvPCurseRate;
             AutoReviveDelayEdit.EditValue = Config.AutoReviveDelay;
+            DeathDropsEdit.EditValue = Config.DeathDrops;
+            DDInventoryEdit.EditValue = Config.DDInventory;
+            DDCommonEdit.EditValue = Config.DDCommon;
+            DDSuperiorEdit.EditValue = Config.DDSuperior;
+            DDRareEdit.EditValue = Config.DDRare;
+            DDEliteEdit.EditValue = Config.DDElite;
+            DDLegendaryEdit.EditValue = Config.DDLegendary;
+            DDMaxDropEdit.EditValue = Config.DDMaxDrop;
+            startLeveLEdit.EditValue = Config.StartLevel;
 
             //Monsters
             DeadDurationEdit.EditValue = Config.DeadDuration;
             HarvestDurationEdit.EditValue = Config.HarvestDuration;
             MysteryShipRegionIndexEdit.EditValue = Config.MysteryShipRegionIndex;
             LairRegionIndexEdit.EditValue = Config.LairRegionIndex;
+            SeaCaveRegionIndexEdit.EditValue = Config.SeaCaveRegionIndex;
+            FlowerMapRegionIndexEdit.EditValue = Config.FlowerMapRegionIndex;
+
 
             //Items
             DropDurationEdit.EditValue = Config.DropDuration;
             DropDistanceEdit.EditValue = Config.DropDistance;
             DropLayersEdit.EditValue = Config.DropLayers;
+            DropAddedChanceEdit.EditValue = Config.DropAddedChance;
+            DropRarityIncEdit.EditValue = Config.DropRarityInc;
             TorchRateEdit.EditValue = Config.TorchRate;
             SpecialRepairDelayEdit.EditValue = Config.SpecialRepairDelay;
             MaxLuckEdit.EditValue = Config.MaxLuck;
@@ -150,6 +163,8 @@ namespace Server.Views
             GoldRateEdit.EditValue = Config.GoldRate;
             SkillRateEdit.EditValue = Config.SkillRate;
             CompanionRateEdit.EditValue = Config.CompanionRate;
+
+
         }
         public void SaveSettings()
         {
@@ -192,6 +207,7 @@ namespace Server.Views
             Config.ClientPath = (string)ClientPathEdit.EditValue;
             Config.ReleaseDate = (DateTime)ReleaseDateEdit.EditValue;
             Config.EasterEventEnd = (DateTime)RabbitEventEndEdit.EditValue;
+            Config.EnvironmentTickCount = (int)EnvironmentTickCountEdit.EditValue;
 
             //Mail
             Config.MailServer = (string)MailServerEdit.EditValue;
@@ -217,7 +233,7 @@ namespace Server.Views
             Config.IPNPrefix = (string)IPNPrefixEdit.EditValue;
             Config.ReceiverEMail = (string)ReceiverEMailEdit.EditValue;
             Config.ProcessGameGold = (bool)ProcessGameGoldEdit.EditValue;
-            Config.AllowBuyGameGold = (bool)AllowBuyGameGoldEdit.EditValue;
+            Config.AllowBuyGammeGold = (bool)AllowBuyGammeGoldEdit.EditValue;
 
 
             //Players
@@ -235,17 +251,31 @@ namespace Server.Views
             Config.PvPCurseDuration = (TimeSpan)PvPCurseDurationEdit.EditValue;
             Config.PvPCurseRate = (int)PvPCurseRateEdit.EditValue;
             Config.AutoReviveDelay = (TimeSpan)AutoReviveDelayEdit.EditValue;
+            Config.DeathDrops = (bool)DeathDropsEdit.EditValue;
+            Config.DDInventory = (int)DDInventoryEdit.EditValue;
+            Config.DDCommon = (int)DDCommonEdit.EditValue;
+            Config.DDSuperior = (int)DDSuperiorEdit.EditValue;
+            Config.DDRare = (int)DDRareEdit.EditValue;
+            Config.DDElite = (int)DDEliteEdit.EditValue;
+            Config.DDLegendary = (int)DDLegendaryEdit.EditValue;
+            Config.DDMaxDrop = (int)DDMaxDropEdit.EditValue;
+            Config.StartLevel = (int)startLeveLEdit.EditValue;
+
 
             //Monsters
             Config.DeadDuration = (TimeSpan)DeadDurationEdit.EditValue;
             Config.HarvestDuration = (TimeSpan)HarvestDurationEdit.EditValue;
             Config.MysteryShipRegionIndex = (int)MysteryShipRegionIndexEdit.EditValue;
             Config.LairRegionIndex = (int)LairRegionIndexEdit.EditValue;
+            Config.SeaCaveRegionIndex = (int)SeaCaveRegionIndexEdit.EditValue;
+            Config.FlowerMapRegionIndex = (int)FlowerMapRegionIndexEdit.EditValue;
 
             //Items
             Config.DropDuration = (TimeSpan)DropDurationEdit.EditValue;
             Config.DropDistance = (int)DropDistanceEdit.EditValue;
             Config.DropLayers = (int)DropLayersEdit.EditValue;
+            Config.DropAddedChance = (int)DropAddedChanceEdit.EditValue;
+            Config.DropRarityInc = (int)DropRarityIncEdit.EditValue;
             Config.TorchRate = (int)TorchRateEdit.EditValue;
             Config.SpecialRepairDelay = (TimeSpan)SpecialRepairDelayEdit.EditValue;
             Config.MaxLuck = (int)MaxLuckEdit.EditValue;
@@ -265,12 +295,11 @@ namespace Server.Views
             Config.CompanionRate = (int)CompanionRateEdit.EditValue;
 
             if (SEnvir.Started)
-            {
                 SEnvir.ServerBuffChanged = true;
-            }
 
-            ConfigReader.Save(typeof(Config).Assembly);
+            ConfigReader.Save();
         }
+
 
         private void SaveButton_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -278,7 +307,12 @@ namespace Server.Views
         }
         private void ReloadButton_ItemClick(object sender, ItemClickEventArgs e)
         {
+            int tickRateBefore = currentTickRate;
+
             LoadSettings();
+
+            if (tickRateBefore != Config.EnvironmentTickCount)
+                SEnvir.ReloadTickRate();
         }
 
 
@@ -288,31 +322,45 @@ namespace Server.Views
 
             Config.LoadVersion();
 
-            if (Functions.IsMatch(old, Config.ClientHash) || !SEnvir.Started) return;
+            if (Functions.IsMatch(old, Config.ClientHash) || !SEnvir.Started)
+                return;
 
             SEnvir.Broadcast(new S.Chat { Text = "A new version has been made available, please update when possible.", Type = MessageType.Announcement });
         }
         private void VersionPathEdit_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
-            if (OpenDialog.ShowDialog() != DialogResult.OK) return;
+            if (OpenDialog.ShowDialog() != DialogResult.OK)
+                return;
 
             VersionPathEdit.EditValue = OpenDialog.FileName;
         }
         private void MapPathEdit_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
-            if (FolderDialog.ShowDialog() != DialogResult.OK) return;
+            if (FolderDialog.ShowDialog() != DialogResult.OK)
+                return;
 
             MapPathEdit.EditValue = FolderDialog.SelectedPath;
         }
 
         private void ClientPathEdit_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
-            if (FolderDialog.ShowDialog() != DialogResult.OK) return;
+            if (FolderDialog.ShowDialog() != DialogResult.OK)
+                return;
 
             ClientPathEdit.EditValue = FolderDialog.SelectedPath;
         }
 
         private void ConfigView_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void labelControl91_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lookUpEdit1_EditValueChanged(object sender, EventArgs e)
         {
 
         }

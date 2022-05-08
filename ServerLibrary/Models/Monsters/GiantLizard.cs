@@ -8,16 +8,17 @@ namespace Server.Models.Monsters
 {
     public class GiantLizard : MonsterObject
     {
-        public int AttackRange = 7;
         public DateTime RangeTime;
         public TimeSpan RangeCooldown;
         public bool CanPvPRange = true;
 
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
-            
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
+
             if (SEnvir.Now > RangeTime && (CanPvPRange || Target.Race != ObjectType.Player))
                 return Functions.InRange(CurrentLocation, Target.CurrentLocation, AttackRange);
 
@@ -50,7 +51,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (InAttackRange() && CanAttack) //random 3
                 Attack();
@@ -62,7 +64,8 @@ namespace Server.Models.Monsters
 
                 for (int d = 0; d < 8; d++)
                 {
-                    if (Walk(direction)) break;
+                    if (Walk(direction))
+                        break;
 
                     direction = Functions.ShiftDirection(direction, rotation);
                 }

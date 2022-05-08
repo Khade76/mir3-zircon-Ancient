@@ -199,6 +199,7 @@ namespace Library
                 case MagicType.IceBlades:
                 case MagicType.FrozenEarth:
                 case MagicType.MeteorShower:
+                case MagicType.IceShower:
 
                 case MagicType.ExplosiveTalisman:
                 case MagicType.EvilSlayer:
@@ -207,12 +208,17 @@ namespace Library
                 case MagicType.MassInvisibility:
                 case MagicType.GreaterEvilSlayer:
                 case MagicType.GreaterFrozenEarth:
+                case MagicType.GreaterScorchedEarth:
+                case MagicType.GreaterMassCyclone:
+                case MagicType.GreaterLightningBeam:
                 case MagicType.Infection:
 
                 case MagicType.ElementalSuperiority:
                 case MagicType.BloodLust:
                 case MagicType.LifeSteal:
                 case MagicType.ImprovedExplosiveTalisman:
+
+                case MagicType.Neutralize:
                     return MirAnimation.Combat1;
 
 
@@ -229,6 +235,7 @@ namespace Library
                 case MagicType.BlowEarth:
                 case MagicType.ExpelUndead:
                 case MagicType.MagicShield:
+                case MagicType.MagicShieldPhysical:
                 case MagicType.IceStorm:
                 case MagicType.DragonTornado:
                 case MagicType.ChainLightning:
@@ -242,6 +249,13 @@ namespace Library
                 case MagicType.ThunderStrike:
                 case MagicType.MirrorImage:
                 case MagicType.Asteroid:
+                case MagicType.SuperiorMagicShield:
+                case MagicType.Blizzard:
+                    return MirAnimation.Combat2;
+
+                case MagicType.ElementalHurricane:
+                    return MirAnimation.ChannellingStart;
+
 
                 case MagicType.Heal:
                 case MagicType.PoisonDust:
@@ -259,6 +273,7 @@ namespace Library
                 case MagicType.SummonDemonicCreature:
                 case MagicType.DemonExplosion:
                 case MagicType.Scarecrow:
+                case MagicType.DarkSoulPrison:
                     return MirAnimation.Combat2;
 
                 case MagicType.PoisonousCloud:
@@ -279,6 +294,8 @@ namespace Library
                 case MagicType.Abyss:
                 case MagicType.Evasion:
                 case MagicType.RagingWind:
+            //    case MagicType.Concentration:
+            //    case MagicType.SwordOfVengeance:
                     return MirAnimation.Combat9;
 
                 case MagicType.Rake:
@@ -290,10 +307,12 @@ namespace Library
                 case MagicType.Might:
                 case MagicType.ReflectDamage:
                 case MagicType.Fetter:
+                case MagicType.Invincibility:
                     return MirAnimation.Combat15;
 
                 case MagicType.SwiftBlade:
                 case MagicType.SeismicSlam:
+                case MagicType.CrushingWave:
                     return MirAnimation.Combat3;
 
                 default:
@@ -456,13 +475,18 @@ namespace Library
                     return type == ItemType.HorseArmour;
                 case EquipmentSlot.Shield:
                     return type == ItemType.Shield;
-                case EquipmentSlot.Wings:
-                    return type == ItemType.Wings;
+                case EquipmentSlot.MTXArmour:
+                    return type == ItemType.MTXArmour;
+                case EquipmentSlot.MTXWings:
+                    return type == ItemType.MTXWings;
+                case EquipmentSlot.MTXWeapons:
+                    return type == ItemType.MTXWeapons;
+                case EquipmentSlot.MTXHelmets:
+                    return type == ItemType.MTXHelmets;
                 default:
                     return false;
             }
         }
-
         public static bool CorrectSlot(ItemType type, CompanionSlot slot)
         {
             switch (slot)
@@ -479,7 +503,6 @@ namespace Library
                     return false;
             }
         }
-
         public static int Direction16(Point source, Point destination)
         {
             PointF c = new PointF(source.X, source.Y);

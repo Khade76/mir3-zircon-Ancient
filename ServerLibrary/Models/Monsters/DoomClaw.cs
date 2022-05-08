@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
-using Server.Models.Monsters;
 using S = Library.Network.ServerPackets;
 
 namespace Server.Models.Monsters
@@ -16,9 +11,9 @@ namespace Server.Models.Monsters
         protected override void OnSpawned()
         {
             base.OnSpawned();
-            
+
             ActionTime = SEnvir.Now.AddSeconds(2);
-            
+
             Broadcast(new S.ObjectShow { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation });
         }
 
@@ -31,19 +26,22 @@ namespace Server.Models.Monsters
             bool canCrit = true, bool canStruck = true)
         {
 
-            if (!Functions.InRange(CurrentLocation, attacker.CurrentLocation, 10)) return 0;
-               
+            if (!Functions.InRange(CurrentLocation, attacker.CurrentLocation, 10))
+                return 0;
+
             return base.Attacked(attacker, power, element, canReflect, ignoreShield, canCrit);
         }
 
         public override void ProcessAI()
         {
-            if (Dead) return;
+            if (Dead)
+                return;
 
             ProcessRegen();
 
-            if (!CanAttack) return;
-            
+            if (!CanAttack)
+                return;
+
             List<MapObject> rightTargets = GetTargets(CurrentMap, Functions.Move(CurrentLocation, MirDirection.Right, 5), 5);
             List<MapObject> leftTargets = GetTargets(CurrentMap, Functions.Move(CurrentLocation, MirDirection.Down, 5), 5);
             List<MapObject> middleTargets = GetTargets(CurrentMap, Functions.Move(CurrentLocation, MirDirection.DownRight, 5), Config.MaxViewRange);
@@ -54,14 +52,15 @@ namespace Server.Models.Monsters
             {
 
                 List<MapObject> allTargerts = GetTargets(CurrentMap, CurrentLocation, Config.MaxViewRange);
-                if (allTargerts.Count == 0) return;
+                if (allTargerts.Count == 0)
+                    return;
                 //Do Wave
                 Wave(allTargerts);
                 return;
             }
-            
+
             int total = rightTargets.Count + leftTargets.Count + middleTargets.Count;
-            
+
             int value = SEnvir.Random.Next(total);
 
             if ((value -= rightTargets.Count) < 0)
@@ -146,7 +145,7 @@ namespace Server.Models.Monsters
             foreach (MapObject ob in targets)
             {
                 int damage = GetDC();
-                
+
                 if (ob.Race == ObjectType.Player)
                 {
                     switch (((PlayerObject)ob).Class)

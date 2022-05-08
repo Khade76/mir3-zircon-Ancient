@@ -69,6 +69,7 @@ namespace Library
                             this[pair.Key] += pair.Value;
                         break;
                     case Stat.ItemReviveTime:
+                    case Stat.DeathDropPrevention:
                         if (pair.Value == 0) continue;
 
                         if (this[pair.Key] == 0)
@@ -160,7 +161,7 @@ namespace Library
                         value += $"{description.Title} +" + this[s];
                         neecComma = true;
                     }
-                    return value;
+                    return value;                
                 case StatType.ElementResistance:
 
 
@@ -219,6 +220,34 @@ namespace Library
                         neecComma = true;
                     }
 
+                    return value;
+                case StatType.MaxElementResist:
+
+                    list = new List<Stat>();
+                    foreach (KeyValuePair<Stat, int> pair in Values)
+                        if (type.GetMember(pair.Key.ToString())[0].GetCustomAttribute<StatDescription>().Mode == StatType.MaxElementResist) list.Add(pair.Key);
+
+                    if (list.Count == 0 || list[0] != stat)
+                        return null;
+
+                    value = $"E. MaxRes: ";
+
+                    neecComma = false;
+                    foreach (Stat s in list)
+                    {
+                        description = type.GetMember(s.ToString())[0].GetCustomAttribute<StatDescription>();
+
+                        if (neecComma)
+                            value += $", ";
+
+                        string seperator = null;
+                        if (this[s] > 0)
+                        {
+                            seperator = "+";
+                        }
+                        value += $"{description.Title} {seperator}" + this[s];
+                        neecComma = true;
+                    }
                     return value;
                 default: return null;
             }
@@ -279,6 +308,13 @@ namespace Library
                 this[Stat.HolyResistance] <= 0 && this[Stat.DarkResistance] <= 0 &&
                 this[Stat.PhantomResistance] <= 0 && this[Stat.PhysicalResistance] <= 0;
 
+        }
+
+        public bool HasCap(Stat stat)
+        {
+            if (this[stat] > 0)
+                return true;
+            else return false;
         }
 
         public Stat GetWeaponElement()
@@ -580,6 +616,7 @@ namespace Library
 
         [StatDescription(Title = "Magic Shield", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         MagicShield,
+
         [StatDescription(Title = "Invisible", Mode = StatType.Text)]
         Cloak,
         [StatDescription(Title = "Cloak Damage", Format = "{0} per tick", Mode = StatType.Default)]
@@ -645,6 +682,7 @@ namespace Library
         SCPercent,
         [StatDescription(Title = "Companion Hunger", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
         CompanionHunger,
+
 
         [StatDescription(Title = "Pet's DC", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         PetDCPercent,
@@ -729,7 +767,7 @@ namespace Library
         [StatDescription(Title = "Experience", Format = "{0}", Mode = StatType.Default)]
         Experience,
 
-        [StatDescription(Title = "Death Drops Enabled.", Mode = StatType.Text)]
+        [StatDescription(Title = "Death Drops Disabled.", Mode = StatType.Text)]
         DeathDrops,
 
         [StatDescription(Title = "Physical", Format = "{0:+#0;-#0;#0}", Mode = StatType.ElementResistance)]
@@ -766,10 +804,60 @@ namespace Library
         [StatDescription(Title = "Rebirth ", Format = "{0}", Mode = StatType.Default)]
         Rebirth,
 
+        [StatDescription(Title = "You are immune to all damage.", Mode = StatType.Text)]
+        Invincibility,
 
+        [StatDescription(Title = "Superior Magic Shield", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
+        SuperiorMagicShield,
 
         [StatDescription(Title = "Duration", Mode = StatType.Time)]
         Duration = 10000,
+
+        [StatDescription(Title = "AC", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        ACPercent,
+        [StatDescription(Title = "MR", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        MRPercent,
+        [StatDescription(Title = "Pet's AC", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        PetACPercent,
+        [StatDescription(Title = "Pet's MR", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        PetMRPercent,
+        [StatDescription(Mode = StatType.None)]
+        ChaosNeck,
+        [StatDescription(Mode = StatType.None)]
+        LifeNeck,
+        [StatDescription(Mode = StatType.None)]
+        CosmosNeck,
+        [StatDescription(Mode = StatType.None)]
+        DeathNeck,
+        [StatDescription(Title = "Fire", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxFireResistance,
+        [StatDescription(Title = "Ice", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxIceResistance,
+        [StatDescription(Title = "Lightning", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxLightningResistance,
+        [StatDescription(Title = "Wind", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxWindResistance,
+        [StatDescription(Title = "Holy", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxHolyResistance,
+        [StatDescription(Title = "Dark", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxDarkResistance,
+        [StatDescription(Title = "Phantom", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxPhantomResistance,
+        [StatDescription(Title = "Physical", Format = "{0:+#0;-#0;#0}", Mode = StatType.MaxElementResist)]
+        MaxPhysicalResistance,
+        [StatDescription(Title = "Kill Steak Exp Bonus", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        KillStreakExpBonus,
+        [StatDescription(Title = "Kill Steak Drop Bonus", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        KillStreakDropBonus,
+        [StatDescription(Title = "Total Life Steal Healing", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
+        LSHealing,
+        [StatDescription(Title = "Max Life Steal Heal per Tick", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
+        LSHealingCap,
+        [StatDescription(Title = "Death Drops Prevention.", Mode = StatType.Text)]
+        DeathDropPrevention,
+
+        [StatDescription(Title = "Phyiscal Magic Shield", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        MagicShieldPhysical, 
     }
 
     public enum StatSource
@@ -793,6 +881,7 @@ namespace Library
         ElementResistance,
         SpellPower,
         Time,
+        MaxElementResist,
     }
 
     [AttributeUsage(AttributeTargets.Field)]

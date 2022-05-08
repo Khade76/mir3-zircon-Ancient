@@ -70,14 +70,14 @@
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.ribbonPage1});
-            this.ribbon.Size = new System.Drawing.Size(631, 143);
+            this.ribbon.Size = new System.Drawing.Size(1219, 147);
             // 
             // SaveButton
             // 
             this.SaveButton.Caption = "Save Databasse";
-            this.SaveButton.Glyph = ((System.Drawing.Image)(resources.GetObject("SaveButton.Glyph")));
             this.SaveButton.Id = 1;
-            this.SaveButton.LargeGlyph = ((System.Drawing.Image)(resources.GetObject("SaveButton.LargeGlyph")));
+            this.SaveButton.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("SaveButton.ImageOptions.Image")));
+            this.SaveButton.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("SaveButton.ImageOptions.LargeImage")));
             this.SaveButton.LargeWidth = 60;
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.SaveButton_ItemClick);
@@ -100,14 +100,15 @@
             // BaseStatGridControl
             // 
             this.BaseStatGridControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.BaseStatGridControl.Location = new System.Drawing.Point(0, 143);
+            this.BaseStatGridControl.Location = new System.Drawing.Point(0, 147);
             this.BaseStatGridControl.MainView = this.BaseStatGridView;
             this.BaseStatGridControl.MenuManager = this.ribbon;
             this.BaseStatGridControl.Name = "BaseStatGridControl";
-            this.BaseStatGridControl.Size = new System.Drawing.Size(631, 291);
+            this.BaseStatGridControl.Size = new System.Drawing.Size(1219, 287);
             this.BaseStatGridControl.TabIndex = 2;
             this.BaseStatGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.BaseStatGridView});
+            this.BaseStatGridControl.Click += new System.EventHandler(this.BaseStatGridControl_Click);
             // 
             // BaseStatGridView
             // 
@@ -276,7 +277,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(631, 434);
+            this.ClientSize = new System.Drawing.Size(1219, 434);
             this.Controls.Add(this.BaseStatGridControl);
             this.Controls.Add(this.ribbon);
             this.Name = "BaseStatView";

@@ -14,10 +14,14 @@ namespace Server.DBModels
         [Association("Characters")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -26,13 +30,18 @@ namespace Server.DBModels
             }
         }
         private AccountInfo _Account;
-        
+
+
         public string CharacterName
         {
-            get { return _CharacterName; }
+            get
+            {
+                return _CharacterName;
+            }
             set
             {
-                if (_CharacterName == value) return;
+                if (_CharacterName == value)
+                    return;
 
                 var oldValue = _CharacterName;
                 _CharacterName = value;
@@ -44,10 +53,14 @@ namespace Server.DBModels
 
         public MirClass Class
         {
-            get { return _Class; }
+            get
+            {
+                return _Class;
+            }
             set
             {
-                if (_Class == value) return;
+                if (_Class == value)
+                    return;
 
                 var oldValue = _Class;
                 _Class = value;
@@ -59,10 +72,14 @@ namespace Server.DBModels
 
         public MirGender Gender
         {
-            get { return _Gender; }
+            get
+            {
+                return _Gender;
+            }
             set
             {
-                if (_Gender == value) return;
+                if (_Gender == value)
+                    return;
 
                 var oldValue = _Gender;
                 _Gender = value;
@@ -74,10 +91,14 @@ namespace Server.DBModels
 
         public int Level
         {
-            get { return _Level; }
+            get
+            {
+                return _Level;
+            }
             set
             {
-                if (_Level == value) return;
+                if (_Level == value)
+                    return;
 
                 var oldValue = _Level;
                 _Level = value;
@@ -87,12 +108,35 @@ namespace Server.DBModels
         }
         private int _Level;
 
-        public int HairType
+        public string GuildName
         {
-            get { return _HairType; }
+            get
+            {
+                return _GuildName;
+            }
             set
             {
-                if (_HairType == value) return;
+                if (_GuildName == value)
+                    return;
+
+                var oldValue = _GuildName;
+                _GuildName = value;
+
+                OnChanged(oldValue, value, "GuildName");
+            }
+        }
+        private string _GuildName;
+
+        public int HairType
+        {
+            get
+            {
+                return _HairType;
+            }
+            set
+            {
+                if (_HairType == value)
+                    return;
 
                 var oldValue = _HairType;
                 _HairType = value;
@@ -104,10 +148,14 @@ namespace Server.DBModels
 
         public Color HairColour
         {
-            get { return _HairColour; }
+            get
+            {
+                return _HairColour;
+            }
             set
             {
-                if (_HairColour == value) return;
+                if (_HairColour == value)
+                    return;
 
                 var oldValue = _HairColour;
                 _HairColour = value;
@@ -119,10 +167,14 @@ namespace Server.DBModels
 
         public Color ArmourColour
         {
-            get { return _ArmourColour; }
+            get
+            {
+                return _ArmourColour;
+            }
             set
             {
-                if (_ArmourColour == value) return;
+                if (_ArmourColour == value)
+                    return;
 
                 var oldValue = _ArmourColour;
                 _ArmourColour = value;
@@ -131,13 +183,17 @@ namespace Server.DBModels
             }
         }
         private Color _ArmourColour;
-        
+
         public DateTime LastLogin
         {
-            get { return _LastLogin; }
+            get
+            {
+                return _LastLogin;
+            }
             set
             {
-                if (_LastLogin == value) return;
+                if (_LastLogin == value)
+                    return;
 
                 var oldValue = _LastLogin;
                 _LastLogin = value;
@@ -149,10 +205,14 @@ namespace Server.DBModels
 
         public bool Deleted
         {
-            get { return _Deleted; }
+            get
+            {
+                return _Deleted;
+            }
             set
             {
-                if (_Deleted == value) return;
+                if (_Deleted == value)
+                    return;
 
                 var oldValue = _Deleted;
                 _Deleted = value;
@@ -164,10 +224,14 @@ namespace Server.DBModels
 
         public DateTime CreationDate
         {
-            get { return _CreationDate; }
+            get
+            {
+                return _CreationDate;
+            }
             set
             {
-                if (_CreationDate == value) return;
+                if (_CreationDate == value)
+                    return;
 
                 var oldValue = _CreationDate;
                 _CreationDate = value;
@@ -179,10 +243,14 @@ namespace Server.DBModels
 
         public string CreationIP
         {
-            get { return _CreationIP; }
+            get
+            {
+                return _CreationIP;
+            }
             set
             {
-                if (_CreationIP == value) return;
+                if (_CreationIP == value)
+                    return;
 
                 var oldValue = _CreationIP;
                 _CreationIP = value;
@@ -194,10 +262,14 @@ namespace Server.DBModels
 
         public Point CurrentLocation
         {
-            get { return _CurrentLocation; }
+            get
+            {
+                return _CurrentLocation;
+            }
             set
             {
-                if (_CurrentLocation == value) return;
+                if (_CurrentLocation == value)
+                    return;
 
                 var oldValue = _CurrentLocation;
                 _CurrentLocation = value;
@@ -206,13 +278,17 @@ namespace Server.DBModels
             }
         }
         private Point _CurrentLocation;
-        
+
         public MapInfo CurrentMap
         {
-            get { return _CurrentMap; }
+            get
+            {
+                return _CurrentMap;
+            }
             set
             {
-                if (_CurrentMap == value) return;
+                if (_CurrentMap == value)
+                    return;
 
                 var oldValue = _CurrentMap;
                 _CurrentMap = value;
@@ -222,27 +298,16 @@ namespace Server.DBModels
         }
         private MapInfo _CurrentMap;
 
-        public InstanceInfo CurrentInstance
-        {
-            get { return _CurrentInstance; }
-            set
-            {
-                if (_CurrentInstance == value) return;
-
-                var oldValue = _CurrentInstance;
-                _CurrentInstance = value;
-
-                OnChanged(oldValue, value, "CurrentInstance");
-            }
-        }
-        private InstanceInfo _CurrentInstance;
-
         public MirDirection Direction
         {
-            get { return _Direction; }
+            get
+            {
+                return _Direction;
+            }
             set
             {
-                if (_Direction == value) return;
+                if (_Direction == value)
+                    return;
 
                 var oldValue = _Direction;
                 _Direction = value;
@@ -251,13 +316,17 @@ namespace Server.DBModels
             }
         }
         private MirDirection _Direction;
-        
+
         public SafeZoneInfo BindPoint
         {
-            get { return _BindPoint; }
+            get
+            {
+                return _BindPoint;
+            }
             set
             {
-                if (_BindPoint == value) return;
+                if (_BindPoint == value)
+                    return;
 
                 var oldValue = _BindPoint;
                 _BindPoint = value;
@@ -269,10 +338,14 @@ namespace Server.DBModels
 
         public int CurrentHP
         {
-            get { return _CurrentHP; }
+            get
+            {
+                return _CurrentHP;
+            }
             set
             {
-                if (_CurrentHP == value) return;
+                if (_CurrentHP == value)
+                    return;
 
                 var oldValue = _CurrentHP;
                 _CurrentHP = value;
@@ -284,10 +357,14 @@ namespace Server.DBModels
 
         public int CurrentMP
         {
-            get { return _CurrentMP; }
+            get
+            {
+                return _CurrentMP;
+            }
             set
             {
-                if (_CurrentMP == value) return;
+                if (_CurrentMP == value)
+                    return;
 
                 var oldValue = _CurrentMP;
                 _CurrentMP = value;
@@ -299,10 +376,14 @@ namespace Server.DBModels
 
         public decimal Experience
         {
-            get { return _Experience; }
+            get
+            {
+                return _Experience;
+            }
             set
             {
-                if (_Experience == value) return;
+                if (_Experience == value)
+                    return;
 
                 var oldValue = _Experience;
                 _Experience = value;
@@ -314,10 +395,14 @@ namespace Server.DBModels
 
         public bool CanThrusting
         {
-            get { return _canThrusting; }
+            get
+            {
+                return _canThrusting;
+            }
             set
             {
-                if (_canThrusting == value) return;
+                if (_canThrusting == value)
+                    return;
 
                 var oldValue = _canThrusting;
                 _canThrusting = value;
@@ -329,10 +414,14 @@ namespace Server.DBModels
 
         public bool CanHalfMoon
         {
-            get { return _CanHalfMoon; }
+            get
+            {
+                return _CanHalfMoon;
+            }
             set
             {
-                if (_CanHalfMoon == value) return;
+                if (_CanHalfMoon == value)
+                    return;
 
                 var oldValue = _CanHalfMoon;
                 _CanHalfMoon = value;
@@ -344,10 +433,14 @@ namespace Server.DBModels
 
         public bool CanDestructiveSurge
         {
-            get { return _canDestructiveSurge; }
+            get
+            {
+                return _canDestructiveSurge;
+            }
             set
             {
-                if (_canDestructiveSurge == value) return;
+                if (_canDestructiveSurge == value)
+                    return;
 
                 var oldValue = _canDestructiveSurge;
                 _canDestructiveSurge = value;
@@ -359,10 +452,14 @@ namespace Server.DBModels
 
         public bool CanFlameSplash
         {
-            get { return _CanFlameSplash; }
+            get
+            {
+                return _CanFlameSplash;
+            }
             set
             {
-                if (_CanFlameSplash == value) return;
+                if (_CanFlameSplash == value)
+                    return;
 
                 var oldValue = _CanFlameSplash;
                 _CanFlameSplash = value;
@@ -371,13 +468,17 @@ namespace Server.DBModels
             }
         }
         private bool _CanFlameSplash;
-        
+
         public Stats LastStats
         {
-            get { return _LastStats; }
+            get
+            {
+                return _LastStats;
+            }
             set
             {
-                if (_LastStats == value) return;
+                if (_LastStats == value)
+                    return;
 
                 var oldValue = _LastStats;
                 _LastStats = value;
@@ -389,10 +490,14 @@ namespace Server.DBModels
 
         public Stats HermitStats
         {
-            get { return _HermitStats; }
+            get
+            {
+                return _HermitStats;
+            }
             set
             {
-                if (_HermitStats == value) return;
+                if (_HermitStats == value)
+                    return;
 
                 var oldValue = _HermitStats;
                 _HermitStats = value;
@@ -402,12 +507,35 @@ namespace Server.DBModels
         }
         private Stats _HermitStats;
 
-        public int SpentPoints
+        public Stats LastHermitStats
         {
-            get { return _SpentPoints; }
+            get
+            {
+                return _LastHermitStats;
+            }
             set
             {
-                if (_SpentPoints == value) return;
+                if (_LastHermitStats == value)
+                    return;
+
+                var oldValue = _LastHermitStats;
+                _LastHermitStats = value;
+
+                OnChanged(oldValue, value, "LastHermitStats");
+            }
+        }
+        private Stats _LastHermitStats;
+
+        public int SpentPoints
+        {
+            get
+            {
+                return _SpentPoints;
+            }
+            set
+            {
+                if (_SpentPoints == value)
+                    return;
 
                 var oldValue = _SpentPoints;
                 _SpentPoints = value;
@@ -417,12 +545,35 @@ namespace Server.DBModels
         }
         private int _SpentPoints;
 
-        public AttackMode AttackMode
+        public int BonusPoints
         {
-            get { return _AttackMode; }
+            get
+            {
+                return _BonusPoints;
+            }
             set
             {
-                if (_AttackMode == value) return;
+                if (_BonusPoints == value)
+                    return;
+
+                var oldValue = _BonusPoints;
+                _BonusPoints = value;
+
+                OnChanged(oldValue, value, "BonusPoints");
+            }
+        }
+        private int _BonusPoints;
+
+        public AttackMode AttackMode
+        {
+            get
+            {
+                return _AttackMode;
+            }
+            set
+            {
+                if (_AttackMode == value)
+                    return;
 
                 var oldValue = _AttackMode;
                 _AttackMode = value;
@@ -434,10 +585,14 @@ namespace Server.DBModels
 
         public PetMode PetMode
         {
-            get { return _PetMode; }
+            get
+            {
+                return _PetMode;
+            }
             set
             {
-                if (_PetMode == value) return;
+                if (_PetMode == value)
+                    return;
 
                 var oldValue = _PetMode;
                 _PetMode = value;
@@ -446,13 +601,17 @@ namespace Server.DBModels
             }
         }
         private PetMode _PetMode;
-        
+
         public bool Observable
         {
-            get { return _Observable; }
+            get
+            {
+                return _Observable;
+            }
             set
             {
-                if (_Observable == value) return;
+                if (_Observable == value)
+                    return;
 
                 var oldValue = _Observable;
                 _Observable = value;
@@ -464,10 +623,14 @@ namespace Server.DBModels
 
         public DateTime ItemReviveTime
         {
-            get { return _ItemReviveTime; }
+            get
+            {
+                return _ItemReviveTime;
+            }
             set
             {
-                if (_ItemReviveTime == value) return;
+                if (_ItemReviveTime == value)
+                    return;
 
                 var oldValue = _ItemReviveTime;
                 _ItemReviveTime = value;
@@ -477,12 +640,35 @@ namespace Server.DBModels
         }
         private DateTime _ItemReviveTime;
 
-        public DateTime ReincarnationPillTime
+        public DateTime DeathDropPreventTime
         {
-            get { return _ReincarnationPillTime; }
+            get
+            {
+                return _DeathDropPreventTime;
+            }
             set
             {
-                if (_ReincarnationPillTime == value) return;
+                if (_DeathDropPreventTime == value)
+                    return;
+
+                var oldValue = _DeathDropPreventTime;
+                _DeathDropPreventTime = value;
+
+                OnChanged(oldValue, value, "DeathDropPreventTime");
+            }
+        }
+        private DateTime _DeathDropPreventTime;
+
+        public DateTime ReincarnationPillTime
+        {
+            get
+            {
+                return _ReincarnationPillTime;
+            }
+            set
+            {
+                if (_ReincarnationPillTime == value)
+                    return;
 
                 var oldValue = _ReincarnationPillTime;
                 _ReincarnationPillTime = value;
@@ -494,10 +680,14 @@ namespace Server.DBModels
 
         public DateTime MarriageTeleportTime
         {
-            get { return _MarriageTeleportTime; }
+            get
+            {
+                return _MarriageTeleportTime;
+            }
             set
             {
-                if (_MarriageTeleportTime == value) return;
+                if (_MarriageTeleportTime == value)
+                    return;
 
                 var oldValue = _MarriageTeleportTime;
                 _MarriageTeleportTime = value;
@@ -509,10 +699,14 @@ namespace Server.DBModels
 
         public DateTime GroupRecallTime
         {
-            get { return _GroupRecallTime; }
+            get
+            {
+                return _GroupRecallTime;
+            }
             set
             {
-                if (_GroupRecallTime == value) return;
+                if (_GroupRecallTime == value)
+                    return;
 
                 var oldValue = _GroupRecallTime;
                 _GroupRecallTime = value;
@@ -521,13 +715,17 @@ namespace Server.DBModels
             }
         }
         private DateTime _GroupRecallTime;
-        
+
         public bool HideHelmet
         {
-            get { return _HideHelmet; }
+            get
+            {
+                return _HideHelmet;
+            }
             set
             {
-                if (_HideHelmet == value) return;
+                if (_HideHelmet == value)
+                    return;
 
                 var oldValue = _HideHelmet;
                 _HideHelmet = value;
@@ -539,10 +737,14 @@ namespace Server.DBModels
 
         public bool CanDeathDrop
         {
-            get { return _CanDeathDrop; }
+            get
+            {
+                return _CanDeathDrop;
+            }
             set
             {
-                if (_CanDeathDrop == value) return;
+                if (_CanDeathDrop == value)
+                    return;
 
                 var oldValue = _CanDeathDrop;
                 _CanDeathDrop = value;
@@ -551,13 +753,14 @@ namespace Server.DBModels
             }
         }
         private bool _CanDeathDrop;
-        
+
         public int Rebirth
         {
             get => _Rebirth;
             set
             {
-                if (_Rebirth == value) return;
+                if (_Rebirth == value)
+                    return;
 
                 int oldValue = _Rebirth;
                 _Rebirth = value;
@@ -567,15 +770,19 @@ namespace Server.DBModels
         }
         private int _Rebirth;
 
-        
+
 
 
         public DateTime NextDeathDropChange
         {
-            get { return _NextDeathDropChange; }
+            get
+            {
+                return _NextDeathDropChange;
+            }
             set
             {
-                if (_NextDeathDropChange == value) return;
+                if (_NextDeathDropChange == value)
+                    return;
 
                 var oldValue = _NextDeathDropChange;
                 _NextDeathDropChange = value;
@@ -584,14 +791,94 @@ namespace Server.DBModels
             }
         }
         private DateTime _NextDeathDropChange;
-              
+
+
+        public DateTime LastDailyReset
+        {
+            get
+            {
+                return _LastDailyReset;
+            }
+            set
+            {
+                if (_LastDailyReset == value)
+                    return;
+
+                var oldValue = _LastDailyReset;
+                _LastDailyReset = value;
+
+                OnChanged(oldValue, value, "LastDailyReset");
+            }
+        }
+        private DateTime _LastDailyReset;
+        public bool HasDaily
+        {
+            get
+            {
+                return _HasDaily;
+            }
+            set
+            {
+                if (_HasDaily == value)
+                    return;
+
+                var oldValue = _HasDaily;
+                _HasDaily = value;
+
+                OnChanged(oldValue, value, "HasDaily");
+            }
+        }
+        private bool _HasDaily;
+
+        public bool HadDailyFix
+        {
+            get
+            {
+                return _HadDailyFix;
+            }
+            set
+            {
+                if (_HadDailyFix == value)
+                    return;
+
+                var oldValue = _HadDailyFix;
+                _HadDailyFix = value;
+
+                OnChanged(oldValue, value, "HadDailyFix");
+            }
+        }
+        private bool _HadDailyFix;
+
+        public int DailyResets
+        {
+            get
+            {
+                return _DailyResets;
+            }
+            set
+            {
+                if (_DailyResets == value)
+                    return;
+
+                var oldValue = _DailyResets;
+                _DailyResets = value;
+
+                OnChanged(oldValue, value, "DailyResets");
+            }
+        }
+        private int _DailyResets;
+
         [Association("Companion")]
         public UserCompanion Companion
         {
-            get { return _Companion; }
+            get
+            {
+                return _Companion;
+            }
             set
             {
-                if (_Companion == value) return;
+                if (_Companion == value)
+                    return;
 
                 var oldValue = _Companion;
                 _Companion = value;
@@ -600,35 +887,60 @@ namespace Server.DBModels
             }
         }
         private UserCompanion _Companion;
-        
+
         [Association("Items", true)]
-        public DBBindingList<UserItem> Items { get; set; }
+        public DBBindingList<UserItem> Items
+        {
+            get; set;
+        }
 
         [Association("BeltLinks", true)]
-        public DBBindingList<CharacterBeltLink> BeltLinks { get; set; }
+        public DBBindingList<CharacterBeltLink> BeltLinks
+        {
+            get; set;
+        }
 
         [Association("AutoPotionLinks", true)]
-        public DBBindingList<AutoPotionLink> AutoPotionLinks { get; set; }
+        public DBBindingList<AutoPotionLink> AutoPotionLinks
+        {
+            get; set;
+        }
 
         [Association("Magics", true)]
-        public DBBindingList<UserMagic> Magics { get; set; }
+        public DBBindingList<UserMagic> Magics
+        {
+            get; set;
+        }
 
         [Association("Buffs", true)]
-        public DBBindingList<BuffInfo> Buffs { get; set; }
-        
+        public DBBindingList<BuffInfo> Buffs
+        {
+            get; set;
+        }
+
         [Association("Refines", true)]
-        public DBBindingList<RefineInfo> Refines { get; set; }
+        public DBBindingList<RefineInfo> Refines
+        {
+            get; set;
+        }
 
         [Association("Quests", true)]
-        public DBBindingList<UserQuest> Quests { get; set; }
+        public DBBindingList<UserQuest> Quests
+        {
+            get; set;
+        }
 
         [Association("Marriage")]
         public CharacterInfo Partner
         {
-            get { return _Partner; }
+            get
+            {
+                return _Partner;
+            }
             set
             {
-                if (_Partner == value) return;
+                if (_Partner == value)
+                    return;
 
                 var oldValue = _Partner;
                 _Partner = value;
@@ -638,57 +950,13 @@ namespace Server.DBModels
         }
         private CharacterInfo _Partner;
 
-        public string FiltersClass
-        {
-            get { return _FiltersClass; }
-            set
-            {
-                if (_FiltersClass == value) return;
-
-                var oldValue = _FiltersClass;
-                _FiltersClass = value;
-
-                OnChanged(oldValue, value, "FiltersClass");
-            }
-        }
-        private string _FiltersClass;
-
-        public string FiltersRarity
-        {
-            get { return _FiltersRarity; }
-            set
-            {
-                if (_FiltersRarity == value) return;
-
-                var oldValue = _FiltersRarity;
-                _FiltersRarity = value;
-
-                OnChanged(oldValue, value, "FiltersRarity");
-            }
-        }
-        private string _FiltersRarity;
-
-        public string FiltersItemType
-        {
-            get { return _FiltersItemType; }
-            set
-            {
-                if (_FiltersItemType == value) return;
-
-                var oldValue = _FiltersItemType;
-                _FiltersItemType = value;
-
-                OnChanged(oldValue, value, "FiltersItemType");
-            }
-        }
-        private string _FiltersItemType;
 
         protected override void OnDeleted()
         {
             Account = null;
             Companion = null;
             Partner = null;
-            
+
             base.OnDeleted();
         }
 
@@ -718,8 +986,10 @@ namespace Server.DBModels
 
             LastStats = new Stats();
             HermitStats = new Stats();
+            LastHermitStats = new Stats();
 
-            Observable = true;
+            Observable = false;
+            CanDeathDrop = true;
         }
 
         /*  protected override void OnLoaded()

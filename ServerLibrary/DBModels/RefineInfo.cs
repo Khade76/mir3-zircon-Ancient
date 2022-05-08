@@ -11,10 +11,14 @@ namespace Server.DBModels
         [Association("Refines")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -27,10 +31,14 @@ namespace Server.DBModels
         [Association("Refine")]
         public UserItem Weapon
         {
-            get { return _Weapon; }
+            get
+            {
+                return _Weapon;
+            }
             set
             {
-                if (_Weapon == value) return;
+                if (_Weapon == value)
+                    return;
 
                 var oldValue = _Weapon;
                 _Weapon = value;
@@ -42,10 +50,14 @@ namespace Server.DBModels
 
         public RefineQuality Quality
         {
-            get { return _Quality; }
+            get
+            {
+                return _Quality;
+            }
             set
             {
-                if (_Quality == value) return;
+                if (_Quality == value)
+                    return;
 
                 var oldValue = _Quality;
                 _Quality = value;
@@ -57,10 +69,14 @@ namespace Server.DBModels
 
         public RefineType Type
         {
-            get { return _Type; }
+            get
+            {
+                return _Type;
+            }
             set
             {
-                if (_Type == value) return;
+                if (_Type == value)
+                    return;
 
                 var oldValue = _Type;
                 _Type = value;
@@ -72,10 +88,14 @@ namespace Server.DBModels
 
         public DateTime RetrieveTime
         {
-            get { return _RetrieveTime; }
+            get
+            {
+                return _RetrieveTime;
+            }
             set
             {
-                if (_RetrieveTime == value) return;
+                if (_RetrieveTime == value)
+                    return;
 
                 var oldValue = _RetrieveTime;
                 _RetrieveTime = value;
@@ -87,10 +107,14 @@ namespace Server.DBModels
 
         public int Chance
         {
-            get { return _Chance; }
+            get
+            {
+                return _Chance;
+            }
             set
             {
-                if (_Chance == value) return;
+                if (_Chance == value)
+                    return;
 
                 var oldValue = _Chance;
                 _Chance = value;
@@ -102,10 +126,14 @@ namespace Server.DBModels
 
         public int MaxChance
         {
-            get { return _MaxChance; }
+            get
+            {
+                return _MaxChance;
+            }
             set
             {
-                if (_MaxChance == value) return;
+                if (_MaxChance == value)
+                    return;
 
                 var oldValue = _MaxChance;
                 _MaxChance = value;

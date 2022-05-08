@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -12,7 +9,7 @@ namespace Server.Models.Monsters
     public class CrimsonNecromancer : MonsterObject
     {
         public DateTime DebuffTime;
-        
+
         public override void ProcessTarget()
         {
             if (CanAttack && SEnvir.Now > DebuffTime)

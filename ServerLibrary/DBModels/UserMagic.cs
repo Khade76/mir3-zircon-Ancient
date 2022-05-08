@@ -11,10 +11,14 @@ namespace Server.DBModels
     {
         public MagicInfo Info
         {
-            get { return _Info; }
+            get
+            {
+                return _Info;
+            }
             set
             {
-                if (_Info == value) return;
+                if (_Info == value)
+                    return;
 
                 var oldValue = _Info;
                 _Info = value;
@@ -27,10 +31,14 @@ namespace Server.DBModels
         [Association("Magics")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -39,13 +47,17 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _Character;
-        
+
         public SpellKey Set1Key
         {
-            get { return _Set1Key; }
+            get
+            {
+                return _Set1Key;
+            }
             set
             {
-                if (_Set1Key == value) return;
+                if (_Set1Key == value)
+                    return;
 
                 var oldValue = _Set1Key;
                 _Set1Key = value;
@@ -57,10 +69,14 @@ namespace Server.DBModels
 
         public SpellKey Set2Key
         {
-            get { return _Set2Key; }
+            get
+            {
+                return _Set2Key;
+            }
             set
             {
-                if (_Set2Key == value) return;
+                if (_Set2Key == value)
+                    return;
 
                 var oldValue = _Set2Key;
                 _Set2Key = value;
@@ -72,10 +88,14 @@ namespace Server.DBModels
 
         public SpellKey Set3Key
         {
-            get { return _Set3Key; }
+            get
+            {
+                return _Set3Key;
+            }
             set
             {
-                if (_Set3Key == value) return;
+                if (_Set3Key == value)
+                    return;
 
                 var oldValue = _Set3Key;
                 _Set3Key = value;
@@ -87,10 +107,14 @@ namespace Server.DBModels
 
         public SpellKey Set4Key
         {
-            get { return _Set4Key; }
+            get
+            {
+                return _Set4Key;
+            }
             set
             {
-                if (_Set4Key == value) return;
+                if (_Set4Key == value)
+                    return;
 
                 var oldValue = _Set4Key;
                 _Set4Key = value;
@@ -102,10 +126,14 @@ namespace Server.DBModels
 
         public int Level
         {
-            get { return _Level; }
+            get
+            {
+                return _Level;
+            }
             set
             {
-                if (_Level == value) return;
+                if (_Level == value)
+                    return;
 
                 var oldValue = _Level;
                 _Level = value;
@@ -117,10 +145,14 @@ namespace Server.DBModels
 
         public long Experience
         {
-            get { return _Experience; }
+            get
+            {
+                return _Experience;
+            }
             set
             {
-                if (_Experience == value) return;
+                if (_Experience == value)
+                    return;
 
                 var oldValue = _Experience;
                 _Experience = value;
@@ -131,7 +163,7 @@ namespace Server.DBModels
         private long _Experience;
 
         public DateTime Cooldown;
-        
+
         [IgnoreProperty]
         public int Cost => Info.BaseCost + Level * Info.LevelCost / 3;
 
@@ -146,11 +178,13 @@ namespace Server.DBModels
 
         public int GetPower()
         {
-            int min = Info.MinBasePower + Level*Info.MinLevelPower/3;
+            int min = Info.MinBasePower + Level * Info.MinLevelPower / 3;
             int max = Info.MaxBasePower + Level * Info.MaxLevelPower / 3;
 
-            if (min < 0) min = 0;
-            if (min >= max) return min;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return min;
 
             return SEnvir.Random.Next(min, max + 1);
         }

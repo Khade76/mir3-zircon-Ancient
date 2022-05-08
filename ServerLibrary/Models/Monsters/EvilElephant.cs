@@ -28,8 +28,9 @@ namespace Server.Models.Monsters
                 return;
             }
 
-            if (Attack(ob, GetDC(), AttackElement) <= 0) return;
-                
+            if (Attack(ob, GetDC(), AttackElement) <= 0)
+                return;
+
             ob.ApplyPoison(new Poison
             {
                 Value = GetSC(),

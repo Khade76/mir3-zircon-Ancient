@@ -1,4 +1,4 @@
-﻿namespace Server.Views
+namespace Server.Views
 {
     partial class MagicInfoView
     {
@@ -57,6 +57,10 @@
             this.gridColumn19 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn14 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn20 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn21 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn22 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn23 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn24 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.MagicInfoGridControl = new DevExpress.XtraGrid.GridControl();
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MagicImageComboBox)).BeginInit();
@@ -149,7 +153,11 @@
             this.gridColumn18,
             this.gridColumn19,
             this.gridColumn14,
-            this.gridColumn20});
+            this.gridColumn20,
+            this.gridColumn21,
+            this.gridColumn22,
+            this.gridColumn23,
+            this.gridColumn24});
             this.MagicInfoGridView.GridControl = this.MagicInfoGridControl;
             this.MagicInfoGridView.Name = "MagicInfoGridView";
             this.MagicInfoGridView.OptionsDetail.AllowExpandEmptyDetails = true;
@@ -165,7 +173,7 @@
             this.gridColumn15.OptionsColumn.AllowEdit = false;
             this.gridColumn15.OptionsColumn.ReadOnly = true;
             this.gridColumn15.Visible = true;
-            this.gridColumn15.VisibleIndex = 0;
+            this.gridColumn15.VisibleIndex = 1;
             // 
             // gridColumn1
             // 
@@ -271,13 +279,29 @@
             this.gridColumn11.Visible = true;
             this.gridColumn11.VisibleIndex = 14;
             // 
+            // gridColumn21
+            // 
+            this.gridColumn21.Caption = "Need Level 4";
+            this.gridColumn21.FieldName = "NeedLevel4";
+            this.gridColumn21.Name = "gridColumn21";
+            this.gridColumn21.Visible = true;
+            this.gridColumn21.VisibleIndex = 15;
+            // 
+            // gridColumn22
+            // 
+            this.gridColumn22.Caption = "Need Level 5";
+            this.gridColumn22.FieldName = "NeedLevel5";
+            this.gridColumn22.Name = "gridColumn22";
+            this.gridColumn22.Visible = true;
+            this.gridColumn22.VisibleIndex = 16;
+            // 
             // gridColumn12
             // 
             this.gridColumn12.Caption = "Experience 1";
             this.gridColumn12.FieldName = "Experience1";
             this.gridColumn12.Name = "gridColumn12";
             this.gridColumn12.Visible = true;
-            this.gridColumn12.VisibleIndex = 15;
+            this.gridColumn12.VisibleIndex = 17;
             // 
             // gridColumn18
             // 
@@ -285,7 +309,7 @@
             this.gridColumn18.FieldName = "Experience2";
             this.gridColumn18.Name = "gridColumn18";
             this.gridColumn18.Visible = true;
-            this.gridColumn18.VisibleIndex = 16;
+            this.gridColumn18.VisibleIndex = 18;
             // 
             // gridColumn19
             // 
@@ -293,21 +317,37 @@
             this.gridColumn19.FieldName = "Experience3";
             this.gridColumn19.Name = "gridColumn19";
             this.gridColumn19.Visible = true;
-            this.gridColumn19.VisibleIndex = 17;
+            this.gridColumn19.VisibleIndex = 19;
+            // 
+            // gridColumn23
+            // 
+            this.gridColumn23.Caption = "Experience 4";
+            this.gridColumn23.FieldName = "Experience4";
+            this.gridColumn23.Name = "gridColumn23";
+            this.gridColumn23.Visible = true;
+            this.gridColumn23.VisibleIndex = 20;
+            // 
+            // gridColumn24
+            // 
+            this.gridColumn24.Caption = "Experience 5";
+            this.gridColumn24.FieldName = "Experience5";
+            this.gridColumn24.Name = "gridColumn24";
+            this.gridColumn24.Visible = true;
+            this.gridColumn24.VisibleIndex = 21;
             // 
             // gridColumn14
             // 
             this.gridColumn14.FieldName = "Delay";
             this.gridColumn14.Name = "gridColumn14";
             this.gridColumn14.Visible = true;
-            this.gridColumn14.VisibleIndex = 18;
+            this.gridColumn14.VisibleIndex = 22;
             // 
             // gridColumn20
             // 
             this.gridColumn20.FieldName = "Description";
             this.gridColumn20.Name = "gridColumn20";
             this.gridColumn20.Visible = true;
-            this.gridColumn20.VisibleIndex = 19;
+            this.gridColumn20.VisibleIndex = 23;
             // 
             // MagicInfoGridControl
             // 
@@ -378,5 +418,9 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn18;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn19;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn20;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn21;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn22;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn23;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn24;
     }
 }

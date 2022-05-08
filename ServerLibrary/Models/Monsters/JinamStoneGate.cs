@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 
 namespace Server.Models.Monsters
 {
-    public class JinamStoneGate :MonsterObject
+    public class JinamStoneGate : MonsterObject
     {
         public override bool CanMove => false;
         public override bool CanAttack => false;
@@ -34,10 +30,10 @@ namespace Server.Models.Monsters
 
             DespawnTime = SEnvir.Now.AddMinutes(20);
 
-            foreach (SConnection con in SEnvir.Connections)
+            foreach (SConnection con in SEnvir.AuthenticatedConnections)
                 con.ReceiveChat(string.Format(con.Language.LairGateOpen, CurrentMap.Info.Description, CurrentLocation), MessageType.System);
 
-           }
+        }
 
         public override void Process()
         {
@@ -48,7 +44,7 @@ namespace Server.Models.Monsters
                 if (SpawnInfo != null)
                     SpawnInfo.AliveCount--;
 
-                foreach (SConnection con in SEnvir.Connections)
+                foreach (SConnection con in SEnvir.AuthenticatedConnections)
                     con.ReceiveChat(con.Language.LairGateClosed, MessageType.System);
 
                 SpawnInfo = null;
@@ -59,7 +55,7 @@ namespace Server.Models.Monsters
             if (SEnvir.Now >= SearchTime && SEnvir.LairMapRegion != null && SEnvir.LairMapRegion.PointList.Count > 0)
             {
                 SearchTime = SEnvir.Now.AddSeconds(3);
-                Map map = SEnvir.GetMap(SEnvir.LairMapRegion.Map, CurrentMap.Instance, CurrentMap.InstanceIndex);
+                Map map = SEnvir.GetMap(SEnvir.LairMapRegion.Map);
 
                 if (map == null)
                 {
@@ -71,16 +67,20 @@ namespace Server.Models.Monsters
                 {
                     MapObject ob = CurrentMap.Objects[i];
 
-                    if (ob == this) continue;
+                    if (ob == this)
+                        continue;
 
-                    if (ob is Guard) continue;
+                    if (ob is Guard)
+                        continue;
 
                     switch (ob.Race)
                     {
                         case ObjectType.Player:
-                            if (ob.InSafeZone) continue;
+                            if (ob.InSafeZone)
+                                continue;
 
-                            if (ob.Dead || !Functions.InRange(ob.CurrentLocation, CurrentLocation, MonsterInfo.ViewRange)) continue;
+                            if (ob.Dead || !Functions.InRange(ob.CurrentLocation, CurrentLocation, MonsterInfo.ViewRange))
+                                continue;
 
                             ob.Teleport(map, SEnvir.LairMapRegion.PointList[SEnvir.Random.Next(SEnvir.LairMapRegion.PointList.Count)]);
                             break;

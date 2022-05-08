@@ -46,15 +46,19 @@
             this.gridColumn10 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.RegionLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.gridColumn11 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn12 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.MapLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.EventInfoGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.gridColumn1 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn2 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn14 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn15 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn16 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
             this.SaveButton = new DevExpress.XtraBars.BarButtonItem();
             this.ribbonPage1 = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.ribbonPageGroup1 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
-            this.gridColumn12 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn13 = new DevExpress.XtraGrid.Columns.GridColumn();
             ((System.ComponentModel.ISupportInitialize)(this.TargetsGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.EventInfoGridControl)).BeginInit();
@@ -70,7 +74,7 @@
             // 
             this.TargetsGridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
             this.gridColumn5,
-            this.gridColumn12,
+            this.gridColumn13,
             this.gridColumn3});
             this.TargetsGridView.GridControl = this.EventInfoGridControl;
             this.TargetsGridView.Name = "TargetsGridView";
@@ -148,7 +152,8 @@
             this.gridColumn8,
             this.gridColumn9,
             this.gridColumn10,
-            this.gridColumn11});
+            this.gridColumn11,
+            this.gridColumn12});
             this.ActionsGridView.GridControl = this.EventInfoGridControl;
             this.ActionsGridView.Name = "ActionsGridView";
             this.ActionsGridView.OptionsView.EnableAppearanceEvenRow = true;
@@ -163,7 +168,7 @@
             this.gridColumn4.Name = "gridColumn4";
             this.gridColumn4.Visible = true;
             this.gridColumn4.VisibleIndex = 0;
-            this.gridColumn4.Width = 103;
+            this.gridColumn4.Width = 83;
             // 
             // gridColumn6
             // 
@@ -171,7 +176,7 @@
             this.gridColumn6.Name = "gridColumn6";
             this.gridColumn6.Visible = true;
             this.gridColumn6.VisibleIndex = 1;
-            this.gridColumn6.Width = 103;
+            this.gridColumn6.Width = 83;
             // 
             // gridColumn7
             // 
@@ -179,7 +184,7 @@
             this.gridColumn7.Name = "gridColumn7";
             this.gridColumn7.Visible = true;
             this.gridColumn7.VisibleIndex = 2;
-            this.gridColumn7.Width = 103;
+            this.gridColumn7.Width = 83;
             // 
             // gridColumn8
             // 
@@ -188,7 +193,7 @@
             this.gridColumn8.Name = "gridColumn8";
             this.gridColumn8.Visible = true;
             this.gridColumn8.VisibleIndex = 3;
-            this.gridColumn8.Width = 103;
+            this.gridColumn8.Width = 83;
             // 
             // gridColumn9
             // 
@@ -220,7 +225,7 @@
             this.gridColumn10.Name = "gridColumn10";
             this.gridColumn10.Visible = true;
             this.gridColumn10.VisibleIndex = 5;
-            this.gridColumn10.Width = 110;
+            this.gridColumn10.Width = 90;
             // 
             // RegionLookUpEdit
             // 
@@ -241,7 +246,15 @@
             this.gridColumn11.Name = "gridColumn11";
             this.gridColumn11.Visible = true;
             this.gridColumn11.VisibleIndex = 6;
-            this.gridColumn11.Width = 115;
+            this.gridColumn11.Width = 95;
+            // 
+            // gridColumn12
+            // 
+            this.gridColumn12.FieldName = "BonusParameter1";
+            this.gridColumn12.Name = "gridColumn12";
+            this.gridColumn12.Visible = true;
+            this.gridColumn12.VisibleIndex = 7;
+            this.gridColumn12.Width = 100;
             // 
             // MapLookUpEdit
             // 
@@ -261,7 +274,10 @@
             // 
             this.EventInfoGridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
             this.gridColumn1,
-            this.gridColumn2});
+            this.gridColumn2,
+            this.gridColumn14,
+            this.gridColumn15,
+            this.gridColumn16});
             this.EventInfoGridView.GridControl = this.EventInfoGridControl;
             this.EventInfoGridView.Name = "EventInfoGridView";
             this.EventInfoGridView.OptionsDetail.AllowExpandEmptyDetails = true;
@@ -284,6 +300,29 @@
             this.gridColumn2.Name = "gridColumn2";
             this.gridColumn2.Visible = true;
             this.gridColumn2.VisibleIndex = 1;
+            // 
+            // gridColumn14
+            // 
+            this.gridColumn14.FieldName = "EventType";
+            this.gridColumn14.Name = "gridColumn14";
+            this.gridColumn14.Visible = true;
+            this.gridColumn14.VisibleIndex = 2;
+            // 
+            // gridColumn15
+            // 
+            this.gridColumn15.ColumnEdit = this.MapLookUpEdit;
+            this.gridColumn15.FieldName = "MapParameter";
+            this.gridColumn15.Name = "gridColumn15";
+            this.gridColumn15.Visible = true;
+            this.gridColumn15.VisibleIndex = 2;
+            // 
+            // gridColumn16
+            // 
+            this.gridColumn16.FieldName = "CoolDownTime";
+            this.gridColumn16.Name = "gridColumn16";
+            this.gridColumn16.Visible = true;
+            this.gridColumn16.VisibleIndex = 7;
+            this.gridColumn16.Width = 100;
             // 
             // ribbon
             // 
@@ -325,10 +364,10 @@
             // 
             // gridColumn12
             // 
-            this.gridColumn12.FieldName = "DropSet";
-            this.gridColumn12.Name = "gridColumn12";
-            this.gridColumn12.Visible = true;
-            this.gridColumn12.VisibleIndex = 1;
+            this.gridColumn13.FieldName = "DropSet";
+            this.gridColumn13.Name = "gridColumn12";
+            this.gridColumn13.Visible = true;
+            this.gridColumn13.VisibleIndex = 1;
             // 
             // EventInfoView
             // 
@@ -380,5 +419,9 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn11;
         private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit MapLookUpEdit;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn12;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn13;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn14;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn15;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn16;
     }
 }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 
@@ -16,7 +12,8 @@ namespace Server.Models.Monsters
         {
             base.Process();
 
-            if (Dead) return;
+            if (Dead)
+                return;
 
             if (SEnvir.Now > PuriTime)
             {
@@ -33,7 +30,8 @@ namespace Server.Models.Monsters
                 for (int i = MinionList.Count - 1; i >= 0; i--)
                 {
                     MonsterObject mob = MinionList[i];
-                    if (mob.CurrentMap == CurrentMap && Functions.InRange(CurrentLocation, mob.CurrentLocation, 10)) continue;
+                    if (mob.CurrentMap == CurrentMap && Functions.InRange(CurrentLocation, mob.CurrentLocation, 10))
+                        continue;
 
                     mob.EXPOwner = null;
                     mob.Die();
@@ -46,7 +44,7 @@ namespace Server.Models.Monsters
         }
         public override bool SpawnMinion(MonsterObject mob)
         {
-            return mob.Spawn(CurrentMap, CurrentMap.GetRandomLocation(CurrentLocation, 10));
+            return mob.Spawn(CurrentMap.Info, CurrentMap.GetRandomLocation(CurrentLocation, 10));
         }
     }
 }

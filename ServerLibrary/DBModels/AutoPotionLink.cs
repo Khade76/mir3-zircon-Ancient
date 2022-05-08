@@ -9,10 +9,14 @@ namespace Server.DBModels
         [Association("AutoPotionLinks")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -24,10 +28,14 @@ namespace Server.DBModels
 
         public int Slot
         {
-            get { return _Slot; }
+            get
+            {
+                return _Slot;
+            }
             set
             {
-                if (_Slot == value) return;
+                if (_Slot == value)
+                    return;
 
                 var oldValue = _Slot;
                 _Slot = value;
@@ -39,10 +47,14 @@ namespace Server.DBModels
 
         public int LinkInfoIndex
         {
-            get { return _LinkInfoIndex; }
+            get
+            {
+                return _LinkInfoIndex;
+            }
             set
             {
-                if (_LinkInfoIndex == value) return;
+                if (_LinkInfoIndex == value)
+                    return;
 
                 var oldValue = _LinkInfoIndex;
                 _LinkInfoIndex = value;
@@ -54,10 +66,14 @@ namespace Server.DBModels
 
         public int Health
         {
-            get { return _Health; }
+            get
+            {
+                return _Health;
+            }
             set
             {
-                if (_Health == value) return;
+                if (_Health == value)
+                    return;
 
                 var oldValue = _Health;
                 _Health = value;
@@ -69,10 +85,14 @@ namespace Server.DBModels
 
         public int Mana
         {
-            get { return _Mana; }
+            get
+            {
+                return _Mana;
+            }
             set
             {
-                if (_Mana == value) return;
+                if (_Mana == value)
+                    return;
 
                 var oldValue = _Mana;
                 _Mana = value;
@@ -84,10 +104,14 @@ namespace Server.DBModels
 
         public bool Enabled
         {
-            get { return _Enabled; }
+            get
+            {
+                return _Enabled;
+            }
             set
             {
-                if (_Enabled == value) return;
+                if (_Enabled == value)
+                    return;
 
                 var oldValue = _Enabled;
                 _Enabled = value;

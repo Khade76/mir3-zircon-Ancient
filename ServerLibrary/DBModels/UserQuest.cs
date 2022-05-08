@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.SystemModels;
 using MirDB;
@@ -15,10 +12,14 @@ namespace Server.DBModels
     {
         public QuestInfo QuestInfo
         {
-            get { return _QuestInfo; }
+            get
+            {
+                return _QuestInfo;
+            }
             set
             {
-                if (_QuestInfo == value) return;
+                if (_QuestInfo == value)
+                    return;
 
                 var oldValue = _QuestInfo;
                 _QuestInfo = value;
@@ -31,10 +32,14 @@ namespace Server.DBModels
         [Association("Quests")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -43,13 +48,17 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _Character;
-        
+
         public bool Completed
         {
-            get { return _Completed; }
+            get
+            {
+                return _Completed;
+            }
             set
             {
-                if (_Completed == value) return;
+                if (_Completed == value)
+                    return;
 
                 var oldValue = _Completed;
                 _Completed = value;
@@ -61,10 +70,14 @@ namespace Server.DBModels
 
         public int SelectedReward
         {
-            get { return _SelectedReward; }
+            get
+            {
+                return _SelectedReward;
+            }
             set
             {
-                if (_SelectedReward == value) return;
+                if (_SelectedReward == value)
+                    return;
 
                 var oldValue = _SelectedReward;
                 _SelectedReward = value;
@@ -76,10 +89,14 @@ namespace Server.DBModels
 
         public bool Track
         {
-            get { return _Track; }
+            get
+            {
+                return _Track;
+            }
             set
             {
-                if (_Track == value) return;
+                if (_Track == value)
+                    return;
 
                 var oldValue = _Track;
                 _Track = value;
@@ -89,43 +106,16 @@ namespace Server.DBModels
         }
         private bool _Track;
 
-        public DateTime DateTaken
-        {
-            get { return _DateTaken; }
-            set
-            {
-                if (_DateTaken == value) return;
-
-                var oldValue = _DateTaken;
-                _DateTaken = value;
-
-                OnChanged(oldValue, value, "DateTaken");
-            }
-        }
-        private DateTime _DateTaken;
-
-        public DateTime DateCompleted
-        {
-            get { return _DateCompleted; }
-            set
-            {
-                if (_DateCompleted == value) return;
-
-                var oldValue = _DateCompleted;
-                _DateCompleted = value;
-
-                OnChanged(oldValue, value, "DateCompleted");
-            }
-        }
-        private DateTime _DateCompleted;
-
 
         [IgnoreProperty]
         public bool IsComplete => Tasks.Count == QuestInfo.Tasks.Count && Tasks.All(x => x.Completed);
 
 
         [Association("Tasks", true)]
-        public DBBindingList<UserQuestTask> Tasks { get; set; }
+        public DBBindingList<UserQuestTask> Tasks
+        {
+            get; set;
+        }
 
         protected override void OnDeleted()
         {
@@ -144,14 +134,13 @@ namespace Server.DBModels
             return new ClientUserQuest
             {
                 Index = Index,
-                QuestIndex =  QuestInfo.Index,
+                QuestIndex = QuestInfo.Index,
                 Completed = Completed,
                 SelectedReward = SelectedReward,
                 Track = Track,
-                DateTaken = DateTaken,
-                DateCompleted = DateCompleted,
 
-                Tasks = Tasks.Select(x=> x.ToClientInfo()).ToList(),
+
+                Tasks = Tasks.Select(x => x.ToClientInfo()).ToList(),
             };
         }
 
@@ -170,10 +159,14 @@ namespace Server.DBModels
         [Association("Tasks")]
         public UserQuest Quest
         {
-            get { return _Quest; }
+            get
+            {
+                return _Quest;
+            }
             set
             {
-                if (_Quest == value) return;
+                if (_Quest == value)
+                    return;
 
                 var oldValue = _Quest;
                 _Quest = value;
@@ -185,10 +178,14 @@ namespace Server.DBModels
 
         public QuestTask Task
         {
-            get { return _Task; }
+            get
+            {
+                return _Task;
+            }
             set
             {
-                if (_Task == value) return;
+                if (_Task == value)
+                    return;
 
                 var oldValue = _Task;
                 _Task = value;
@@ -197,13 +194,17 @@ namespace Server.DBModels
             }
         }
         private QuestTask _Task;
-        
+
         public long Amount
         {
-            get { return _Amount; }
+            get
+            {
+                return _Amount;
+            }
             set
             {
-                if (_Amount == value) return;
+                if (_Amount == value)
+                    return;
 
                 var oldValue = _Amount;
                 _Amount = value;

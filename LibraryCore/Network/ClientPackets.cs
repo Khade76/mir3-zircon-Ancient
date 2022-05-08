@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Library.SystemModels;
 
 namespace Library.Network.ClientPackets
 {
@@ -235,9 +236,6 @@ namespace Library.Network.ClientPackets
     public sealed class NPCMasterRefine : Packet
     {
         public RefineType RefineType { get; set; }
-        public List<CellLinkInfo> Fragment1s { get; set; }
-        public List<CellLinkInfo> Fragment2s { get; set; }
-        public List<CellLinkInfo> Fragment3s { get; set; }
         public List<CellLinkInfo> Stones { get; set; }
         public List<CellLinkInfo> Specials { get; set; }
     }
@@ -389,6 +387,11 @@ namespace Library.Network.ClientPackets
         public long Count { get; set; }
         public bool UseHuntGold { get; set; }
     }
+    public sealed class MarketPlaceFPBuy : Packet
+    {
+        public int Index { get; set; }
+        public long Count { get; set; }
+    }
 
 
     public sealed class MailOpened : Packet
@@ -488,6 +491,11 @@ namespace Library.Network.ClientPackets
     {
 
     }
+    public sealed class GuildFlagChanged : Packet
+    {
+        public int FlagShape { get; set; }
+        public Color FlagColour { get; set; }
+    }
     public sealed class GuildResponse : Packet
     {
         public bool Accept { get; set; }
@@ -535,6 +543,23 @@ namespace Library.Network.ClientPackets
         public int Index { get; set; }
     }
     public sealed class CompanionStore : Packet
+    {
+        public int Index { get; set; }
+    }
+    public sealed class HorseRetrieve : Packet
+    {
+        public int Index { get; set; }
+    }
+    public sealed class HorseStore : Packet
+    {
+        public int Index { get; set; }
+    }
+
+    public sealed class HorseUnlock : Packet
+    {
+        public int Index { get; set; }
+    }
+    public sealed class HorseAdopt : Packet
     {
         public int Index { get; set; }
     }
@@ -628,16 +653,28 @@ namespace Library.Network.ClientPackets
         public List<CellLinkInfo> Links { get; set; }
         public RefineType RefineType { get; set; }
     }
-    public sealed class JoinInstance : Packet
+    public sealed class NPCBookRefine : Packet
     {
+        public List<CellLinkInfo> Target { get; set; }
+        public List<CellLinkInfo> Material { get; set; }
+    }
+    public sealed class CraftItem : Packet
+    {
+        public List<CellLinkInfo> Ingredients { get; set; }
         public int Index { get; set; }
     }
-
-    public sealed class SendCompanionFilters : Packet
+    public sealed class CraftInformation : Packet
     {
-        public List<MirClass> FilterClass { get; set; }
-        public List<Rarity> FilterRarity { get; set; }
-        public List<ItemType> FilterItemType { get; set; }
+    }
+    public sealed class StartMiniGame : Packet
+    {
+        public int index { get; set; }
+        }
 
+    public sealed class DailyQuestGain : Packet
+    {
+    }
+    public sealed class DailyQuestReset : Packet
+    {
     }
 }

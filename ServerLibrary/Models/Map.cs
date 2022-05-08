@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -15,36 +16,48 @@ namespace Server.Models
 {
     public sealed class Map
     {
-        public MapInfo Info { get; }
-        public InstanceInfo Instance { get; }
-        public byte InstanceIndex { get; }
-        public int Width { get; private set; }
-        public int Height { get; private set; }
+        public MapInfo Info
+        {
+            get;
+        }
 
-        public bool HasSafeZone { get; set; }
+        public int Width
+        {
+            get; private set;
+        }
+        public int Height
+        {
+            get; private set;
+        }
 
-        public Cell[,] Cells { get; private set; }
+        public bool HasSafeZone
+        {
+            get; set;
+        }
+
+        public Cell[,] Cells
+        {
+            get; private set;
+        }
         public List<Cell> ValidCells { get; } = new List<Cell>();
 
         public List<MapObject> Objects { get; } = new List<MapObject>();
         public List<PlayerObject> Players { get; } = new List<PlayerObject>();
         public List<MonsterObject> Bosses { get; } = new List<MonsterObject>();
+        public List<MonsterObject> Mobs { get; } = new List<MonsterObject>();
+        public List<MonsterObject> Flags { get; } = new List<MonsterObject>();
         public List<NPCObject> NPCs { get; } = new List<NPCObject>();
         public HashSet<MapObject>[] OrderedObjects;
 
-        public DateTime LastProcess, LastPlayer;
+        public DateTime LastProcess;
+        public bool IsInstance;
+        public DateTime ExpireTime;
 
         public DateTime HalloweenEventTime, ChristmasEventTime;
 
-        public Map(MapInfo info, InstanceInfo instance = null, byte instanceIndex = 0)
+        public Map(MapInfo info)
         {
             Info = info;
-
-            if (instance != null)
-            {
-                Instance = instance;
-                InstanceIndex = instanceIndex;
-            }
         }
 
         public void Load()
@@ -72,7 +85,8 @@ namespace Server.Models
                 {
                     byte flag = fileBytes[offSet + (x * Height + y) * 14];
 
-                    if ((flag & 0x02) != 2 || (flag & 0x01) != 1) continue;
+                    if ((flag & 0x02) != 2 || (flag & 0x01) != 1)
+                        continue;
 
                     ValidCells.Add(Cells[x, y] = new Cell(new Point(x, y)) { Map = this });
                 }
@@ -84,8 +98,7 @@ namespace Server.Models
         public void Setup()
         {
             CreateGuards();
-
-            LastPlayer = DateTime.Now;
+            CreateFlags();
         }
 
         private void CreateGuards()
@@ -95,10 +108,53 @@ namespace Server.Models
                 MonsterObject mob = MonsterObject.GetMonster(info.Monster);
                 mob.Direction = info.Direction;
 
-                if (!mob.Spawn(this, new Point(info.X, info.Y)))
+                if (!mob.Spawn(Info, new Point(info.X, info.Y)))
                 {
                     SEnvir.Log($"Failed to spawn Guard Map:{Info.Description}, Location: {info.X}, {info.Y}");
                     continue;
+                }
+
+            }
+        }
+        private void CreateFlags()
+        {
+            int shape = SEnvir.Random.Next(0, 12);
+            Color colour = Color.FromArgb(SEnvir.Random.Next(256), SEnvir.Random.Next(256), SEnvir.Random.Next(256));
+            foreach (FlagInfo info in Info.Flags)
+            {
+                MonsterObject mob = MonsterObject.GetMonster(info.Monster);
+                mob.Direction = info.Direction;
+
+                foreach (CastleInfo castle in SEnvir.CastleInfoList.Binding)
+                {
+                    if (castle.Map != Info)
+                        continue;
+
+                    GuildInfo ownerGuild = SEnvir.GuildInfoList.Binding.FirstOrDefault(x => x.Castle == castle);
+
+                    if (ownerGuild != null)
+                    {
+                        mob.FlagShape = ownerGuild.FlagShape;
+                        mob.FlagColour = ownerGuild.FlagColour;
+                        mob.Name = ownerGuild.GuildName;
+                    }
+                    else
+                    {
+                        mob.FlagColour = colour;
+                        mob.FlagShape = shape;
+                        mob.Name = castle.Name;
+                    }
+                }
+
+                if (!mob.Spawn(Info, new Point(info.X, info.Y)))
+                {
+                    SEnvir.Log($"Failed to spawn Flag Map:{Info.Description}, Location: {info.X}, {info.Y}");
+                    continue;
+                }
+                else
+                {
+                    Flags.Add(mob);
+                    Broadcast(new S.ObjectFlagColour { ObjectID = mob.ObjectID, FlagColour = mob.FlagColour, FlagShape = mob.FlagShape, name = mob.Name });
                 }
             }
         }
@@ -106,9 +162,20 @@ namespace Server.Models
 
         public void Process()
         {
-            if (LastPlayer.AddMinutes(1) < DateTime.Now && Players.Any())
+            if (SEnvir.Now > Info.KillStreakEndTime && Info.KillSteakActive == true)
             {
-                LastPlayer = DateTime.Now;
+
+                if (Info.KillStreakExperienceRate > 0)
+                {
+                    Broadcast(new S.Chat { Text = ("Kill streak bonus has been reset"), Type = MessageType.System });
+                }
+                Info.KillStreakExperienceRate = 0;
+                foreach (PlayerObject eplayers in Players)
+                {
+                    eplayers.ApplyMapBuff();
+                }
+                Info.KillSteakActive = false;
+
             }
         }
 
@@ -130,7 +197,7 @@ namespace Server.Models
                     break;
                 case ObjectType.Monster:
                     MonsterObject mob = (MonsterObject)ob;
-                    if (mob.MonsterInfo.IsBoss)
+                    if (mob.MonsterInfo.IsBoss || mob.SuperMob)
                         Bosses.Add(mob);
                     break;
             }
@@ -153,7 +220,7 @@ namespace Server.Models
                     break;
                 case ObjectType.Monster:
                     MonsterObject mob = (MonsterObject)ob;
-                    if (mob.MonsterInfo.IsBoss)
+                    if (mob.MonsterInfo.IsBoss || mob.SuperMob)
                         Bosses.Remove(mob);
                     break;
             }
@@ -161,7 +228,8 @@ namespace Server.Models
 
         public Cell GetCell(int x, int y)
         {
-            if (x < 0 || x >= Width || y < 0 || y >= Height) return null;
+            if (x < 0 || x >= Width || y < 0 || y >= Height)
+                return null;
 
             return Cells[x, y];
         }
@@ -177,17 +245,22 @@ namespace Server.Models
             {
                 for (int y = location.Y - d; y <= location.Y + d; y++)
                 {
-                    if (y < 0) continue;
-                    if (y >= Height) break;
+                    if (y < 0)
+                        continue;
+                    if (y >= Height)
+                        break;
 
                     for (int x = location.X - d; x <= location.X + d; x += Math.Abs(y - location.Y) == d ? 1 : d * 2)
                     {
-                        if (x < 0) continue;
-                        if (x >= Width) break;
+                        if (x < 0)
+                            continue;
+                        if (x >= Width)
+                            break;
 
                         Cell cell = Cells[x, y]; //Direct Access we've checked the boudaries.
 
-                        if (cell == null) continue;
+                        if (cell == null)
+                            continue;
 
                         cells.Add(cell);
                     }
@@ -238,7 +311,8 @@ namespace Server.Models
         {
             foreach (PlayerObject player in Players)
             {
-                if (!Functions.InRange(location, player.CurrentLocation, Config.MaxViewRange)) continue;
+                if (!Functions.InRange(location, player.CurrentLocation, Config.MaxViewRange))
+                    continue;
                 player.Enqueue(p);
             }
         }
@@ -259,10 +333,10 @@ namespace Server.Models
 
         public DateTime LastCheck;
 
-        public SpawnInfo(RespawnInfo info, InstanceInfo instance, byte index)
+        public SpawnInfo(RespawnInfo info)
         {
             Info = info;
-            CurrentMap = SEnvir.GetMap(info.Region.Map, instance, index);
+            CurrentMap = SEnvir.GetMap(info.Region.Map);
             LastCheck = SEnvir.Now;
         }
 
@@ -270,7 +344,8 @@ namespace Server.Models
         {
             if (!eventSpawn)
             {
-                if (Info.EventSpawn || SEnvir.Now < NextSpawn) return;
+                if (Info.EventSpawn || SEnvir.Now < NextSpawn)
+                    return;
 
                 if (Info.Delay >= 1000000)
                 {
@@ -307,15 +382,16 @@ namespace Server.Models
                     }
                     else if (SEnvir.Now > CurrentMap.ChristmasEventTime && SEnvir.Now <= Config.ChristmasEventEnd)
                     {
-                        mob = new ChristmasMonster { MonsterInfo = Info.Monster, ChristmasEventMob = true };
-                        CurrentMap.ChristmasEventTime = SEnvir.Now.AddMinutes(20);
+                        mob.ChristmasEventMob = true;
+                        mob.ExtraExperienceRate = 5;
+                        CurrentMap.ChristmasEventTime = SEnvir.Now.AddMinutes(20);                        
                     }
                 }
 
 
                 mob.SpawnInfo = this;
 
-                if (!mob.Spawn(Info.Region, CurrentMap.Instance, CurrentMap.InstanceIndex))
+                if (!mob.Spawn(Info.Region))
                 {
                     mob.SpawnInfo = null;
                     continue;
@@ -325,12 +401,12 @@ namespace Server.Models
                 {
                     if (Info.Delay >= 1000000)
                     {
-                        foreach (SConnection con in SEnvir.Connections)
+                        foreach (SConnection con in SEnvir.AuthenticatedConnections)
                             con.ReceiveChat($"{mob.MonsterInfo.MonsterName} has appeared.", MessageType.System);
                     }
                     else
                     {
-                        foreach (SConnection con in SEnvir.Connections)
+                        foreach (SConnection con in SEnvir.AuthenticatedConnections)
                             con.ReceiveChat(string.Format(con.Language.BossSpawn, CurrentMap.Info.Description), MessageType.System);
                     }
                 }
@@ -338,232 +414,6 @@ namespace Server.Models
                 mob.DropSet = Info.DropSet;
                 AliveCount++;
             }
-        }
-    }
-
-    public class Cell
-    {
-        public Point Location;
-
-        public Map Map;
-
-        public List<MapObject> Objects;
-        public SafeZoneInfo SafeZone;
-
-        public List<MovementInfo> Movements;
-        public bool HasMovement;
-
-
-        public Cell(Point location)
-        {
-            Location = location;
-        }
-
-
-        public void AddObject(MapObject ob)
-        {
-            if (Objects == null)
-                Objects = new List<MapObject>();
-
-            Objects.Add(ob);
-
-            ob.CurrentMap = Map;
-            ob.CurrentLocation = Location;
-
-            Map.OrderedObjects[Location.X].Add(ob);
-        }
-        public void RemoveObject(MapObject ob)
-        {
-            Objects.Remove(ob);
-
-            if (Objects.Count == 0)
-                Objects = null;
-
-            Map.OrderedObjects[Location.X].Remove(ob);
-        }
-        public bool IsBlocking(MapObject checker, bool cellTime)
-        {
-            if (Objects == null) return false;
-
-            foreach (MapObject ob in Objects)
-            {
-                if (!ob.Blocking) continue;
-                if (cellTime && SEnvir.Now < ob.CellTime) continue;
-
-                if (ob.Stats == null) return true;
-
-                if (ob.Buffs.Any(x => x.Type == BuffType.Cloak || x.Type == BuffType.Transparency) && ob.Level > checker.Level && !ob.InGroup(checker)) continue;
-
-
-                return true;
-            }
-
-            return false;
-        }
-
-        public Cell GetMovement(MapObject ob)
-        {
-            if (Movements == null || Movements.Count == 0)
-                return this;
-
-            for (int i = 0; i < 5; i++) //20 Attempts to get movement;
-            {
-                MovementInfo movement = Movements[SEnvir.Random.Next(Movements.Count)];
-
-                Map map = SEnvir.GetMap(movement.DestinationRegion.Map, Map.Instance, Map.InstanceIndex);
-
-
-                Cell cell = map.GetCell(movement.DestinationRegion.PointList[SEnvir.Random.Next(movement.DestinationRegion.PointList.Count)]);
-
-                if (cell == null) continue;
-
-                if (ob.Race == ObjectType.Player)
-                {
-                    bool allowed = true;
-                    PlayerObject player = (PlayerObject)ob;
-
-                    if (movement.DestinationRegion.Map.MinimumLevel > ob.Level && !player.Character.Account.TempAdmin)
-                    {
-                        player.Connection.ReceiveChat(string.Format(player.Connection.Language.NeedLevel, movement.DestinationRegion.Map.MinimumLevel), MessageType.System);
-
-                        foreach (SConnection con in player.Connection.Observers)
-                            con.ReceiveChat(string.Format(con.Language.NeedLevel, movement.DestinationRegion.Map.MinimumLevel), MessageType.System);
-
-                        break;
-                    }
-                    if (movement.DestinationRegion.Map.MaximumLevel > 0 && movement.DestinationRegion.Map.MaximumLevel < ob.Level && !player.Character.Account.TempAdmin)
-                    {
-                        player.Connection.ReceiveChat(string.Format(player.Connection.Language.NeedMaxLevel, movement.DestinationRegion.Map.MaximumLevel), MessageType.System);
-
-                        foreach (SConnection con in player.Connection.Observers)
-                            con.ReceiveChat(string.Format(con.Language.NeedMaxLevel, movement.DestinationRegion.Map.MaximumLevel), MessageType.System);
-
-                        break;
-                    }
-
-                    if (movement.DestinationRegion.Map.RequiredClass != RequiredClass.None && movement.DestinationRegion.Map.RequiredClass != RequiredClass.All)
-                    {
-                        switch (player.Class)
-                        {
-                            case MirClass.Warrior:
-                                if ((movement.DestinationRegion.Map.RequiredClass & RequiredClass.Warrior) != RequiredClass.Warrior)
-                                    allowed = false;
-                                break;
-                            case MirClass.Wizard:
-                                if ((movement.DestinationRegion.Map.RequiredClass & RequiredClass.Wizard) != RequiredClass.Wizard)
-                                    allowed = false;
-                                break;
-                            case MirClass.Taoist:
-                                if ((movement.DestinationRegion.Map.RequiredClass & RequiredClass.Taoist) != RequiredClass.Taoist)
-                                    allowed = false;
-                                break;
-                            case MirClass.Assassin:
-                                if ((movement.DestinationRegion.Map.RequiredClass & RequiredClass.Assassin) != RequiredClass.Assassin)
-                                    allowed = false;
-                                break;
-                        }
-
-                        if (!allowed)
-                        {
-                            var message = string.Format(player.Connection.Language.NeedClass, movement.DestinationRegion.Map.RequiredClass.ToString());
-                            player.Connection.ReceiveChat(message, MessageType.System);
-
-                            foreach (SConnection con in player.Connection.Observers)
-                                con.ReceiveChat(message, MessageType.System);
-
-                            break;
-                        }
-
-                    }
-
-                    if (movement.NeedSpawn != null)
-                    {
-                        SpawnInfo spawn = SEnvir.Spawns.FirstOrDefault(x => x.Info == movement.NeedSpawn);
-
-                        if (spawn == null)
-                            break;
-
-                        if (spawn.AliveCount == 0)
-                        {
-                            player.Connection.ReceiveChat(player.Connection.Language.NeedMonster, MessageType.System);
-
-                            foreach (SConnection con in player.Connection.Observers)
-                                con.ReceiveChat(con.Language.NeedMonster, MessageType.System);
-
-                            break;
-                        }
-
-                    }
-
-                    if (movement.NeedItem != null)
-                    {
-                        if (player.GetItemCount(movement.NeedItem) == 0)
-                        {
-                            player.Connection.ReceiveChat(string.Format(player.Connection.Language.NeedItem, movement.NeedItem.ItemName), MessageType.System);
-
-                            foreach (SConnection con in player.Connection.Observers)
-                                con.ReceiveChat(string.Format(con.Language.NeedItem, movement.NeedItem.ItemName), MessageType.System);
-                            break;
-                        }
-
-                        player.TakeItem(movement.NeedItem, 1);
-                    }
-
-                    foreach (UserQuest quest in player.Character.Quests)
-                    {
-                        //For Each Active Quest
-                        if (quest.Completed) continue;
-                        bool changed = false;
-
-                        foreach (QuestTask task in quest.QuestInfo.Tasks)
-                        {
-                            if (task.Task != QuestTaskType.Region || task.RegionParameter == null) continue;
-
-                            if (task.RegionParameter != movement.SourceRegion) continue;
-
-                            UserQuestTask userTask = quest.Tasks.FirstOrDefault(x => x.Task == task);
-
-                            if (userTask == null)
-                            {
-                                userTask = SEnvir.UserQuestTaskList.CreateNewObject();
-                                userTask.Task = task;
-                                userTask.Quest = quest;
-                            }
-
-                            if (userTask.Completed) continue;
-
-                            userTask.Amount = 1;
-                            changed = true;
-                        }
-
-                        if (changed)
-                            player.Enqueue(new S.QuestChanged { Quest = quest.ToClientInfo() });
-                    }
-
-                    switch (movement.Effect)
-                    {
-                        case MovementEffect.SpecialRepair:
-                            player.SpecialRepair(EquipmentSlot.Weapon);
-                            player.SpecialRepair(EquipmentSlot.Shield);
-                            player.SpecialRepair(EquipmentSlot.Helmet);
-                            player.SpecialRepair(EquipmentSlot.Armour);
-                            player.SpecialRepair(EquipmentSlot.Necklace);
-                            player.SpecialRepair(EquipmentSlot.BraceletL);
-                            player.SpecialRepair(EquipmentSlot.BraceletR);
-                            player.SpecialRepair(EquipmentSlot.RingL);
-                            player.SpecialRepair(EquipmentSlot.RingR);
-                            player.SpecialRepair(EquipmentSlot.Shoes);
-
-                            player.RefreshStats();
-                            break;
-                    }
-
-                }
-
-                return cell.GetMovement(ob);
-            }
-
-            return this;
         }
     }
 }

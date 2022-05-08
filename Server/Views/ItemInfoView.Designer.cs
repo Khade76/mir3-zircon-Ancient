@@ -30,6 +30,7 @@
         {
             DevExpress.XtraGrid.GridLevelNode gridLevelNode1 = new DevExpress.XtraGrid.GridLevelNode();
             DevExpress.XtraGrid.GridLevelNode gridLevelNode2 = new DevExpress.XtraGrid.GridLevelNode();
+            DevExpress.XtraGrid.GridLevelNode gridLevelNode3 = new DevExpress.XtraGrid.GridLevelNode();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ItemInfoView));
             this.ItemStatsGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.colStat = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -37,12 +38,21 @@
             this.colAmount = new DevExpress.XtraGrid.Columns.GridColumn();
             this.ItemInfoGridControl = new DevExpress.XtraGrid.GridControl();
             this.DropsGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
+            this.colDropList = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.DropListLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.colMonster = new DevExpress.XtraGrid.Columns.GridColumn();
             this.MonsterLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.colChance = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colDAmount = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn3 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn8 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.LootBoxView = new DevExpress.XtraGrid.Views.Grid.GridView();
+            this.Item = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.ItemLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
+            this.Amount = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.Chance = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.Guarenteed = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.RandAmount = new DevExpress.XtraGrid.Columns.GridColumn();
             this.ItemInfoGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.colIndex = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colItemName = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -56,6 +66,7 @@
             this.RequiredTypeImageComboBox = new DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox();
             this.gridColumn2 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colShape = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colEffectShape = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colEffect = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colImage = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colWeight = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -88,7 +99,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.StatImageComboBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemInfoGridControl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropsGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropListLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterLookUpEdit)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LootBoxView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemInfoGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemTypeImageComboBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RequiredClassImageComboBox)).BeginInit();
@@ -141,10 +155,13 @@
             gridLevelNode1.RelationName = "ItemStats";
             gridLevelNode2.LevelTemplate = this.DropsGridView;
             gridLevelNode2.RelationName = "Drops";
+            gridLevelNode3.LevelTemplate = this.LootBoxView;
+            gridLevelNode3.RelationName = "LootBox";
             this.ItemInfoGridControl.LevelTree.Nodes.AddRange(new DevExpress.XtraGrid.GridLevelNode[] {
             gridLevelNode1,
-            gridLevelNode2});
-            this.ItemInfoGridControl.Location = new System.Drawing.Point(0, 144);
+            gridLevelNode2,
+            gridLevelNode3});
+            this.ItemInfoGridControl.Location = new System.Drawing.Point(0, 147);
             this.ItemInfoGridControl.MainView = this.ItemInfoGridView;
             this.ItemInfoGridControl.MenuManager = this.ribbon;
             this.ItemInfoGridControl.Name = "ItemInfoGridControl";
@@ -155,18 +172,22 @@
             this.StatImageComboBox,
             this.RequiredTypeImageComboBox,
             this.MonsterLookUpEdit,
+            this.DropListLookUpEdit,
+            this.ItemLookUpEdit,
             this.SetLookUpEdit});
             this.ItemInfoGridControl.ShowOnlyPredefinedDetails = true;
-            this.ItemInfoGridControl.Size = new System.Drawing.Size(803, 397);
+            this.ItemInfoGridControl.Size = new System.Drawing.Size(805, 395);
             this.ItemInfoGridControl.TabIndex = 2;
             this.ItemInfoGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.DropsGridView,
+            this.LootBoxView,
             this.ItemInfoGridView,
             this.ItemStatsGridView});
             // 
             // DropsGridView
             // 
             this.DropsGridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
+            this.colDropList,
             this.colMonster,
             this.colChance,
             this.colDAmount,
@@ -180,13 +201,33 @@
             this.DropsGridView.OptionsView.ShowButtonMode = DevExpress.XtraGrid.Views.Base.ShowButtonModeEnum.ShowAlways;
             this.DropsGridView.OptionsView.ShowGroupPanel = false;
             // 
+            // colDropList
+            // 
+            this.colDropList.Caption = "DropList";
+            this.colDropList.ColumnEdit = this.DropListLookUpEdit;
+            this.colDropList.FieldName = "DropList";
+            this.colDropList.Name = "colDropList";
+            this.colDropList.Visible = true;
+            this.colDropList.VisibleIndex = 0;
+            // 
+            // DropListLookUpEdit
+            // 
+            this.DropListLookUpEdit.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
+            this.DropListLookUpEdit.AutoHeight = false;
+            this.DropListLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.DropListLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.DropListLookUpEdit.DisplayMember = "DropTier";
+            this.DropListLookUpEdit.Name = "DropListLookUpEdit";
+            this.DropListLookUpEdit.NullText = "[DropList is null]";
+            // 
             // colMonster
             // 
             this.colMonster.ColumnEdit = this.MonsterLookUpEdit;
             this.colMonster.FieldName = "Monster";
             this.colMonster.Name = "colMonster";
             this.colMonster.Visible = true;
-            this.colMonster.VisibleIndex = 0;
+            this.colMonster.VisibleIndex = 1;
             // 
             // MonsterLookUpEdit
             // 
@@ -210,28 +251,98 @@
             this.colChance.FieldName = "Chance";
             this.colChance.Name = "colChance";
             this.colChance.Visible = true;
-            this.colChance.VisibleIndex = 1;
+            this.colChance.VisibleIndex = 2;
             // 
             // colDAmount
             // 
             this.colDAmount.FieldName = "Amount";
             this.colDAmount.Name = "colDAmount";
             this.colDAmount.Visible = true;
-            this.colDAmount.VisibleIndex = 2;
+            this.colDAmount.VisibleIndex = 3;
             // 
             // gridColumn3
             // 
             this.gridColumn3.FieldName = "DropSet";
             this.gridColumn3.Name = "gridColumn3";
             this.gridColumn3.Visible = true;
-            this.gridColumn3.VisibleIndex = 3;
+            this.gridColumn3.VisibleIndex = 4;
             // 
             // gridColumn8
             // 
             this.gridColumn8.FieldName = "PartOnly";
             this.gridColumn8.Name = "gridColumn8";
             this.gridColumn8.Visible = true;
-            this.gridColumn8.VisibleIndex = 4;
+            this.gridColumn8.VisibleIndex = 5;
+            // 
+            // LootBoxView
+            // 
+            this.LootBoxView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
+            this.Item,
+            this.Amount,
+            this.Chance,
+            this.Guarenteed,
+            this.RandAmount});
+            this.LootBoxView.GridControl = this.ItemInfoGridControl;
+            this.LootBoxView.Name = "LootBoxView";
+            this.LootBoxView.OptionsView.EnableAppearanceEvenRow = true;
+            this.LootBoxView.OptionsView.EnableAppearanceOddRow = true;
+            this.LootBoxView.OptionsView.NewItemRowPosition = DevExpress.XtraGrid.Views.Grid.NewItemRowPosition.Top;
+            this.LootBoxView.OptionsView.ShowButtonMode = DevExpress.XtraGrid.Views.Base.ShowButtonModeEnum.ShowAlways;
+            this.LootBoxView.OptionsView.ShowGroupPanel = false;
+            // 
+            // Item
+            // 
+            this.Item.ColumnEdit = this.ItemLookUpEdit;
+            this.Item.FieldName = "Item";
+            this.Item.Name = "Item";
+            this.Item.Visible = true;
+            this.Item.VisibleIndex = 0;
+            // 
+            // ItemLookUpEdit
+            // 
+            this.ItemLookUpEdit.AutoHeight = false;
+            this.ItemLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.ItemLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.ItemLookUpEdit.Columns.AddRange(new DevExpress.XtraEditors.Controls.LookUpColumnInfo[] {
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Index", "Index"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("ItemName", "Item Name"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("ItemType", "Item Type")});
+            this.ItemLookUpEdit.DisplayMember = "ItemName";
+            this.ItemLookUpEdit.Name = "ItemLookUpEdit";
+            this.ItemLookUpEdit.NullText = "[Item is null]";
+            // 
+            // Amount
+            // 
+            this.Amount.Caption = "Amount";
+            this.Amount.FieldName = "Amount";
+            this.Amount.Name = "Amount";
+            this.Amount.Visible = true;
+            this.Amount.VisibleIndex = 1;
+            // 
+            // Chance
+            // 
+            this.Chance.Caption = "Chance";
+            this.Chance.FieldName = "Chance";
+            this.Chance.Name = "Chance";
+            this.Chance.Visible = true;
+            this.Chance.VisibleIndex = 2;
+            // 
+            // Guarenteed
+            // 
+            this.Guarenteed.Caption = "Guarenteed";
+            this.Guarenteed.FieldName = "Guarenteed";
+            this.Guarenteed.Name = "Guarenteed";
+            this.Guarenteed.Visible = true;
+            this.Guarenteed.VisibleIndex = 3;
+            // 
+            // RandAmount
+            // 
+            this.RandAmount.Caption = "RandAmount";
+            this.RandAmount.FieldName = "RandAmount";
+            this.RandAmount.Name = "RandAmount";
+            this.RandAmount.Visible = true;
+            this.RandAmount.VisibleIndex = 4;
             // 
             // ItemInfoGridView
             // 
@@ -244,6 +355,7 @@
             this.gridColumn1,
             this.gridColumn2,
             this.colShape,
+            this.colEffectShape,
             this.colEffect,
             this.colImage,
             this.colWeight,
@@ -367,12 +479,20 @@
             this.colShape.VisibleIndex = 6;
             this.colShape.Width = 24;
             // 
+            // colEffectShape
+            // 
+            this.colEffectShape.FieldName = "EffectShape";
+            this.colEffectShape.Name = "colEffectShape";
+            this.colEffectShape.Visible = true;
+            this.colEffectShape.VisibleIndex = 7;
+            this.colEffectShape.Width = 24;
+            // 
             // colEffect
             // 
             this.colEffect.FieldName = "Effect";
             this.colEffect.Name = "colEffect";
             this.colEffect.Visible = true;
-            this.colEffect.VisibleIndex = 7;
+            this.colEffect.VisibleIndex = 8;
             this.colEffect.Width = 24;
             // 
             // colImage
@@ -380,7 +500,7 @@
             this.colImage.FieldName = "Image";
             this.colImage.Name = "colImage";
             this.colImage.Visible = true;
-            this.colImage.VisibleIndex = 8;
+            this.colImage.VisibleIndex = 9;
             this.colImage.Width = 24;
             // 
             // colWeight
@@ -388,7 +508,7 @@
             this.colWeight.FieldName = "Weight";
             this.colWeight.Name = "colWeight";
             this.colWeight.Visible = true;
-            this.colWeight.VisibleIndex = 9;
+            this.colWeight.VisibleIndex = 10;
             this.colWeight.Width = 24;
             // 
             // colDurability
@@ -396,7 +516,7 @@
             this.colDurability.FieldName = "Durability";
             this.colDurability.Name = "colDurability";
             this.colDurability.Visible = true;
-            this.colDurability.VisibleIndex = 10;
+            this.colDurability.VisibleIndex = 11;
             this.colDurability.Width = 24;
             // 
             // colPrice
@@ -404,7 +524,7 @@
             this.colPrice.FieldName = "Price";
             this.colPrice.Name = "colPrice";
             this.colPrice.Visible = true;
-            this.colPrice.VisibleIndex = 11;
+            this.colPrice.VisibleIndex = 12;
             this.colPrice.Width = 24;
             // 
             // colStackSize
@@ -412,7 +532,7 @@
             this.colStackSize.FieldName = "StackSize";
             this.colStackSize.Name = "colStackSize";
             this.colStackSize.Visible = true;
-            this.colStackSize.VisibleIndex = 12;
+            this.colStackSize.VisibleIndex = 13;
             this.colStackSize.Width = 24;
             // 
             // colSellRate
@@ -420,7 +540,7 @@
             this.colSellRate.FieldName = "SellRate";
             this.colSellRate.Name = "colSellRate";
             this.colSellRate.Visible = true;
-            this.colSellRate.VisibleIndex = 13;
+            this.colSellRate.VisibleIndex = 14;
             this.colSellRate.Width = 24;
             // 
             // colStartItem
@@ -428,7 +548,7 @@
             this.colStartItem.FieldName = "StartItem";
             this.colStartItem.Name = "colStartItem";
             this.colStartItem.Visible = true;
-            this.colStartItem.VisibleIndex = 14;
+            this.colStartItem.VisibleIndex = 15;
             this.colStartItem.Width = 24;
             // 
             // colCanRepair
@@ -436,7 +556,7 @@
             this.colCanRepair.FieldName = "CanRepair";
             this.colCanRepair.Name = "colCanRepair";
             this.colCanRepair.Visible = true;
-            this.colCanRepair.VisibleIndex = 15;
+            this.colCanRepair.VisibleIndex = 16;
             this.colCanRepair.Width = 24;
             // 
             // colCanSell
@@ -444,7 +564,7 @@
             this.colCanSell.FieldName = "CanSell";
             this.colCanSell.Name = "colCanSell";
             this.colCanSell.Visible = true;
-            this.colCanSell.VisibleIndex = 16;
+            this.colCanSell.VisibleIndex = 17;
             this.colCanSell.Width = 24;
             // 
             // colCanStore
@@ -452,7 +572,7 @@
             this.colCanStore.FieldName = "CanStore";
             this.colCanStore.Name = "colCanStore";
             this.colCanStore.Visible = true;
-            this.colCanStore.VisibleIndex = 17;
+            this.colCanStore.VisibleIndex = 18;
             this.colCanStore.Width = 24;
             // 
             // colCanTrade
@@ -460,7 +580,7 @@
             this.colCanTrade.FieldName = "CanTrade";
             this.colCanTrade.Name = "colCanTrade";
             this.colCanTrade.Visible = true;
-            this.colCanTrade.VisibleIndex = 18;
+            this.colCanTrade.VisibleIndex = 19;
             this.colCanTrade.Width = 24;
             // 
             // colCanDrop
@@ -468,7 +588,7 @@
             this.colCanDrop.FieldName = "CanDrop";
             this.colCanDrop.Name = "colCanDrop";
             this.colCanDrop.Visible = true;
-            this.colCanDrop.VisibleIndex = 19;
+            this.colCanDrop.VisibleIndex = 20;
             this.colCanDrop.Width = 24;
             // 
             // ColCanDeathDrop
@@ -476,7 +596,7 @@
             this.ColCanDeathDrop.FieldName = "CanDeathDrop";
             this.ColCanDeathDrop.Name = "ColCanDeathDrop";
             this.ColCanDeathDrop.Visible = true;
-            this.ColCanDeathDrop.VisibleIndex = 20;
+            this.ColCanDeathDrop.VisibleIndex = 21;
             this.ColCanDeathDrop.Width = 24;
             // 
             // gridColumn4
@@ -484,7 +604,7 @@
             this.gridColumn4.FieldName = "CanAutoPot";
             this.gridColumn4.Name = "gridColumn4";
             this.gridColumn4.Visible = true;
-            this.gridColumn4.VisibleIndex = 21;
+            this.gridColumn4.VisibleIndex = 22;
             this.gridColumn4.Width = 24;
             // 
             // colRarity
@@ -492,7 +612,7 @@
             this.colRarity.FieldName = "Rarity";
             this.colRarity.Name = "colRarity";
             this.colRarity.Visible = true;
-            this.colRarity.VisibleIndex = 22;
+            this.colRarity.VisibleIndex = 23;
             this.colRarity.Width = 24;
             // 
             // colDescription
@@ -500,7 +620,7 @@
             this.colDescription.FieldName = "Description";
             this.colDescription.Name = "colDescription";
             this.colDescription.Visible = true;
-            this.colDescription.VisibleIndex = 23;
+            this.colDescription.VisibleIndex = 24;
             this.colDescription.Width = 24;
             // 
             // gridColumn5
@@ -509,7 +629,7 @@
             this.gridColumn5.FieldName = "Set";
             this.gridColumn5.Name = "gridColumn5";
             this.gridColumn5.Visible = true;
-            this.gridColumn5.VisibleIndex = 24;
+            this.gridColumn5.VisibleIndex = 25;
             this.gridColumn5.Width = 24;
             // 
             // SetLookUpEdit
@@ -530,7 +650,7 @@
             this.gridColumn6.FieldName = "BuffIcon";
             this.gridColumn6.Name = "gridColumn6";
             this.gridColumn6.Visible = true;
-            this.gridColumn6.VisibleIndex = 25;
+            this.gridColumn6.VisibleIndex = 26;
             this.gridColumn6.Width = 24;
             // 
             // gridColumn7
@@ -538,7 +658,7 @@
             this.gridColumn7.FieldName = "PartCount";
             this.gridColumn7.Name = "gridColumn7";
             this.gridColumn7.Visible = true;
-            this.gridColumn7.VisibleIndex = 26;
+            this.gridColumn7.VisibleIndex = 27;
             this.gridColumn7.Width = 87;
             // 
             // ribbon
@@ -554,7 +674,7 @@
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.ribbonPage1,
             this.ribbonPage2});
-            this.ribbon.Size = new System.Drawing.Size(803, 144);
+            this.ribbon.Size = new System.Drawing.Size(805, 147);
             // 
             // SaveButton
             // 
@@ -610,7 +730,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(803, 541);
+            this.ClientSize = new System.Drawing.Size(805, 542);
             this.Controls.Add(this.ItemInfoGridControl);
             this.Controls.Add(this.ribbon);
             this.Name = "ItemInfoView";
@@ -620,7 +740,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.StatImageComboBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemInfoGridControl)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropsGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropListLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterLookUpEdit)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.LootBoxView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemInfoGridView)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemTypeImageComboBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RequiredClassImageComboBox)).EndInit();
@@ -653,6 +776,7 @@
         private DevExpress.XtraGrid.Columns.GridColumn colRequiredGender;
         private DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox RequiredGenderImageComboBox;
         private DevExpress.XtraGrid.Columns.GridColumn colShape;
+        private DevExpress.XtraGrid.Columns.GridColumn colEffectShape;
         private DevExpress.XtraGrid.Columns.GridColumn colImage;
         private DevExpress.XtraGrid.Columns.GridColumn colDurability;
         private DevExpress.XtraGrid.Columns.GridColumn colPrice;
@@ -673,6 +797,7 @@
         private DevExpress.XtraGrid.Columns.GridColumn colChance;
         private DevExpress.XtraGrid.Columns.GridColumn colDAmount;
         private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit MonsterLookUpEdit;
+        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit DropListLookUpEdit;
         private DevExpress.XtraGrid.Columns.GridColumn colEffect;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn1;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn2;
@@ -680,6 +805,7 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn4;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn5;
         private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit SetLookUpEdit;
+        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit ItemLookUpEdit;
         private DevExpress.XtraGrid.Columns.GridColumn colWeight;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn6;
         private DevExpress.XtraBars.BarButtonItem barButtonItem1;
@@ -688,5 +814,12 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn7;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn8;
         private DevExpress.XtraGrid.Columns.GridColumn colIndex;
+        private DevExpress.XtraGrid.Views.Grid.GridView LootBoxView;
+        private DevExpress.XtraGrid.Columns.GridColumn Item;
+        private DevExpress.XtraGrid.Columns.GridColumn Amount;
+        private DevExpress.XtraGrid.Columns.GridColumn Chance;
+        private DevExpress.XtraGrid.Columns.GridColumn Guarenteed;
+        private DevExpress.XtraGrid.Columns.GridColumn colDropList;
+        private DevExpress.XtraGrid.Columns.GridColumn RandAmount;
     }
 }

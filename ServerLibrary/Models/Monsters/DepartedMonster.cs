@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Library;
-using Library.SystemModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -49,10 +44,11 @@ namespace Server.Models.Monsters
                                    GetDC(),
                                    element));
             }
-            
+
             foreach (MapObject target in targets)
             {
-                if (target.Dead || target.Race != ObjectType.Player) continue;
+                if (target.Dead || target.Race != ObjectType.Player)
+                    continue;
 
                 SpawnMinions(4, 0, target);
             }
@@ -60,7 +56,7 @@ namespace Server.Models.Monsters
 
         public override bool SpawnMinion(MonsterObject mob)
         {
-            return mob.Spawn(CurrentMap, CurrentLocation);
+            return mob.Spawn(CurrentMap.Info, CurrentLocation);
         }
     }
 }

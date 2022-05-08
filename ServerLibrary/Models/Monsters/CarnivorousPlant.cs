@@ -10,7 +10,7 @@ namespace Server.Models.Monsters
         public override bool CanAttack => Visible && base.CanAttack;
         public override bool CanMove => Visible && base.CanMove;
         public override bool Blocking => Visible && base.Blocking;
-        
+
         public DateTime VisibleTime;
         public int FindRange = 5;
         public int HideRange = 5;
@@ -37,14 +37,16 @@ namespace Server.Models.Monsters
         {
             base.Process();
 
-            if (Dead || SEnvir.Now < ShockTime) return;
+            if (Dead || SEnvir.Now < ShockTime)
+                return;
 
-            if (SEnvir.Now <= VisibleTime) return;
+            if (SEnvir.Now <= VisibleTime)
+                return;
 
             VisibleTime = SEnvir.Now.AddSeconds(3);
 
             bool visible = Target != null && (Functions.InRange(Target.CurrentLocation, CurrentLocation, Visible ? HideRange : FindRange) || (Visible && InAttackRange()));
-            
+
 
             if (!Visible && visible)
             {
@@ -69,7 +71,7 @@ namespace Server.Models.Monsters
                 PoisonList.Clear();
             }
         }
-        
+
         public override bool CanBeSeenBy(PlayerObject ob)
         {
             return Visible && base.CanBeSeenBy(ob);

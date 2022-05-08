@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using Library;
-using Library.SystemModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -10,18 +8,19 @@ namespace Server.Models.Monsters
     public class ArachnidGrazer : MonsterObject
     {
         public override bool CanMove => false;
-        
+
+        public DateTime SpawnDelay = SEnvir.Now;
+
         protected override bool InAttackRange()
         {
             return Target.CurrentMap == CurrentMap;
         }
 
-
         public ArachnidGrazer()
         {
-            Direction = (MirDirection) SEnvir.Random.Next(3);
+            Direction = (MirDirection)SEnvir.Random.Next(3);
         }
-        
+
         public override void ProcessAction(DelayedAction action)
         {
             switch (action.Type)
@@ -31,24 +30,28 @@ namespace Server.Models.Monsters
                     break;
             }
 
+
+
             base.ProcessAction(action);
         }
-        
+
         protected override void Attack()
         {
             Broadcast(new S.ObjectAttack { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation });
 
             UpdateAttackTime();
 
-            ActionList.Add(new DelayedAction(
-                               SEnvir.Now.AddMilliseconds(600),
-                               ActionType.Function));
+            if (SEnvir.Now > SpawnDelay)
+
+            {
+                ActionList.Add(new DelayedAction(SEnvir.Now.AddMilliseconds(600), ActionType.Function));
+                SpawnDelay = SEnvir.Now.AddSeconds(2);
+            }
         }
-        
 
         public override bool SpawnMinion(MonsterObject mob)
         {
-            return mob.Spawn(CurrentMap, Functions.Move(CurrentLocation, Functions.ShiftDirection(Direction, 3)));
+            return mob.Spawn(CurrentMap.Info, Functions.Move(CurrentLocation, Functions.ShiftDirection(Direction, 3)));
         }
     }
 }

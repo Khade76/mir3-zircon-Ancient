@@ -1,4 +1,5 @@
 ﻿using MirDB;
+using System;
 
 namespace Library.SystemModels
 {
@@ -34,10 +35,6 @@ namespace Library.SystemModels
         }
         private string _Description;
 
-        [IgnoreProperty]
-        public string ServerDescription => $"{FileName} - {Description}";
-
-
         public int MiniMap
         {
             get { return _MiniMap; }
@@ -68,6 +65,21 @@ namespace Library.SystemModels
         }
         private LightSetting _Light;
 
+        public WeatherSetting Weather
+        {
+            get { return _Weather; }
+            set
+            {
+                if (_Weather == value) return;
+
+                var oldValue = _Weather;
+                _Weather = value;
+
+                OnChanged(oldValue, value, "Weather");
+            }
+        }
+        private WeatherSetting _Weather;
+
         public FightSetting Fight
         {
             get { return _Fight; }
@@ -97,6 +109,21 @@ namespace Library.SystemModels
             }
         }
         private bool _AllowRT;
+
+        public bool AllowGEO
+        {
+            get { return _AllowGEO; }
+            set
+            {
+                if (_AllowGEO == value) return;
+
+                var oldValue = _AllowGEO;
+                _AllowGEO = value;
+
+                OnChanged(oldValue, value, "AllowGEO");
+            }
+        }
+        private bool _AllowGEO;
 
         public int SkillDelay
         {
@@ -187,9 +214,9 @@ namespace Library.SystemModels
             }
         }
         private bool _AllowRecall;
-
-        public int MinimumLevel
-        {
+        
+        
+        public int MinimumLevel{
             get { return _MinimumLevel; }
             set
             {
@@ -217,7 +244,7 @@ namespace Library.SystemModels
             }
         }
         private int _MaximumLevel;
-
+        
         public MapInfo ReconnectMap
         {
             get { return _ReconnectMap; }
@@ -311,6 +338,26 @@ namespace Library.SystemModels
         }
         private int _ExperienceRate;
 
+        public int KillStreakExperienceRate
+        {
+            get { return _KillStreakExperienceRate; }
+            set
+            {
+                if (_KillStreakExperienceRate == value) return;
+
+                var oldValue = _KillStreakExperienceRate;
+                _KillStreakExperienceRate = value;
+
+                OnChanged(oldValue, value, "KillStreakExperienceRate");
+            }
+        }
+        private int _KillStreakExperienceRate;
+
+        public DateTime KillStreakEndTime { get; set; }
+        public Boolean KillSteakActive { get; set; }
+        public int InstanceIndex { get; set; }
+
+
         public int GoldRate
         {
             get { return _GoldRate; }
@@ -400,41 +447,17 @@ namespace Library.SystemModels
             }
         }
         private int _MaxGoldRate;
+        
+        
 
-
-        [Association("Maps")]
-        public InstanceInfo Instance
-        {
-            get { return _Instance; }
-            set
-            {
-                if (_Instance == value) return;
-
-                var oldValue = _Instance;
-                _Instance = value;
-
-                OnChanged(oldValue, value, "Instance");
-            }
-        }
-        private InstanceInfo _Instance;
-
-        public RequiredClass RequiredClass
-        {
-            get => _requiredClass;
-            set
-            {
-                if (_requiredClass == value) return;
-                var oldValue = _requiredClass;
-                _requiredClass = value;
-                OnChanged(oldValue, value, nameof(RequiredClass));
-            }
-        }
-        private RequiredClass _requiredClass;
-
+        
         [Association("Guards", true)]
         public DBBindingList<GuardInfo> Guards { get; set; }
 
-        [Association("Regions", true)]
+        [Association("Flags", true)]
+        public DBBindingList<FlagInfo> Flags { get; set; }
+
+        [Association("Regions",true)]
         public DBBindingList<MapRegion> Regions { get; set; }
 
         [Association("Mining", true)]
@@ -448,6 +471,7 @@ namespace Library.SystemModels
             AllowTT = true;
             CanMarriageRecall = true;
             AllowRecall = true;
+            AllowGEO = true;
         }
 
         //Client Variables

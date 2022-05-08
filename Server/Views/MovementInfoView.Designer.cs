@@ -44,14 +44,18 @@
             this.gridColumn5 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.SpawnLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.gridColumn6 = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.MapIconImageComboBox = new DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox();
             this.gridColumn7 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn8 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn9 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.QuestInfoLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
+            this.MapIconImageComboBox = new DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MovementGridControl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MovementGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MapLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SpawnLookUpEdit)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.QuestInfoLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MapIconImageComboBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -66,14 +70,14 @@
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.ribbonPage1});
-            this.ribbon.Size = new System.Drawing.Size(733, 144);
+            this.ribbon.Size = new System.Drawing.Size(733, 143);
             // 
             // SaveButton
             // 
             this.SaveButton.Caption = "Save Database";
-            this.SaveButton.Glyph = ((System.Drawing.Image)(resources.GetObject("SaveButton.Glyph")));
             this.SaveButton.Id = 1;
-            this.SaveButton.LargeGlyph = ((System.Drawing.Image)(resources.GetObject("SaveButton.LargeGlyph")));
+            this.SaveButton.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("SaveButton.ImageOptions.Image")));
+            this.SaveButton.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("SaveButton.ImageOptions.LargeImage")));
             this.SaveButton.LargeWidth = 60;
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.SaveButton_ItemClick);
@@ -96,17 +100,18 @@
             // MovementGridControl
             // 
             this.MovementGridControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.MovementGridControl.Location = new System.Drawing.Point(0, 144);
+            this.MovementGridControl.Location = new System.Drawing.Point(0, 143);
             this.MovementGridControl.MainView = this.MovementGridView;
             this.MovementGridControl.MenuManager = this.ribbon;
             this.MovementGridControl.Name = "MovementGridControl";
             this.MovementGridControl.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
+            this.QuestInfoLookUpEdit,
             this.MapLookUpEdit,
             this.MapIconImageComboBox,
             this.ItemLookUpEdit,
             this.SpawnLookUpEdit});
             this.MovementGridControl.ShowOnlyPredefinedDetails = true;
-            this.MovementGridControl.Size = new System.Drawing.Size(733, 391);
+            this.MovementGridControl.Size = new System.Drawing.Size(733, 392);
             this.MovementGridControl.TabIndex = 2;
             this.MovementGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.MovementGridView});
@@ -120,7 +125,9 @@
             this.gridColumn4,
             this.gridColumn5,
             this.gridColumn6,
-            this.gridColumn7});
+            this.gridColumn7,
+            this.gridColumn8,
+            this.gridColumn9});
             this.MovementGridView.GridControl = this.MovementGridControl;
             this.MovementGridView.Name = "MovementGridView";
             this.MovementGridView.OptionsView.EnableAppearanceEvenRow = true;
@@ -222,19 +229,51 @@
             this.gridColumn6.Visible = true;
             this.gridColumn6.VisibleIndex = 5;
             // 
-            // MapIconImageComboBox
-            // 
-            this.MapIconImageComboBox.AutoHeight = false;
-            this.MapIconImageComboBox.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.MapIconImageComboBox.Name = "MapIconImageComboBox";
-            // 
             // gridColumn7
             // 
             this.gridColumn7.FieldName = "RequiredClass";
             this.gridColumn7.Name = "gridColumn7";
             this.gridColumn7.Visible = true;
             this.gridColumn7.VisibleIndex = 6;
+            // 
+            // gridColumn8
+            // 
+            this.gridColumn8.Caption = "CompletedQuest";
+            this.gridColumn8.ColumnEdit = this.QuestInfoLookUpEdit;
+            this.gridColumn8.FieldName = "CompletedQuest";
+            this.gridColumn8.Name = "gridColumn8";
+            this.gridColumn8.Visible = true;
+            this.gridColumn8.VisibleIndex = 7;
+            // 
+            // gridColumn9
+            // 
+            this.gridColumn9.Caption = "NotCompletedQuest";
+            this.gridColumn9.ColumnEdit = this.QuestInfoLookUpEdit;
+            this.gridColumn9.FieldName = "NotCompletedQuest";
+            this.gridColumn9.Name = "gridColumn9";
+            this.gridColumn9.Visible = true;
+            this.gridColumn9.VisibleIndex = 8;
+            // 
+            // QuestInfoLookUpEdit
+            // 
+            this.QuestInfoLookUpEdit.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
+            this.QuestInfoLookUpEdit.AutoHeight = false;
+            this.QuestInfoLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.QuestInfoLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.QuestInfoLookUpEdit.Columns.AddRange(new DevExpress.XtraEditors.Controls.LookUpColumnInfo[] {
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Index", "Index"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("QuestName", "Quest Name")});
+            this.QuestInfoLookUpEdit.DisplayMember = "QuestName";
+            this.QuestInfoLookUpEdit.Name = "QuestInfoLookUpEdit";
+            this.QuestInfoLookUpEdit.NullText = "[Quest is null]";
+            // 
+            // MapIconImageComboBox
+            // 
+            this.MapIconImageComboBox.AutoHeight = false;
+            this.MapIconImageComboBox.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.MapIconImageComboBox.Name = "MapIconImageComboBox";
             // 
             // MovementInfoView
             // 
@@ -252,6 +291,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.MapLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SpawnLookUpEdit)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.QuestInfoLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MapIconImageComboBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -277,5 +317,8 @@
         private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit SpawnLookUpEdit;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn6;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn7;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn8;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn9;
+        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit QuestInfoLookUpEdit;
     }
 }

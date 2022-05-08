@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Library</RootNamespace>
     <AssemblyName>Library</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -29,6 +29,26 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\Debug\Library\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\Release\Library\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -66,12 +86,18 @@
     <Compile Include="Stat.cs" />
     <Compile Include="SystemModels\BaseStat.cs" />
     <Compile Include="SystemModels\CastleInfo.cs" />
+    <Compile Include="SystemModels\HorseInfo.cs" />
+    <Compile Include="SystemModels\DropListInfo.cs" />
+    <Compile Include="SystemModels\LootBoxInfo.cs" />
+    <Compile Include="SystemModels\MiniGameInfo.cs" />
     <Compile Include="SystemModels\EventInfo.cs" />
     <Compile Include="SystemModels\CompanionInfo.cs" />
     <Compile Include="SystemModels\CompanionLevelInfo.cs" />
     <Compile Include="SystemModels\CompanionSkillInfo.cs" />
     <Compile Include="SystemModels\DropInfo.cs" />
+    <Compile Include="SystemModels\FlagInfo.cs" />
     <Compile Include="SystemModels\GuardInfo.cs" />
+    <Compile Include="SystemModels\CraftInfo.cs" />
     <Compile Include="SystemModels\ItemInfo.cs" />
     <Compile Include="SystemModels\ItemInfoStat.cs" />
     <Compile Include="SystemModels\MagicInfo.cs" />
@@ -87,6 +113,7 @@
     <Compile Include="SystemModels\SafeZoneInfo.cs" />
     <Compile Include="SystemModels\SetInfo.cs" />
     <Compile Include="SystemModels\SetInfoStat.cs" />
+    <Compile Include="SystemModels\FamePointInfo.cs" />
     <Compile Include="SystemModels\StoreInfo.cs" />
     <Compile Include="SystemModels\WeaponCraftStatsInfo.cs" />
     <Compile Include="Time.cs" />

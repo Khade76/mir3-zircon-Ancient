@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using DevExpress.XtraBars;
 using Library.SystemModels;
 
@@ -19,7 +12,7 @@ namespace Server.Views
 
 
             CastleInfoGridControl.DataSource = SMain.Session.GetCollection<CastleInfo>().Binding;
-            
+
             MonsterLookUpEdit.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding;
             RegionLookUpEdit.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
             MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapInfo>().Binding;
@@ -36,6 +29,11 @@ namespace Server.Views
         private void SaveButton_ItemClick(object sender, ItemClickEventArgs e)
         {
             SMain.Session.Save(true);
+        }
+
+        private void CastleInfoGridControl_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

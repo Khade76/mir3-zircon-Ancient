@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.SystemModels;
 using Server.Envir;
@@ -22,7 +18,7 @@ namespace Server.Models.Monsters
             switch (action.Type)
             {
                 case ActionType.DelayAttack:
-                    Attack((MapObject) action.Data[0]);
+                    Attack((MapObject)action.Data[0]);
                     return;
             }
 
@@ -52,7 +48,7 @@ namespace Server.Models.Monsters
             MapDropRate *= 10;
             MapGoldRate *= 30;
         }
-        
+
         public override bool ShouldAttackTarget(MapObject ob)
         {
             return CanAttackTarget(ob);
@@ -60,7 +56,8 @@ namespace Server.Models.Monsters
 
         public override bool CanAttackTarget(MapObject ob)
         {
-            if (ob?.Node == null || ob.Dead || !ob.Visible || ob is Guard || ob is CastleLord || ob == this) return false;
+            if (ob.HasNoNode() || ob.Dead || !ob.Visible || ob is Guard || ob is CastleLord || ob == this)
+                return false;
 
             switch (ob.Race)
             {
@@ -68,9 +65,9 @@ namespace Server.Models.Monsters
                     return base.CanAttackTarget(ob);
 
                 case ObjectType.Monster:
-                    MonsterObject mob = (MonsterObject) ob;
+                    MonsterObject mob = (MonsterObject)ob;
 
-                    return !mob.MonsterInfo.IsBoss ;
+                    return !mob.MonsterInfo.IsBoss;
                 default:
                     return false;
             }
@@ -87,8 +84,8 @@ namespace Server.Models.Monsters
             Point targetBack = Functions.Move(Target.CurrentLocation, Target.Direction, -1);
 
 
-            Broadcast(new S.ObjectAttack {ObjectID = ObjectID, Direction = Target.Direction, Location = targetBack});
-            Broadcast(new S.ObjectTurn {ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation});
+            Broadcast(new S.ObjectAttack { ObjectID = ObjectID, Direction = Target.Direction, Location = targetBack });
+            Broadcast(new S.ObjectTurn { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation });
 
 
             UpdateAttackTime();
@@ -102,13 +99,14 @@ namespace Server.Models.Monsters
 
         private void Attack(MapObject ob)
         {
-            if (ob?.Node == null || ob.Dead) return;
+            if (ob.HasNoNode() || ob.Dead)
+                return;
 
             int power;
             MonsterObject mob = null;
             if (ob.Race == ObjectType.Monster)
             {
-                mob = (MonsterObject) ob;
+                mob = (MonsterObject)ob;
                 if (mob.PetOwner == null)
                 {
                     mob.EXPOwner = null;
@@ -130,10 +128,11 @@ namespace Server.Models.Monsters
 
         public override void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
 
         public override void DeActivate()
@@ -144,7 +143,8 @@ namespace Server.Models.Monsters
         {
             base.Die();
 
-            if (CurrentMap.HasSafeZone) return;
+            if (CurrentMap.HasSafeZone)
+                return;
 
             if (SEnvir.Random.Next(2) == 0)
             {
@@ -154,14 +154,15 @@ namespace Server.Models.Monsters
                 {
                     boss = SEnvir.BossList[SEnvir.Random.Next(SEnvir.BossList.Count)];
 
-                    if (boss.Level >= 300) continue;
+                    if (boss.Level >= 300)
+                        continue;
 
                     break;
                 }
 
                 MonsterObject mob = GetMonster(boss);
 
-                mob.Spawn(CurrentMap, CurrentMap.GetRandomLocation(CurrentLocation, 2));
+                mob.Spawn(CurrentMap.Info, CurrentMap.GetRandomLocation(CurrentLocation, 2));
             }
             else
             {
@@ -169,17 +170,23 @@ namespace Server.Models.Monsters
                 {
                     MonsterObject mob = CurrentMap.Objects[i] as MonsterObject;
 
-                    if (mob == null) continue;
+                    if (mob == null)
+                        continue;
 
-                    if (mob.PetOwner != null) continue;
+                    if (mob.PetOwner != null)
+                        continue;
 
-                    if (mob is Guard) continue;
+                    if (mob is Guard)
+                        continue;
 
-                    if (mob.Dead || mob.MoveDelay == 0 || !mob.CanMove) continue;
+                    if (mob.Dead || mob.MoveDelay == 0 || !mob.CanMove)
+                        continue;
 
-                    if (mob.Target != null) continue;
+                    if (mob.Target != null)
+                        continue;
 
-                    if (mob.Level >= 300) continue;
+                    if (mob.Level >= 300)
+                        continue;
 
                     mob.Teleport(CurrentMap, CurrentMap.GetRandomLocation(CurrentLocation, 15));
                 }

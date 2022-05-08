@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
-using Library.SystemModels;
 using Server.DBModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -17,17 +13,22 @@ namespace Server.Models.Monsters
 
         public override int Attacked(MapObject attacker, int power, Element element, bool canReflect = true, bool ignoreShield = false, bool canCrit = true, bool canStruck = true)
         {
-            if (attacker == null || attacker.Race != ObjectType.Player) return 0;
+            if (attacker == null || attacker.Race != ObjectType.Player)
+                return 0;
 
-            PlayerObject player = (PlayerObject) attacker;
+            PlayerObject player = (PlayerObject)attacker;
 
-            if (War == null) return 0;
+            if (War == null)
+                return 0;
 
-            if (player.Character.Account.GuildMember == null) return 0;
+            if (player.Character.Account.GuildMember == null)
+                return 0;
 
-            if (player.Character.Account.GuildMember.Guild.Castle != null) return 0;
+            if (player.Character.Account.GuildMember.Guild.Castle != null)
+                return 0;
 
-            if (War.Participants.Count > 0 && !War.Participants.Contains(player.Character.Account.GuildMember.Guild)) return 0;
+            if (War.Participants.Count > 0 && !War.Participants.Contains(player.Character.Account.GuildMember.Guild))
+                return 0;
 
             int result = base.Attacked(attacker, 1, element, canReflect, ignoreShield, canCrit);
 
@@ -36,13 +37,13 @@ namespace Server.Models.Monsters
             switch (attacker.Race)
             {
                 case ObjectType.Player:
-                    UserConquestStats conquest = SEnvir.GetConquestStats((PlayerObject) attacker);
+                    UserConquestStats conquest = SEnvir.GetConquestStats((PlayerObject)attacker);
 
                     if (conquest != null)
                         conquest.BossDamageDealt += result;
                     break;
                 case ObjectType.Monster:
-                    MonsterObject mob = (MonsterObject) attacker;
+                    MonsterObject mob = (MonsterObject)attacker;
                     if (mob.PetOwner != null)
                     {
                         conquest = SEnvir.GetConquestStats(mob.PetOwner);
@@ -67,10 +68,13 @@ namespace Server.Models.Monsters
             return false;
         }
 
-        public override void ProcessRegen() { }
+        public override void ProcessRegen()
+        {
+        }
         public override bool ShouldAttackTarget(MapObject ob)
         {
-            if (Passive || ob == this || ob?.Node == null || ob.Dead || !ob.Visible || ob is Guard || ob is CastleLord) return false;
+            if (Passive || ob == this || ob.HasNoNode() || ob.Dead || !ob.Visible || ob is Guard || ob is CastleLord)
+                return false;
 
             switch (ob.Race)
             {
@@ -81,20 +85,26 @@ namespace Server.Models.Monsters
                     return false;
             }
 
-            if (ob.Buffs.Any(x => x.Type == BuffType.Invisibility) && !CoolEye) return false;
+            if (ob.Buffs.Any(x => x.Type == BuffType.Invisibility) && !CoolEye)
+                return false;
             if (ob.Buffs.Any(x => x.Type == BuffType.Cloak))
             {
-                if (!CoolEye) return false;
-                if (!Functions.InRange(ob.CurrentLocation, CurrentLocation, 2)) return false;
-                if (ob.Level >= Level) return false;
+                if (!CoolEye)
+                    return false;
+                if (!Functions.InRange(ob.CurrentLocation, CurrentLocation, 2))
+                    return false;
+                if (ob.Level >= Level)
+                    return false;
             }
-            if (ob.Buffs.Any(x => x.Type == BuffType.Transparency)) return false;
+            if (ob.Buffs.Any(x => x.Type == BuffType.Transparency))
+                return false;
 
             switch (ob.Race)
             {
                 case ObjectType.Player:
-                    PlayerObject player = (PlayerObject) ob;
-                    if (player.GameMaster) return false;
+                    PlayerObject player = (PlayerObject)ob;
+                    if (player.GameMaster)
+                        return false;
 
                     return player.Character.Account.GuildMember?.Guild.Castle != War.Castle;
                 default:
@@ -103,7 +113,8 @@ namespace Server.Models.Monsters
         }
         public override bool CanAttackTarget(MapObject ob)
         {
-            if (ob == this || ob?.Node == null || ob.Dead || !ob.Visible || ob is Guard || War == null) return false;
+            if (ob == this || ob.HasNoNode() || ob.Dead || !ob.Visible || ob is Guard || War == null)
+                return false;
 
             switch (ob.Race)
             {
@@ -113,13 +124,14 @@ namespace Server.Models.Monsters
                 case ObjectType.Monster:
                     return false;
             }
-            
+
             switch (ob.Race)
             {
                 case ObjectType.Player:
-                    PlayerObject player = (PlayerObject) ob;
+                    PlayerObject player = (PlayerObject)ob;
 
-                    if (player.GameMaster) return false;
+                    if (player.GameMaster)
+                        return false;
 
                     return player.Character.Account.GuildMember?.Guild.Castle != War.Castle;
                 default:
@@ -132,17 +144,21 @@ namespace Server.Models.Monsters
         {
             if (War != null)
             {
-                if (EXPOwner?.Node == null) return;
+                if (EXPOwner.HasNoNode())
+                    return;
 
-                if (EXPOwner.Character.Account.GuildMember == null) return;
+                if (EXPOwner.Character.Account.GuildMember == null)
+                    return;
 
-                if (EXPOwner.Character.Account.GuildMember.Guild.Castle != null) return;
+                if (EXPOwner.Character.Account.GuildMember.Guild.Castle != null)
+                    return;
 
-                if (War.Participants.Count > 0 && !War.Participants.Contains(EXPOwner.Character.Account.GuildMember.Guild)) return;
+                if (War.Participants.Count > 0 && !War.Participants.Contains(EXPOwner.Character.Account.GuildMember.Guild))
+                    return;
 
                 #region Conquest Stats
 
-                UserConquestStats conquest = SEnvir.GetConquestStats((PlayerObject) EXPOwner);
+                UserConquestStats conquest = SEnvir.GetConquestStats(EXPOwner);
 
                 if (conquest != null)
                     conquest.BossKillCount++;
@@ -156,11 +172,11 @@ namespace Server.Models.Monsters
 
                 EXPOwner.Character.Account.GuildMember.Guild.Castle = War.Castle;
 
-                foreach (SConnection con in SEnvir.Connections)
+                foreach (SConnection con in SEnvir.AuthenticatedConnections)
                     con.ReceiveChat(string.Format(con.Language.ConquestCapture, EXPOwner.Character.Account.GuildMember.Guild.GuildName, War.Castle.Name), MessageType.System);
 
                 SEnvir.Broadcast(new S.GuildCastleInfo { Index = War.Castle.Index, Owner = EXPOwner.Character.Account.GuildMember.Guild.GuildName });
-
+                SEnvir.CastleGuildFlagChange(War.Castle, EXPOwner.Character.Account.GuildMember.Guild);
                 War.CastleBoss = null;
 
                 War.PingPlayers();

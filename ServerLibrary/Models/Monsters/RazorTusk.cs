@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -10,8 +9,10 @@ namespace Server.Models.Monsters
     {
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
 
             return Functions.InRange(CurrentLocation, Target.CurrentLocation, 3);
         }
@@ -40,7 +41,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (InAttackRange() && CanAttack && SEnvir.Random.Next(3) > 0)
                 Attack();
@@ -52,7 +54,8 @@ namespace Server.Models.Monsters
 
                 for (int d = 0; d < 8; d++)
                 {
-                    if (Walk(direction)) break;
+                    if (Walk(direction))
+                        break;
 
                     direction = Functions.ShiftDirection(direction, rotation);
                 }
@@ -68,7 +71,7 @@ namespace Server.Models.Monsters
         protected override void Attack()
         {
             Direction = Functions.DirectionFromPoint(CurrentLocation, Target.CurrentLocation);
-            
+
             UpdateAttackTime();
 
             if (Functions.InRange(CurrentLocation, Target.CurrentLocation, 1))

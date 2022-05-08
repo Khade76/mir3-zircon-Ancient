@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using Library;
 using Library.SystemModels;
 using Server.Envir;
+using Server.Util;
 using Server.Views.DirectX;
 using SlimDX;
 using SlimDX.Direct3D9;
@@ -23,20 +24,27 @@ namespace Server.Views
 {
     public partial class MapViewer : DevExpress.XtraBars.Ribbon.RibbonForm
     {
+        private AccurateTimer processTimer = null;
         public static MapViewer CurrentViewer;
         public DXManager Manager;
         public MapControl Map;
 
         public DateTime AnimationTime;
+        private Boolean loaded = false;
+        private Boolean rendering = false;
 
         #region MapRegion
 
         public MapRegion MapRegion
         {
-            get { return _MapRegion; }
+            get
+            {
+                return _MapRegion;
+            }
             set
             {
-                if (_MapRegion == value) return;
+                if (_MapRegion == value)
+                    return;
 
                 MapRegion oldValue = _MapRegion;
                 _MapRegion = value;
@@ -70,8 +78,8 @@ namespace Server.Views
 
         #endregion
 
-        
-        
+
+
 
 
         public MapViewer()
@@ -79,11 +87,21 @@ namespace Server.Views
             InitializeComponent();
 
             CurrentViewer = this;
+            processTimer = new AccurateTimer(Process, 500);
         }
+
+
 
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
+            loaded = false;
+            if (rendering) return;
+            if (processTimer != null)
+            {
+                processTimer.Stop();
+                processTimer = null;
+            }
 
             if (CurrentViewer == this)
                 CurrentViewer = null;
@@ -102,10 +120,11 @@ namespace Server.Views
             {
                 Size = DXPanel.ClientSize,
             };
-            
+
             DXPanel.MouseWheel += DXPanel_MouseWheel;
-            
+
             UpdateScrollBars();
+            loaded = true;
         }
 
 
@@ -113,19 +132,25 @@ namespace Server.Views
         {
             base.OnSizeChanged(e);
 
-            if (Manager == null) return;
+            if (Manager == null)
+                return;
 
             Manager.ResetDevice();
             Map.Size = DXPanel.ClientSize;
 
-            
+
             UpdateScrollBars();
         }
 
         public void Process()
         {
-            UpdateEnvironment();
-            RenderEnvironment();
+            if (loaded && !rendering)
+            {
+                rendering = true;
+                UpdateEnvironment();
+                RenderEnvironment();
+                rendering = false;
+            }
         }
 
         private void UpdateEnvironment()
@@ -165,13 +190,12 @@ namespace Server.Views
             }
             catch (Exception ex)
             {
-                SEnvir.Log(ex.ToString());
-
+                SEnvir.LogError(ex);
                 Manager.AttemptRecovery();
             }
         }
 
-       
+
         public void UpdateScrollBars()
         {
             if (Map.Width == 0 || Map.Height == 0)
@@ -277,17 +301,18 @@ namespace Server.Views
 
         public void Save()
         {
-            if (MapRegion == null) return;
+            if (MapRegion == null)
+                return;
 
             BitArray bitRegion = null;
             Point[] pointRegion = null;
 
-            if (Map.Selection.Count*8*8 > Map.Width*Map.Height)
+            if (Map.Selection.Count * 8 * 8 > Map.Width * Map.Height)
             {
-                bitRegion = new BitArray(Map.Width*Map.Height);
+                bitRegion = new BitArray(Map.Width * Map.Height);
 
                 foreach (Point point in Map.Selection)
-                    bitRegion[point.Y*Map.Width + point.X] = true;
+                    bitRegion[point.Y * Map.Width + point.X] = true;
             }
             else
             {
@@ -302,20 +327,21 @@ namespace Server.Views
 
         private void CancelButton_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            if (MapRegion == null) return;
+            if (MapRegion == null)
+                return;
 
             Map.Selection = MapRegion.GetPoints(Map.Width);
 
             Map.TextureValid = false;
         }
     }
-    
+
 
 }
 
 
 namespace Server.Views.DirectX
-{ 
+{
     public class DXManager : IDisposable
     {
         public Graphics Graphics;
@@ -324,21 +350,45 @@ namespace Server.Views.DirectX
 
         public Dictionary<LibraryFile, MirLibrary> LibraryList = new Dictionary<LibraryFile, MirLibrary>();
 
-        public PresentParameters Parameters { get; private set; }
-        public Device Device { get; private set; }
-        public Sprite Sprite { get; private set; }
-        public Line Line { get; private set; }
+        public PresentParameters Parameters
+        {
+            get; private set;
+        }
+        public Device Device
+        {
+            get; private set;
+        }
+        public Sprite Sprite
+        {
+            get; private set;
+        }
+        public Line Line
+        {
+            get; private set;
+        }
 
-        public Surface CurrentSurface { get; private set; }
-        public Surface MainSurface { get; private set; }
+        public Surface CurrentSurface
+        {
+            get; private set;
+        }
+        public Surface MainSurface
+        {
+            get; private set;
+        }
 
         public float Opacity { get; private set; } = 1F;
 
-        public bool Blending { get; private set; }
+        public bool Blending
+        {
+            get; private set;
+        }
         public float BlendRate { get; private set; } = 1F;
 
-        public bool DeviceLost { get; set; }
-        
+        public bool DeviceLost
+        {
+            get; set;
+        }
+
         public List<MirImage> TextureList { get; } = new List<MirImage>();
 
         public Texture AttributeTexture;
@@ -352,10 +402,11 @@ namespace Server.Views.DirectX
             Graphics = Graphics.FromHwnd(IntPtr.Zero);
             ConfigureGraphics(Graphics);
 
-            
+
             foreach (KeyValuePair<LibraryFile, string> pair in Libraries.LibraryList)
             {
-                if (!File.Exists(Path.Combine(Config.ClientPath, pair.Value))) continue;
+                if (!File.Exists(Path.Combine(Config.ClientPath, pair.Value)))
+                    continue;
 
                 LibraryList[pair.Key] = new MirLibrary(Path.Combine(Config.ClientPath, pair.Value), this);
             }
@@ -364,24 +415,32 @@ namespace Server.Views.DirectX
 
         public void Create()
         {
-            Parameters = new PresentParameters
+            try
             {
-                Windowed = true,
-                SwapEffect = SwapEffect.Discard,
-                BackBufferFormat = Format.X8R8G8B8,
-                PresentationInterval = PresentInterval.Default,
-                BackBufferWidth = Target.ClientSize.Width,
-                BackBufferHeight = Target.ClientSize.Height,
-                PresentFlags = PresentFlags.LockableBackBuffer,
-            };
 
-            Direct3D direct3D = new Direct3D();
+                Parameters = new PresentParameters
+                {
+                    Windowed = true,
+                    SwapEffect = SwapEffect.Discard,
+                    BackBufferFormat = Format.X8R8G8B8,
+                    PresentationInterval = PresentInterval.Default,
+                    BackBufferWidth = Target.ClientSize.Width,
+                    BackBufferHeight = Target.ClientSize.Height,
+                    PresentFlags = PresentFlags.LockableBackBuffer,
+                };
 
-            Device = new Device(direct3D, direct3D.Adapters.DefaultAdapter.Adapter, DeviceType.Hardware, Target.Handle, CreateFlags.HardwareVertexProcessing, Parameters);
+                Direct3D direct3D = new Direct3D();
 
-            LoadTextures();
+                Device = new Device(direct3D, direct3D.Adapters.DefaultAdapter.Adapter, DeviceType.Hardware, Target.Handle, CreateFlags.HardwareVertexProcessing, Parameters);
 
-            Device.SetDialogBoxMode(true);
+                LoadTextures();
+
+                Device.SetDialogBoxMode(true);
+            }
+            catch (Exception ex)
+            {
+                SEnvir.LogError(ex);
+            }
         }
 
         private unsafe void LoadTextures()
@@ -447,7 +506,8 @@ namespace Server.Views.DirectX
 
         public void SetSurface(Surface surface)
         {
-            if (CurrentSurface == surface) return;
+            if (CurrentSurface == surface)
+                return;
 
             Sprite.Flush();
             CurrentSurface = surface;
@@ -484,7 +544,8 @@ namespace Server.Views.DirectX
         }
         public void SetBlend(bool value, float rate = 1F)
         {
-            if (value == Blending) return;
+            if (value == Blending)
+                return;
 
             Blending = value;
             BlendRate = 1F;
@@ -533,8 +594,9 @@ namespace Server.Views.DirectX
 
             DeviceLost = true;
 
-            if (Parameters == null || Target.ClientSize.Width == 0 || Target.ClientSize.Height == 0) return;
-            
+            if (Parameters == null || Target.ClientSize.Width == 0 || Target.ClientSize.Height == 0)
+                return;
+
             Parameters.BackBufferWidth = Target.ClientSize.Width;
             Parameters.BackBufferHeight = Target.ClientSize.Height;
 
@@ -547,7 +609,8 @@ namespace Server.Views.DirectX
             {
                 Result result = Device.TestCooperativeLevel();
 
-                if (result.Code == ResultCode.DeviceLost.Code) return;
+                if (result.Code == ResultCode.DeviceLost.Code)
+                    return;
 
                 if (result.Code == ResultCode.DeviceNotReset.Code)
                 {
@@ -555,13 +618,14 @@ namespace Server.Views.DirectX
                     return;
                 }
 
-                if (result.Code != ResultCode.Success.Code) return;
+                if (result.Code != ResultCode.Success.Code)
+                    return;
 
                 DeviceLost = false;
             }
             catch (Exception ex)
             {
-                SEnvir.SaveError(ex.ToString());
+                SEnvir.LogError(ex);
             }
         }
         public void AttemptRecovery()
@@ -606,7 +670,10 @@ namespace Server.Views.DirectX
 
         #region IDisposable Support
 
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed
+        {
+            get; private set;
+        }
 
         private void Dispose(bool disposing)
         {
@@ -723,7 +790,8 @@ namespace Server.Views.DirectX
         {
             lock (LoadLocker)
             {
-                if (Loading) return;
+                if (Loading)
+                    return;
                 Loading = true;
             }
 
@@ -740,7 +808,8 @@ namespace Server.Views.DirectX
 
                 for (int i = 0; i < Images.Length; i++)
                 {
-                    if (!reader.ReadBoolean()) continue;
+                    if (!reader.ReadBoolean())
+                        continue;
 
                     Images[i] = new MirImage(reader, Manager);
                 }
@@ -753,25 +822,29 @@ namespace Server.Views.DirectX
 
         public Size GetSize(int index)
         {
-            if (!CheckImage(index)) return Size.Empty;
+            if (!CheckImage(index))
+                return Size.Empty;
 
             return new Size(Images[index].Width, Images[index].Height);
         }
         public Point GetOffSet(int index)
         {
-            if (!CheckImage(index)) return Point.Empty;
+            if (!CheckImage(index))
+                return Point.Empty;
 
             return new Point(Images[index].OffSetX, Images[index].OffSetY);
         }
         public MirImage GetImage(int index)
         {
-            if (!CheckImage(index)) return null;
+            if (!CheckImage(index))
+                return null;
 
             return Images[index];
         }
         public MirImage CreateImage(int index, ImageType type)
         {
-            if (!CheckImage(index)) return null;
+            if (!CheckImage(index))
+                return null;
 
             MirImage image = Images[index];
 
@@ -780,29 +853,34 @@ namespace Server.Views.DirectX
             switch (type)
             {
                 case ImageType.Image:
-                    if (!image.ImageValid) image.CreateImage(_BReader);
+                    if (!image.ImageValid)
+                        image.CreateImage(_BReader);
                     texture = image.Image;
                     break;
                 case ImageType.Shadow:
-                    if (!image.ShadowValid) image.CreateShadow(_BReader);
+                    if (!image.ShadowValid)
+                        image.CreateShadow(_BReader);
                     texture = image.Shadow;
                     break;
                 case ImageType.Overlay:
-                    if (!image.OverlayValid) image.CreateOverlay(_BReader);
+                    if (!image.OverlayValid)
+                        image.CreateOverlay(_BReader);
                     texture = image.Overlay;
                     break;
                 default:
                     return null;
             }
 
-            if (texture == null) return null;
+            if (texture == null)
+                return null;
 
             return image;
         }
 
         private bool CheckImage(int index)
         {
-            if (!Loaded) ReadLibrary();
+            if (!Loaded)
+                ReadLibrary();
 
             while (!Loaded)
                 Thread.Sleep(1);
@@ -812,7 +890,8 @@ namespace Server.Views.DirectX
 
         public bool VisiblePixel(int index, Point location, bool accurate = true, bool offSet = false)
         {
-            if (!CheckImage(index)) return false;
+            if (!CheckImage(index))
+                return false;
 
             MirImage image = Images[index];
 
@@ -824,7 +903,8 @@ namespace Server.Views.DirectX
 
         public void Draw(int index, float x, float y, Color4 colour, Rectangle area, float opacity, ImageType type, byte shadow = 0)
         {
-            if (!CheckImage(index)) return;
+            if (!CheckImage(index))
+                return;
 
             MirImage image = Images[index];
 
@@ -834,16 +914,19 @@ namespace Server.Views.DirectX
             switch (type)
             {
                 case ImageType.Image:
-                    if (!image.ImageValid) image.CreateImage(_BReader);
+                    if (!image.ImageValid)
+                        image.CreateImage(_BReader);
                     texture = image.Image;
                     break;
                 case ImageType.Shadow:
-                    if (!image.ShadowValid) image.CreateShadow(_BReader);
+                    if (!image.ShadowValid)
+                        image.CreateShadow(_BReader);
                     texture = image.Shadow;
 
                     if (texture == null)
                     {
-                        if (!image.ImageValid) image.CreateImage(_BReader);
+                        if (!image.ImageValid)
+                            image.CreateImage(_BReader);
                         texture = image.Image;
 
                         switch (image.ShadowType)
@@ -857,7 +940,8 @@ namespace Server.Views.DirectX
                                 Manager.Sprite.Transform = m * Matrix.Translation(x + image.Height / 2, y, 0);
 
                                 Manager.Device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.None);
-                                if (oldOpacity != 0.5F) Manager.SetOpacity(0.5F);
+                                if (oldOpacity != 0.5F)
+                                    Manager.SetOpacity(0.5F);
 
                                 Manager.Sprite.Draw(texture, Vector3.Zero, Vector3.Zero, Color.Black);
 
@@ -868,7 +952,8 @@ namespace Server.Views.DirectX
                                 image.ExpireTime = SEnvir.Now.AddMinutes(10);
                                 break;
                             case 50:
-                                if (oldOpacity != 0.5F) Manager.SetOpacity(0.5F);
+                                if (oldOpacity != 0.5F)
+                                    Manager.SetOpacity(0.5F);
 
                                 Manager.Sprite.Draw(texture, Vector3.Zero, new Vector3(x, y, 0), Color.Black);
 
@@ -884,14 +969,16 @@ namespace Server.Views.DirectX
                     }
                     break;
                 case ImageType.Overlay:
-                    if (!image.OverlayValid) image.CreateOverlay(_BReader);
+                    if (!image.OverlayValid)
+                        image.CreateOverlay(_BReader);
                     texture = image.Overlay;
                     break;
                 default:
                     return;
             }
 
-            if (texture == null) return;
+            if (texture == null)
+                return;
 
             Manager.SetOpacity(opacity);
 
@@ -903,7 +990,8 @@ namespace Server.Views.DirectX
         }
         public void Draw(int index, float x, float y, Color4 colour, bool useOffSet, float opacity, ImageType type)
         {
-            if (!CheckImage(index)) return;
+            if (!CheckImage(index))
+                return;
 
             MirImage image = Images[index];
 
@@ -913,7 +1001,8 @@ namespace Server.Views.DirectX
             switch (type)
             {
                 case ImageType.Image:
-                    if (!image.ImageValid) image.CreateImage(_BReader);
+                    if (!image.ImageValid)
+                        image.CreateImage(_BReader);
                     texture = image.Image;
                     if (useOffSet)
                     {
@@ -922,7 +1011,8 @@ namespace Server.Views.DirectX
                     }
                     break;
                 case ImageType.Shadow:
-                    if (!image.ShadowValid) image.CreateShadow(_BReader);
+                    if (!image.ShadowValid)
+                        image.CreateShadow(_BReader);
                     texture = image.Shadow;
 
                     if (useOffSet)
@@ -934,7 +1024,8 @@ namespace Server.Views.DirectX
 
                     if (texture == null)
                     {
-                        if (!image.ImageValid) image.CreateImage(_BReader);
+                        if (!image.ImageValid)
+                            image.CreateImage(_BReader);
                         texture = image.Image;
 
                         switch (image.ShadowType)
@@ -948,7 +1039,8 @@ namespace Server.Views.DirectX
                                 Manager.Sprite.Transform = m * Matrix.Translation(x + image.Height / 2, y, 0);
 
                                 Manager.Device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.None);
-                                if (oldOpacity != 0.5F) Manager.SetOpacity(0.5F);
+                                if (oldOpacity != 0.5F)
+                                    Manager.SetOpacity(0.5F);
 
                                 Manager.Sprite.Draw(texture, Vector3.Zero, Vector3.Zero, Color.Black);
 
@@ -959,7 +1051,8 @@ namespace Server.Views.DirectX
                                 image.ExpireTime = SEnvir.Now.AddMinutes(10);
                                 break;
                             case 50:
-                                if (oldOpacity != 0.5F) Manager.SetOpacity(0.5F);
+                                if (oldOpacity != 0.5F)
+                                    Manager.SetOpacity(0.5F);
 
                                 Manager.Sprite.Draw(texture, Vector3.Zero, new Vector3(x, y, 0), Color.Black);
 
@@ -976,7 +1069,8 @@ namespace Server.Views.DirectX
 
                     break;
                 case ImageType.Overlay:
-                    if (!image.OverlayValid) image.CreateOverlay(_BReader);
+                    if (!image.OverlayValid)
+                        image.CreateOverlay(_BReader);
                     texture = image.Overlay;
 
                     if (useOffSet)
@@ -989,7 +1083,8 @@ namespace Server.Views.DirectX
                     return;
             }
 
-            if (texture == null) return;
+            if (texture == null)
+                return;
 
             Manager.SetOpacity(opacity);
 
@@ -1001,7 +1096,8 @@ namespace Server.Views.DirectX
         }
         public void DrawBlend(int index, float x, float y, Color4 colour, bool useOffSet, float rate, ImageType type, byte shadow = 0)
         {
-            if (!CheckImage(index)) return;
+            if (!CheckImage(index))
+                return;
 
             MirImage image = Images[index];
 
@@ -1010,7 +1106,8 @@ namespace Server.Views.DirectX
             switch (type)
             {
                 case ImageType.Image:
-                    if (!image.ImageValid) image.CreateImage(_BReader);
+                    if (!image.ImageValid)
+                        image.CreateImage(_BReader);
                     texture = image.Image;
                     if (useOffSet)
                     {
@@ -1021,7 +1118,8 @@ namespace Server.Views.DirectX
                 case ImageType.Shadow:
                     return;
                 case ImageType.Overlay:
-                    if (!image.OverlayValid) image.CreateOverlay(_BReader);
+                    if (!image.OverlayValid)
+                        image.CreateOverlay(_BReader);
                     texture = image.Overlay;
 
                     if (useOffSet)
@@ -1033,7 +1131,8 @@ namespace Server.Views.DirectX
                 default:
                     return;
             }
-            if (texture == null) return;
+            if (texture == null)
+                return;
 
 
             bool oldBlend = Manager.Blending;
@@ -1051,7 +1150,10 @@ namespace Server.Views.DirectX
 
         #region IDisposable Support
 
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed
+        {
+            get; private set;
+        }
 
         private void Dispose(bool disposing)
         {
@@ -1094,7 +1196,7 @@ namespace Server.Views.DirectX
         #endregion
 
     }
-    
+
     public sealed class MirImage : IDisposable
     {
         public int Position;
@@ -1109,7 +1211,10 @@ namespace Server.Views.DirectX
         public short OffSetY;
         public byte ShadowType;
         public Texture Image;
-        public bool ImageValid { get; private set; }
+        public bool ImageValid
+        {
+            get; private set;
+        }
         public unsafe byte* ImageData;
         public int ImageDataSize
         {
@@ -1131,7 +1236,10 @@ namespace Server.Views.DirectX
         public short ShadowOffSetY;
 
         public Texture Shadow;
-        public bool ShadowValid { get; private set; }
+        public bool ShadowValid
+        {
+            get; private set;
+        }
         public unsafe byte* ShadowData;
         public int ShadowDataSize
         {
@@ -1150,7 +1258,10 @@ namespace Server.Views.DirectX
         public short OverlayHeight;
 
         public Texture Overlay;
-        public bool OverlayValid { get; private set; }
+        public bool OverlayValid
+        {
+            get; private set;
+        }
         public unsafe byte* OverlayData;
         public int OverlayDataSize
         {
@@ -1190,7 +1301,8 @@ namespace Server.Views.DirectX
 
         public unsafe bool VisiblePixel(Point p, bool acurrate)
         {
-            if (p.X < 0 || p.Y < 0 || !ImageValid || ImageData == null) return false;
+            if (p.X < 0 || p.Y < 0 || !ImageValid || ImageData == null)
+                return false;
 
             int w = Width + (4 - Width % 4) % 4;
             int h = Height + (4 - Height % 4) % 4;
@@ -1204,9 +1316,11 @@ namespace Server.Views.DirectX
 
             int col0 = ImageData[index + 1] << 8 | ImageData[index], col1 = ImageData[index + 3] << 8 | ImageData[index + 2];
 
-            if (col0 == 0 && col1 == 0) return false;
+            if (col0 == 0 && col1 == 0)
+                return false;
 
-            if (!acurrate || col1 < col0) return true;
+            if (!acurrate || col1 < col0)
+                return true;
 
             x = p.X % 4;
             y = p.Y % 4;
@@ -1246,12 +1360,14 @@ namespace Server.Views.DirectX
 
         public unsafe void CreateImage(BinaryReader reader)
         {
-            if (Position == 0) return;
+            if (Position == 0)
+                return;
 
             int w = Width + (4 - Width % 4) % 4;
             int h = Height + (4 - Height % 4) % 4;
 
-            if (w == 0 || h == 0) return;
+            if (w == 0 || h == 0)
+                return;
 
             Image = new Texture(Manager.Device, w, h, 1, Usage.None, Format.Dxt1, Pool.Managed);
             DataRectangle rect = Image.LockRectangle(0, LockFlags.Discard);
@@ -1272,7 +1388,8 @@ namespace Server.Views.DirectX
         }
         public unsafe void CreateShadow(BinaryReader reader)
         {
-            if (Position == 0) return;
+            if (Position == 0)
+                return;
 
             if (!ImageValid)
                 CreateImage(reader);
@@ -1280,7 +1397,8 @@ namespace Server.Views.DirectX
             int w = ShadowWidth + (4 - ShadowWidth % 4) % 4;
             int h = ShadowHeight + (4 - ShadowHeight % 4) % 4;
 
-            if (w == 0 || h == 0) return;
+            if (w == 0 || h == 0)
+                return;
 
             Shadow = new Texture(Manager.Device, w, h, 1, Usage.None, Format.Dxt1, Pool.Managed);
             DataRectangle rect = Shadow.LockRectangle(0, LockFlags.Discard);
@@ -1299,7 +1417,8 @@ namespace Server.Views.DirectX
         }
         public unsafe void CreateOverlay(BinaryReader reader)
         {
-            if (Position == 0) return;
+            if (Position == 0)
+                return;
 
             if (!ImageValid)
                 CreateImage(reader);
@@ -1307,7 +1426,8 @@ namespace Server.Views.DirectX
             int w = OverlayWidth + (4 - OverlayWidth % 4) % 4;
             int h = OverlayHeight + (4 - OverlayHeight % 4) % 4;
 
-            if (w == 0 || h == 0) return;
+            if (w == 0 || h == 0)
+                return;
 
             Overlay = new Texture(Manager.Device, w, h, 1, Usage.None, Format.Dxt1, Pool.Managed);
             DataRectangle rect = Overlay.LockRectangle(0, LockFlags.Discard);
@@ -1328,7 +1448,10 @@ namespace Server.Views.DirectX
 
         #region IDisposable Support
 
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed
+        {
+            get; private set;
+        }
 
         public void Dispose(bool disposing)
         {
@@ -1379,7 +1502,7 @@ namespace Server.Views.DirectX
     public class MapControl : IDisposable
     {
         public DXManager Manager;
-        
+
         public MapControl(DXManager manager)
         {
             Manager = manager;
@@ -1390,10 +1513,14 @@ namespace Server.Views.DirectX
 
         public Size Size
         {
-            get { return _Size; }
+            get
+            {
+                return _Size;
+            }
             set
             {
-                if (_Size == value) return;
+                if (_Size == value)
+                    return;
 
                 Size oldValue = _Size;
                 _Size = value;
@@ -1419,10 +1546,14 @@ namespace Server.Views.DirectX
 
         public int StartX
         {
-            get { return _StartX; }
+            get
+            {
+                return _StartX;
+            }
             set
             {
-                if (_StartX == value) return;
+                if (_StartX == value)
+                    return;
 
                 int oldValue = _StartX;
                 _StartX = value;
@@ -1439,15 +1570,19 @@ namespace Server.Views.DirectX
         }
 
         #endregion
-        
+
         #region StartY
 
         public int StartY
         {
-            get { return _StartY; }
+            get
+            {
+                return _StartY;
+            }
             set
             {
-                if (_StartY == value) return;
+                if (_StartY == value)
+                    return;
 
                 int oldValue = _StartY;
                 _StartY = value;
@@ -1470,10 +1605,14 @@ namespace Server.Views.DirectX
 
         public bool DrawAttributes
         {
-            get { return _DrawAttributes; }
+            get
+            {
+                return _DrawAttributes;
+            }
             set
             {
-                if (_DrawAttributes == value) return;
+                if (_DrawAttributes == value)
+                    return;
 
                 bool oldValue = _DrawAttributes;
                 _DrawAttributes = value;
@@ -1495,10 +1634,14 @@ namespace Server.Views.DirectX
 
         public bool DrawSelection
         {
-            get { return _DrawSelection; }
+            get
+            {
+                return _DrawSelection;
+            }
             set
             {
-                if (_DrawSelection == value) return;
+                if (_DrawSelection == value)
+                    return;
 
                 bool oldValue = _DrawSelection;
                 _DrawSelection = value;
@@ -1517,8 +1660,8 @@ namespace Server.Views.DirectX
         #endregion
 
         public HashSet<Point> Selection = new HashSet<Point>();
-        
-        
+
+
         //Zoom to handle
         public const int BaseCellWidth = 48;
         public const int BaseCellHeight = 32;
@@ -1531,10 +1674,14 @@ namespace Server.Views.DirectX
 
         public float Zoom
         {
-            get { return _Zoom; }
+            get
+            {
+                return _Zoom;
+            }
             set
             {
-                if (_Zoom == value) return;
+                if (_Zoom == value)
+                    return;
 
                 float oldValue = _Zoom;
                 _Zoom = value;
@@ -1556,10 +1703,14 @@ namespace Server.Views.DirectX
 
         public int Animation
         {
-            get { return _Animation; }
+            get
+            {
+                return _Animation;
+            }
             set
             {
-                if (_Animation == value) return;
+                if (_Animation == value)
+                    return;
 
                 int oldValue = _Animation;
                 _Animation = value;
@@ -1581,10 +1732,14 @@ namespace Server.Views.DirectX
 
         public bool Border
         {
-            get { return _Border; }
+            get
+            {
+                return _Border;
+            }
             set
             {
-                if (_Border == value) return;
+                if (_Border == value)
+                    return;
 
                 bool oldValue = _Border;
                 _Border = value;
@@ -1607,10 +1762,14 @@ namespace Server.Views.DirectX
 
         public Point MouseLocation
         {
-            get { return _MouseLocation; }
+            get
+            {
+                return _MouseLocation;
+            }
             set
             {
-                if (_MouseLocation == value) return;
+                if (_MouseLocation == value)
+                    return;
 
                 Point oldValue = _MouseLocation;
                 _MouseLocation = value;
@@ -1632,10 +1791,14 @@ namespace Server.Views.DirectX
 
         public int Radius
         {
-            get { return _Radius; }
+            get
+            {
+                return _Radius;
+            }
             set
             {
-                if (_Radius == value) return;
+                if (_Radius == value)
+                    return;
 
                 int oldValue = _Radius;
                 _Radius = value;
@@ -1653,15 +1816,30 @@ namespace Server.Views.DirectX
 
         #endregion
 
-        
+
 
 
         #region Texture
-        public bool TextureValid { get; set; }
-        public Texture ControlTexture { get; set; }
-        public Size TextureSize { get; set; }
-        public Surface ControlSurface { get; set; }
-        public DateTime ExpireTime { get; protected set; }
+        public bool TextureValid
+        {
+            get; set;
+        }
+        public Texture ControlTexture
+        {
+            get; set;
+        }
+        public Size TextureSize
+        {
+            get; set;
+        }
+        public Surface ControlSurface
+        {
+            get; set;
+        }
+        public DateTime ExpireTime
+        {
+            get; protected set;
+        }
 
         protected virtual void CreateTexture()
         {
@@ -1669,7 +1847,8 @@ namespace Server.Views.DirectX
             {
                 DisposeTexture();
                 TextureSize = Size;
-                ControlTexture = new Texture(Manager.Device, TextureSize.Width, TextureSize.Height, 1, Usage.RenderTarget, Format.A8R8G8B8, Pool.Default); ;
+                ControlTexture = new Texture(Manager.Device, TextureSize.Width, TextureSize.Height, 1, Usage.RenderTarget, Format.A8R8G8B8, Pool.Default);
+                ;
                 ControlSurface = ControlTexture.GetSurfaceLevel(0);
                 Manager.Map = this;
             }
@@ -1723,8 +1902,9 @@ namespace Server.Views.DirectX
 
         public void Draw()
         {
-            if (Size.Width <= 0 || Size.Height <= 0) return;
-            
+            if (Size.Width <= 0 || Size.Height <= 0)
+                return;
+
             DrawControl();
         }
         protected virtual void DrawControl()
@@ -1733,7 +1913,8 @@ namespace Server.Views.DirectX
             {
                 CreateTexture();
 
-                if (!TextureValid) return;
+                if (!TextureValid)
+                    return;
             }
 
             float oldOpacity = Manager.Opacity;
@@ -1748,33 +1929,37 @@ namespace Server.Views.DirectX
         public void DrawFloor()
         {
             int minX = Math.Max(0, StartX - 1);
-            int maxX = Math.Min(Width - 1, StartX + (int) Math.Ceiling(Size.Width/CellWidth));
+            int maxX = Math.Min(Width - 1, StartX + (int)Math.Ceiling(Size.Width / CellWidth));
 
             int minY = Math.Max(0, StartY - 1);
-            int maxY = Math.Min(Height - 1, StartY + (int) Math.Ceiling(Size.Height/CellHeight));
+            int maxY = Math.Min(Height - 1, StartY + (int)Math.Ceiling(Size.Height / CellHeight));
 
             Matrix scale = Matrix.Scaling(Zoom, Zoom, 1);
 
             for (int y = minY; y <= maxY; y++)
             {
-                if (y%2 != 0) continue;
+                if (y % 2 != 0)
+                    continue;
 
-                float drawY = (y - StartY)*BaseCellHeight;
+                float drawY = (y - StartY) * BaseCellHeight;
 
                 for (int x = minX; x <= maxX; x++)
                 {
-                    if (x%2 != 0) continue;
+                    if (x % 2 != 0)
+                        continue;
 
-                    float drawX = (x - StartX)*BaseCellWidth;
+                    float drawX = (x - StartX) * BaseCellWidth;
 
                     Cell tile = Cells[x, y];
 
                     MirLibrary library;
                     LibraryFile file;
 
-                    if (!Libraries.KROrder.TryGetValue(tile.BackFile, out file)) continue;
+                    if (!Libraries.KROrder.TryGetValue(tile.BackFile, out file))
+                        continue;
 
-                    if (!Manager.LibraryList.TryGetValue(file, out library)) continue;
+                    if (!Manager.LibraryList.TryGetValue(file, out library))
+                        continue;
 
                     Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY, 0), scale);
 
@@ -1784,11 +1969,11 @@ namespace Server.Views.DirectX
 
             for (int y = minY; y <= maxY; y++)
             {
-                float drawY = (y - StartY + 1)*BaseCellHeight;
+                float drawY = (y - StartY + 1) * BaseCellHeight;
 
                 for (int x = minX; x <= maxX; x++)
                 {
-                    float drawX = (x - StartX)*BaseCellWidth;
+                    float drawX = (x - StartX) * BaseCellWidth;
 
                     Cell cell = Cells[x, y];
 
@@ -1804,10 +1989,10 @@ namespace Server.Views.DirectX
 
                         Size s = library.GetSize(index);
 
-                        if ((s.Width == CellWidth && s.Height == CellHeight) || (s.Width == CellWidth*2 && s.Height == CellHeight*2))
+                        if ((s.Width == CellWidth && s.Height == CellHeight) || (s.Width == CellWidth * 2 && s.Height == CellHeight * 2))
                         {
                             Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY - BaseCellHeight, 0), scale);
-                            
+
                             library.Draw(index, 0, 0, Color.White, false, 1F, ImageType.Image);
                         }
                     }
@@ -1822,24 +2007,24 @@ namespace Server.Views.DirectX
 
                         Size s = library.GetSize(index);
 
-                        if ((s.Width == CellWidth && s.Height == CellHeight) || (s.Width == CellWidth*2 && s.Height == CellHeight*2))
+                        if ((s.Width == CellWidth && s.Height == CellHeight) || (s.Width == CellWidth * 2 && s.Height == CellHeight * 2))
                         {
                             Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY - BaseCellHeight, 0), scale);
-                            
+
                             library.Draw(index, 0, 0, Color.White, false, 1F, ImageType.Image);
                         }
                     }
                 }
             }
 
-            maxY = Math.Min(Height - 1, StartY + 20 + (int)Math.Ceiling(Size.Height / CellHeight) );
+            maxY = Math.Min(Height - 1, StartY + 20 + (int)Math.Ceiling(Size.Height / CellHeight));
             for (int y = minY; y <= maxY; y++)
             {
-                float drawY = (y - StartY + 1)*BaseCellHeight;
+                float drawY = (y - StartY + 1) * BaseCellHeight;
 
                 for (int x = minX; x <= maxX; x++)
                 {
-                    float drawX = (x - StartX)*BaseCellWidth;
+                    float drawX = (x - StartX) * BaseCellWidth;
 
                     Cell cell = Cells[x, y];
 
@@ -1853,16 +2038,16 @@ namespace Server.Views.DirectX
                         bool blend = false;
                         if (cell.MiddleAnimationFrame > 1 && cell.MiddleAnimationFrame < 255)
                         {
-                            index += Animation%(cell.MiddleAnimationFrame & 0x4F);
+                            index += Animation % (cell.MiddleAnimationFrame & 0x4F);
                             blend = (cell.MiddleAnimationFrame & 0x50) > 0;
                         }
 
                         Size s = library.GetSize(index);
 
-                        if ((s.Width != CellWidth || s.Height != CellHeight) && (s.Width != CellWidth*2 || s.Height != CellHeight*2))
+                        if ((s.Width != CellWidth || s.Height != CellHeight) && (s.Width != CellWidth * 2 || s.Height != CellHeight * 2))
                         {
                             Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY - s.Height, 0), scale);
-                            
+
                             if (!blend)
                                 library.Draw(index, 0, 0, Color.White, false, 1F, ImageType.Image);
                             else
@@ -1878,17 +2063,17 @@ namespace Server.Views.DirectX
                         bool blend = false;
                         if (cell.FrontAnimationFrame > 1 && cell.FrontAnimationFrame < 255)
                         {
-                            index += Animation%(cell.FrontAnimationFrame & 0x4F);
+                            index += Animation % (cell.FrontAnimationFrame & 0x4F);
                             blend = (cell.MiddleAnimationFrame & 0x50) > 0;
                         }
 
                         Size s = library.GetSize(index);
 
 
-                        if ((s.Width != CellWidth || s.Height != CellHeight) && (s.Width != CellWidth*2 || s.Height != CellHeight*2))
+                        if ((s.Width != CellWidth || s.Height != CellHeight) && (s.Width != CellWidth * 2 || s.Height != CellHeight * 2))
                         {
                             Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY - s.Height, 0), scale);
-                            
+
                             if (!blend)
                                 library.Draw(index, 0, 0, Color.White, false, 1F, ImageType.Image);
                             else
@@ -1900,7 +2085,7 @@ namespace Server.Views.DirectX
 
             //Invalid Tile = 59
             //Selected Tile = 58
-            
+
 
             maxY = Math.Min(Height - 1, StartY + (int)Math.Ceiling(Size.Height / CellHeight));
 
@@ -1908,17 +2093,18 @@ namespace Server.Views.DirectX
             Manager.SetOpacity(0.35F);
             for (int y = minY; y <= maxY; y++)
             {
-                float drawY = (y - StartY )*BaseCellHeight;
+                float drawY = (y - StartY) * BaseCellHeight;
 
                 for (int x = minX; x <= maxX; x++)
                 {
-                    float drawX = (x - StartX)*BaseCellWidth;
+                    float drawX = (x - StartX) * BaseCellWidth;
 
                     Cell tile = Cells[x, y];
 
                     if (tile.Flag)
                     {
-                        if (!DrawAttributes) continue;
+                        if (!DrawAttributes)
+                            continue;
 
                         Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY, 0), scale);
 
@@ -1927,8 +2113,10 @@ namespace Server.Views.DirectX
                     }
                     else
                     {
-                        if (!DrawSelection) continue;
-                        if (!Selection.Contains(new Point(x, y))) continue;
+                        if (!DrawSelection)
+                            continue;
+                        if (!Selection.Contains(new Point(x, y)))
+                            continue;
 
                         Manager.Sprite.Transform = Matrix.Multiply(Matrix.Translation(drawX, drawY, 0), scale);
 
@@ -1976,7 +2164,8 @@ namespace Server.Views.DirectX
         {
             try
             {
-                if (!File.Exists(Config.MapPath + fileName + ".map")) return;
+                if (!File.Exists(Config.MapPath + fileName + ".map"))
+                    return;
 
                 using (MemoryStream mStream = new MemoryStream(File.ReadAllBytes(Config.MapPath + fileName + ".map")))
                 using (BinaryReader reader = new BinaryReader(mStream))
@@ -2027,7 +2216,7 @@ namespace Server.Views.DirectX
             }
             catch (Exception ex)
             {
-                SEnvir.Log(ex.ToString());
+                SEnvir.LogError(ex);
             }
             TextureValid = false;
         }
@@ -2035,7 +2224,10 @@ namespace Server.Views.DirectX
 
         #region IDisposable Support
 
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed
+        {
+            get; private set;
+        }
 
         private void Dispose(bool disposing)
         {
@@ -2094,7 +2286,8 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag)
+                                continue;
 
                             Selection.Add(new Point(x, y));
                         }
@@ -2106,14 +2299,17 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag)
+                                continue;
 
                             Selection.Remove(new Point(x, y));
                         }
                     break;
                 case MouseButtons.Middle:
-                    if (MouseLocation.X < 0 || MouseLocation.X >= Width || MouseLocation.Y < 0 || MouseLocation.Y >= Height) return;
-                    if (Cells[MouseLocation.X, MouseLocation.Y].Flag) return;
+                    if (MouseLocation.X < 0 || MouseLocation.X >= Width || MouseLocation.Y < 0 || MouseLocation.Y >= Height)
+                        return;
+                    if (Cells[MouseLocation.X, MouseLocation.Y].Flag)
+                        return;
 
                     HashSet<Point> doneList = new HashSet<Point> { MouseLocation };
                     Queue<Point> todoList = new Queue<Point>();
@@ -2125,18 +2321,22 @@ namespace Server.Views.DirectX
                         while (todoList.Count > 0)
                         {
                             Point p = todoList.Dequeue();
-                            
+
                             for (int i = 0; i < 8; i++)
                             {
                                 Point nPoint = Functions.Move(p, (MirDirection)i);
 
-                                if (nPoint.X < 0 || nPoint.X >= Width || nPoint.Y < 0 || nPoint.Y >= Height) continue;
+                                if (nPoint.X < 0 || nPoint.X >= Width || nPoint.Y < 0 || nPoint.Y >= Height)
+                                    continue;
 
-                                if (Cells[nPoint.X, nPoint.Y].Flag) continue;
+                                if (Cells[nPoint.X, nPoint.Y].Flag)
+                                    continue;
 
-                                if (doneList.Contains(nPoint)) continue;
+                                if (doneList.Contains(nPoint))
+                                    continue;
 
-                                if (!Selection.Contains(nPoint)) continue;
+                                if (!Selection.Contains(nPoint))
+                                    continue;
 
                                 doneList.Add(nPoint);
                                 todoList.Enqueue(nPoint);
@@ -2156,13 +2356,17 @@ namespace Server.Views.DirectX
                             {
                                 Point nPoint = Functions.Move(p, (MirDirection)i);
 
-                                if (nPoint.X < 0 || nPoint.X >= Width || nPoint.Y < 0 || nPoint.Y >= Height) continue;
+                                if (nPoint.X < 0 || nPoint.X >= Width || nPoint.Y < 0 || nPoint.Y >= Height)
+                                    continue;
 
-                                if (Cells[nPoint.X, nPoint.Y].Flag) continue;
+                                if (Cells[nPoint.X, nPoint.Y].Flag)
+                                    continue;
 
-                                if (doneList.Contains(nPoint)) continue;
+                                if (doneList.Contains(nPoint))
+                                    continue;
 
-                                if (Selection.Contains(nPoint)) continue;
+                                if (Selection.Contains(nPoint))
+                                    continue;
 
                                 doneList.Add(nPoint);
                                 todoList.Enqueue(nPoint);
@@ -2171,7 +2375,7 @@ namespace Server.Views.DirectX
                             Selection.Add(p);
                         }
                     }
-                    
+
                     break;
             }
             TextureValid = false;
@@ -2179,14 +2383,15 @@ namespace Server.Views.DirectX
         public void MouseMove(MouseEventArgs e)
         {
             MouseLocation = new Point(Math.Min(Width, Math.Max(0, (int)(e.X / CellWidth) + StartX)), Math.Min(Height, Math.Max(0, (int)(e.Y / CellHeight) + StartY)));
-            
+
             switch (e.Button)
             {
                 case MouseButtons.Left:
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag)
+                                continue;
 
                             Selection.Add(new Point(x, y));
                         }
@@ -2196,7 +2401,8 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag)
+                                continue;
 
                             Selection.Remove(new Point(x, y));
                         }

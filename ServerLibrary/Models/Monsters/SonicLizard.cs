@@ -13,13 +13,16 @@ namespace Server.Models.Monsters
 
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
 
             int x = Math.Abs(Target.CurrentLocation.X - CurrentLocation.X);
             int y = Math.Abs(Target.CurrentLocation.Y - CurrentLocation.Y);
 
-            if (x > Range || y > Range) return false;
+            if (x > Range || y > Range)
+                return false;
 
 
             return x == 0 || x == y || y == 0;
@@ -51,7 +54,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (InAttackRange() && CanAttack) //random 4 > 0
                 Attack();
@@ -63,7 +67,8 @@ namespace Server.Models.Monsters
 
                 for (int d = 0; d < 8; d++)
                 {
-                    if (Walk(direction)) break;
+                    if (Walk(direction))
+                        break;
 
                     direction = Functions.ShiftDirection(direction, rotation);
                 }
@@ -92,11 +97,13 @@ namespace Server.Models.Monsters
                 else
                 {
                     Cell cell = CurrentMap.GetCell(target);
-                    if (cell?.Objects == null) continue;
+                    if (cell?.Objects == null)
+                        continue;
 
                     foreach (MapObject ob in cell.Objects)
                     {
-                        if (!CanAttackTarget(ob)) continue;
+                        if (!CanAttackTarget(ob))
+                            continue;
 
                         ActionList.Add(new DelayedAction(
                             SEnvir.Now.AddMilliseconds(400),

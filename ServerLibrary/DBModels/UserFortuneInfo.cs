@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.SystemModels;
 using MirDB;
@@ -16,10 +12,14 @@ namespace Server.DBModels
         [Association("Fortunes")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -31,10 +31,14 @@ namespace Server.DBModels
 
         public ItemInfo Item
         {
-            get { return _Item; }
+            get
+            {
+                return _Item;
+            }
             set
             {
-                if (_Item == value) return;
+                if (_Item == value)
+                    return;
 
                 var oldValue = _Item;
                 _Item = value;
@@ -43,14 +47,18 @@ namespace Server.DBModels
             }
         }
         private ItemInfo _Item;
-        
+
 
         public long DropCount
         {
-            get { return _DropCount; }
+            get
+            {
+                return _DropCount;
+            }
             set
             {
-                if (_DropCount == value) return;
+                if (_DropCount == value)
+                    return;
 
                 var oldValue = _DropCount;
                 _DropCount = value;
@@ -62,10 +70,14 @@ namespace Server.DBModels
 
         public decimal DropProgress
         {
-            get { return _DropProgress; }
+            get
+            {
+                return _DropProgress;
+            }
             set
             {
-                if (_DropProgress == value) return;
+                if (_DropProgress == value)
+                    return;
 
                 var oldValue = _DropProgress;
                 _DropProgress = value;
@@ -74,13 +86,17 @@ namespace Server.DBModels
             }
         }
         private decimal _DropProgress;
-        
+
         public DateTime CheckTime
         {
-            get { return _CheckTime; }
+            get
+            {
+                return _CheckTime;
+            }
             set
             {
-                if (_CheckTime == value) return;
+                if (_CheckTime == value)
+                    return;
 
                 var oldValue = _CheckTime;
                 _CheckTime = value;

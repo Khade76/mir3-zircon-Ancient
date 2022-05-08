@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -11,13 +7,17 @@ namespace Server.Models.Monsters
 {
     public class BanyoWarrior : MonsterObject
     {
-        public DateTime TeleportTime { get; set; }
+        public DateTime TeleportTime
+        {
+            get; set;
+        }
 
         public bool Bonus, DoubleDamage;
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!Functions.InRange(Target.CurrentLocation, CurrentLocation, 1) && SEnvir.Now > TeleportTime && CanAttack)
             {
@@ -59,7 +59,7 @@ namespace Server.Models.Monsters
             UpdateAttackTime();
 
             int damage = GetDC();
-            
+
             if (Bonus && DoubleDamage)
                 damage *= 2;
 

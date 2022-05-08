@@ -1,5 +1,4 @@
-﻿using System;
-using Library;
+﻿using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -45,7 +44,7 @@ namespace Server.Models.Monsters
 
         public override bool SpawnMinion(MonsterObject mob)
         {
-            return mob.Spawn(CurrentMap, CurrentLocation);
+            return mob.Spawn(CurrentMap.Info, CurrentLocation);
         }
     }
 }

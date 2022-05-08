@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using DevExpress.XtraBars;
 using Library.SystemModels;
 
@@ -18,6 +11,7 @@ namespace Server.Views
             InitializeComponent();
 
             DropInfoGridControl.DataSource = SMain.Session.GetCollection<DropInfo>().Binding;
+            DropListLookUpEdit.DataSource = SMain.Session.GetCollection<DropListInfo>().Binding;
 
             MonsterLookUpEdit.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding;
             ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;

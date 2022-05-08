@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using MirDB;
 using Server.Envir;
@@ -15,10 +12,14 @@ namespace Server.DBModels
         [Association("Mail")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -30,10 +31,14 @@ namespace Server.DBModels
 
         public string Sender
         {
-            get { return _Sender; }
+            get
+            {
+                return _Sender;
+            }
             set
             {
-                if (_Sender == value) return;
+                if (_Sender == value)
+                    return;
 
                 var oldValue = _Sender;
                 _Sender = value;
@@ -42,14 +47,18 @@ namespace Server.DBModels
             }
         }
         private string _Sender;
-        
+
 
         public DateTime Date
         {
-            get { return _Date; }
+            get
+            {
+                return _Date;
+            }
             set
             {
-                if (_Date == value) return;
+                if (_Date == value)
+                    return;
 
                 var oldValue = _Date;
                 _Date = value;
@@ -61,10 +70,14 @@ namespace Server.DBModels
 
         public string Subject
         {
-            get { return _Subject; }
+            get
+            {
+                return _Subject;
+            }
             set
             {
-                if (_Subject == value) return;
+                if (_Subject == value)
+                    return;
 
                 var oldValue = _Subject;
                 _Subject = value;
@@ -76,10 +89,14 @@ namespace Server.DBModels
 
         public string Message
         {
-            get { return _Message; }
+            get
+            {
+                return _Message;
+            }
             set
             {
-                if (_Message == value) return;
+                if (_Message == value)
+                    return;
 
                 var oldValue = _Message;
                 _Message = value;
@@ -91,10 +108,14 @@ namespace Server.DBModels
 
         public bool Opened
         {
-            get { return _Opened; }
+            get
+            {
+                return _Opened;
+            }
             set
             {
-                if (_Opened == value) return;
+                if (_Opened == value)
+                    return;
 
                 var oldValue = _Opened;
                 _Opened = value;
@@ -106,10 +127,14 @@ namespace Server.DBModels
 
         public bool HasItem
         {
-            get { return _HasItem; }
+            get
+            {
+                return _HasItem;
+            }
             set
             {
-                if (_HasItem == value) return;
+                if (_HasItem == value)
+                    return;
 
                 var oldValue = _HasItem;
                 _HasItem = value;
@@ -118,10 +143,13 @@ namespace Server.DBModels
             }
         }
         private bool _HasItem;
-        
-        
+
+
         [Association("Mail")]
-        public DBBindingList<UserItem> Items { get; set; }
+        public DBBindingList<UserItem> Items
+        {
+            get; set;
+        }
 
         protected override void OnDeleted()
         {

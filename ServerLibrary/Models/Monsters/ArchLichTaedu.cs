@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Library;
-using Library.SystemModels;
-using Server.DBModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -11,15 +8,11 @@ namespace Server.Models.Monsters
 {
     public class ArchLichTaedu : MonsterObject
     {
-        public int MaxStage = 7;
-        public int Stage;
-
-        public int MinSpawn = 20;
-        public int RandomSpawn = 5;
-
-
         public ArchLichTaedu()
         {
+            MaxStage = 7;
+            MinSpawn = 20;
+            RandomSpawn = 5;
             AvoidFireWall = false;
             MaxMinions = 50;
         }
@@ -31,15 +24,17 @@ namespace Server.Models.Monsters
 
             Stage = MaxStage;
         }
-        
+
         public override void Process()
         {
             base.Process();
 
-            if (Dead) return;
+            if (Dead)
+                return;
 
 
-            if (CurrentHP * MaxStage / Stats[Stat.Health] >= Stage || Stage <= 0) return;
+            if (CurrentHP * MaxStage / Stats[Stat.Health] >= Stage || Stage <= 0)
+                return;
 
             Stage--;
 
@@ -49,11 +44,12 @@ namespace Server.Models.Monsters
 
             SpawnMinions(MinSpawn, RandomSpawn, Target);
         }
-        
+
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!InAttackRange())
             {
@@ -71,7 +67,8 @@ namespace Server.Models.Monsters
 
                     for (int d = 0; d < 8; d++)
                     {
-                        if (Walk(direction)) break;
+                        if (Walk(direction))
+                            break;
 
                         direction = Functions.ShiftDirection(direction, rotation);
                     }
@@ -80,14 +77,16 @@ namespace Server.Models.Monsters
                     MoveTo(Target.CurrentLocation);
             }
 
-            if (!CanAttack) return;
+            if (!CanAttack)
+                return;
 
             if (SEnvir.Random.Next(5) > 0)
             {
                 if (InAttackRange())
                     Attack();
             }
-            else RangeAttack();
+            else
+                RangeAttack();
         }
 
         public void RangeAttack()
@@ -104,6 +103,12 @@ namespace Server.Models.Monsters
                                Target,
                                GetDC(),
                                AttackElement));
+            switch (SEnvir.Random.Next(3))
+            {
+                default:
+                    AttackMagic(MagicType.FireBall, Element.Fire, false, GetDC() * 2);
+                    break;
+            }
         }
     }
 }

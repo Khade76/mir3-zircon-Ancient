@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MirDB;
+﻿using MirDB;
 
 namespace Server.DBModels
 {
@@ -12,10 +7,14 @@ namespace Server.DBModels
     {
         public int Info
         {
-            get { return _Info; }
+            get
+            {
+                return _Info;
+            }
             set
             {
-                if (_Info == value) return;
+                if (_Info == value)
+                    return;
 
                 var oldValue = _Info;
                 _Info = value;
@@ -24,13 +23,17 @@ namespace Server.DBModels
             }
         }
         private int _Info;
-        
+
         public long SaleCount
         {
-            get { return _SaleCount; }
+            get
+            {
+                return _SaleCount;
+            }
             set
             {
-                if (_SaleCount == value) return;
+                if (_SaleCount == value)
+                    return;
 
                 var oldValue = _SaleCount;
                 _SaleCount = value;
@@ -42,10 +45,14 @@ namespace Server.DBModels
 
         public int LastPrice
         {
-            get { return _LastPrice; }
+            get
+            {
+                return _LastPrice;
+            }
             set
             {
-                if (_LastPrice == value) return;
+                if (_LastPrice == value)
+                    return;
 
                 var oldValue = _LastPrice;
                 _LastPrice = value;
@@ -54,13 +61,17 @@ namespace Server.DBModels
             }
         }
         private int _LastPrice;
-        
+
         public int[] Average
         {
-            get { return _Average; }
+            get
+            {
+                return _Average;
+            }
             set
             {
-                if (_Average == value) return;
+                if (_Average == value)
+                    return;
 
                 var oldValue = _Average;
                 _Average = value;
@@ -72,10 +83,14 @@ namespace Server.DBModels
 
         public int PartIndex
         {
-            get { return _PartIndex; }
+            get
+            {
+                return _PartIndex;
+            }
             set
             {
-                if (_PartIndex == value) return;
+                if (_PartIndex == value)
+                    return;
 
                 var oldValue = _PartIndex;
                 _PartIndex = value;
@@ -84,7 +99,7 @@ namespace Server.DBModels
             }
         }
         private int _PartIndex;
-        
+
 
         protected override void OnCreated()
         {

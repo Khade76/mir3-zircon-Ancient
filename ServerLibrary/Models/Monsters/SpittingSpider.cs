@@ -11,13 +11,16 @@ namespace Server.Models.Monsters
 
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
 
             int x = Math.Abs(Target.CurrentLocation.X - CurrentLocation.X);
             int y = Math.Abs(Target.CurrentLocation.Y - CurrentLocation.Y);
 
-            if (x > 2 || y > 2) return false;
+            if (x > 2 || y > 2)
+                return false;
 
 
             return x == 0 || x == y || y == 0;
@@ -51,11 +54,13 @@ namespace Server.Models.Monsters
                 else
                 {
                     Cell cell = CurrentMap.GetCell(target);
-                    if (cell?.Objects == null) continue;
+                    if (cell?.Objects == null)
+                        continue;
 
                     foreach (MapObject ob in cell.Objects)
                     {
-                        if (!CanAttackTarget(ob)) continue;
+                        if (!CanAttackTarget(ob))
+                            continue;
 
                         ActionList.Add(new DelayedAction(
                             SEnvir.Now.AddMilliseconds(400),
@@ -67,8 +72,6 @@ namespace Server.Models.Monsters
                         break;
                     }
                 }
-
-
             }
         }
     }

@@ -64,7 +64,7 @@
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.ribbonPage1});
-            this.ribbon.Size = new System.Drawing.Size(728, 144);
+            this.ribbon.Size = new System.Drawing.Size(728, 143);
             // 
             // SaveButton
             // 
@@ -94,17 +94,18 @@
             // MapRegionGridControl
             // 
             this.MapRegionGridControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.MapRegionGridControl.Location = new System.Drawing.Point(0, 144);
+            this.MapRegionGridControl.Location = new System.Drawing.Point(0, 143);
             this.MapRegionGridControl.MainView = this.MapRegionGridView;
             this.MapRegionGridControl.MenuManager = this.ribbon;
             this.MapRegionGridControl.Name = "MapRegionGridControl";
             this.MapRegionGridControl.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
             this.MapLookUpEdit,
             this.EditButtonEdit});
-            this.MapRegionGridControl.Size = new System.Drawing.Size(728, 404);
+            this.MapRegionGridControl.Size = new System.Drawing.Size(728, 405);
             this.MapRegionGridControl.TabIndex = 2;
             this.MapRegionGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.MapRegionGridView});
+            this.MapRegionGridControl.Click += new System.EventHandler(this.MapRegionGridControl_Click);
             // 
             // MapRegionGridView
             // 
@@ -211,6 +212,6 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn2;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn3;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn4;
-        public DevExpress.XtraEditors.Repository.RepositoryItemButtonEdit EditButtonEdit;
+        private DevExpress.XtraEditors.Repository.RepositoryItemButtonEdit EditButtonEdit;
     }
 }

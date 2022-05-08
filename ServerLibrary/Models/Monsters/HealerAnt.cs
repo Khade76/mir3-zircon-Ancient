@@ -42,7 +42,8 @@ namespace Server.Models.Monsters
 
         public void Heal(MapObject ob)
         {
-            if (ob?.Node == null || ob.Dead) return;
+            if (ob.HasNoNode() || ob.Dead)
+                return;
 
             ob.BuffAdd(BuffType.Heal, TimeSpan.MaxValue, new Stats { [Stat.Healing] = Stats[Stat.Healing], [Stat.HealingCap] = Stats[Stat.HealingCap] }, false, false, TimeSpan.FromSeconds(1));
         }
@@ -53,7 +54,7 @@ namespace Server.Models.Monsters
             Broadcast(new S.ObjectRangeAttack { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation, Targets = new List<uint> { Target.ObjectID } });
 
             UpdateAttackTime();
-            
+
             ActionList.Add(new DelayedAction(
                                SEnvir.Now.AddMilliseconds(400 + Functions.Distance(CurrentLocation, Target.CurrentLocation) * Globals.ProjectileSpeed),
                                ActionType.DelayAttack,

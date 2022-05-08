@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Library;
+﻿using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -43,7 +38,7 @@ namespace Server.Models.Monsters
 
             base.ProcessAction(action);
         }
-        
+
         public void Appear()
         {
             Visible = true;

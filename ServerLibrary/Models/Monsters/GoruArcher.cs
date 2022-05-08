@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -18,7 +14,8 @@ namespace Server.Models.Monsters
 
             int result = base.Attacked(attacker, power, element, canReflect, ignoreShield, canCrit);
 
-            if (result < 0 || Dead || !CanTeleport || CurrentHP > Stats[Stat.Health] / 2) return result;
+            if (result < 0 || Dead || !CanTeleport || CurrentHP > Stats[Stat.Health] / 2)
+                return result;
 
             CanTeleport = false;
 
@@ -28,11 +25,15 @@ namespace Server.Models.Monsters
         }
 
 
-        public DateTime TeleportTime { get; set; }
+        public DateTime TeleportTime
+        {
+            get; set;
+        }
         public bool Bonus;
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!Functions.InRange(Target.CurrentLocation, CurrentLocation, 1) && SEnvir.Now > TeleportTime && CanAttack && SEnvir.Now >= FearTime)
             {

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Library;
-using S = Library.Network.ServerPackets;
 using Server.Envir;
+using S = Library.Network.ServerPackets;
 
 namespace Server.Models.Monsters
 {

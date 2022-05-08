@@ -18,14 +18,10 @@ namespace Server.Views
 
         private void InterfaceTimer_Tick(object sender, EventArgs e)
         {
-            while (!SEnvir.DisplayLogs.IsEmpty)
-            {
-                string log;
+            String log;
 
-                if (!SEnvir.DisplayLogs.TryDequeue(out log)) continue;
-
+            while (SEnvir.DisplayLogs.TryDequeue(out log))
                 Logs.Add(log);
-            }
 
             if (Logs.Count > 0)
                 ClearLogsButton.Enabled = true;
@@ -34,7 +30,7 @@ namespace Server.Views
         private void ClearLogsButton_ItemClick(object sender, ItemClickEventArgs e)
         {
             Logs.Clear();
-                ClearLogsButton.Enabled = false;
+            ClearLogsButton.Enabled = false;
         }
     }
 }

@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Library;
+﻿using Library;
 using Server.Envir;
 
 namespace Server.Models.Monsters
 {
-    class SamaScorcer : MonsterObject
+    internal class SamaScorcer : MonsterObject
     {
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
 
             return Target.CurrentLocation != CurrentLocation && Functions.InRange(CurrentLocation, Target.CurrentLocation, 3);
         }
@@ -21,11 +17,13 @@ namespace Server.Models.Monsters
         {
             foreach (MapObject ob in CurrentMap.Objects) //Expensive.
             {
-                if (ob.Race != ObjectType.Monster) continue;
+                if (ob.Race != ObjectType.Monster)
+                    continue;
 
                 MonsterObject mob = (MonsterObject)ob;
 
-                if (mob.MonsterInfo.Flag == MonsterFlag.BloodStone) return 0;
+                if (mob.MonsterInfo.Flag == MonsterFlag.BloodStone)
+                    return 0;
             }
 
             return base.Attacked(attacker, power, element, canReflect, ignoreShield, canCrit);
@@ -33,9 +31,11 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
-            if (!CanAttack) return;
+            if (!CanAttack)
+                return;
 
             if (SEnvir.Random.Next(5) == 0 && !Functions.InRange(Target.CurrentLocation, CurrentLocation, 5))
                 Target.Teleport(CurrentMap, CurrentMap.GetRandomLocation(CurrentLocation, 2));

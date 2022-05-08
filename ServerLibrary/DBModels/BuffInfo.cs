@@ -10,10 +10,14 @@ namespace Server.DBModels
         [Association("Buffs")]
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -26,10 +30,14 @@ namespace Server.DBModels
         [Association("Buffs")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -38,13 +46,17 @@ namespace Server.DBModels
             }
         }
         private AccountInfo _Account;
-        
+
         public BuffType Type
         {
-            get { return _Type; }
+            get
+            {
+                return _Type;
+            }
             set
             {
-                if (_Type == value) return;
+                if (_Type == value)
+                    return;
 
                 var oldValue = _Type;
                 _Type = value;
@@ -53,13 +65,17 @@ namespace Server.DBModels
             }
         }
         private BuffType _Type;
-        
+
         public Stats Stats
         {
-            get { return _Stats; }
+            get
+            {
+                return _Stats;
+            }
             set
             {
-                if (_Stats == value) return;
+                if (_Stats == value)
+                    return;
 
                 var oldValue = _Stats;
                 _Stats = value;
@@ -71,10 +87,14 @@ namespace Server.DBModels
 
         public TimeSpan RemainingTime
         {
-            get { return _RemainingTime; }
+            get
+            {
+                return _RemainingTime;
+            }
             set
             {
-                if (_RemainingTime == value) return;
+                if (_RemainingTime == value)
+                    return;
 
                 var oldValue = _RemainingTime;
                 _RemainingTime = value;
@@ -86,10 +106,14 @@ namespace Server.DBModels
 
         public TimeSpan TickFrequency
         {
-            get { return _TickFrequency; }
+            get
+            {
+                return _TickFrequency;
+            }
             set
             {
-                if (_TickFrequency == value) return;
+                if (_TickFrequency == value)
+                    return;
 
                 var oldValue = _TickFrequency;
                 _TickFrequency = value;
@@ -101,10 +125,14 @@ namespace Server.DBModels
 
         public TimeSpan TickTime
         {
-            get { return _TickTime; }
+            get
+            {
+                return _TickTime;
+            }
             set
             {
-                if (_TickTime == value) return;
+                if (_TickTime == value)
+                    return;
 
                 var oldValue = _TickTime;
                 _TickTime = value;
@@ -116,10 +144,14 @@ namespace Server.DBModels
 
         public int ItemIndex
         {
-            get { return _ItemIndex; }
+            get
+            {
+                return _ItemIndex;
+            }
             set
             {
-                if (_ItemIndex == value) return;
+                if (_ItemIndex == value)
+                    return;
 
                 var oldValue = _ItemIndex;
                 _ItemIndex = value;
@@ -128,14 +160,18 @@ namespace Server.DBModels
             }
         }
         private int _ItemIndex;
-        
+
 
         public bool Visible
         {
-            get { return _Visible; }
+            get
+            {
+                return _Visible;
+            }
             set
             {
-                if (_Visible == value) return;
+                if (_Visible == value)
+                    return;
 
                 var oldValue = _Visible;
                 _Visible = value;
@@ -147,10 +183,14 @@ namespace Server.DBModels
 
         public bool Pause
         {
-            get { return _Pause; }
+            get
+            {
+                return _Pause;
+            }
             set
             {
-                if (_Pause == value) return;
+                if (_Pause == value)
+                    return;
 
                 var oldValue = _Pause;
                 _Pause = value;
@@ -176,12 +216,14 @@ namespace Server.DBModels
             switch (propertyName)
             {
                 case "Character":
-                    if (newValue == null) break;
+                    if (newValue == null)
+                        break;
 
                     Account = null;
                     break;
                 case "Account":
-                    if (newValue == null) break;
+                    if (newValue == null)
+                        break;
 
                     Character = null;
                     break;

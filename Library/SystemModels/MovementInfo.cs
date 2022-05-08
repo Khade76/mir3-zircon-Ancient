@@ -112,6 +112,37 @@ namespace Library.SystemModels
         private RequiredClass _RequiredClass;
 
 
+        public QuestInfo CompletedQuest
+        {
+            get { return _CompletedQuest; }
+            set
+            {
+                if (_CompletedQuest == value) return;
+
+                var oldValue = _CompletedQuest;
+                _CompletedQuest = value;
+
+                OnChanged(oldValue, value, "CompletedQuest");
+            }
+        }
+        private QuestInfo _CompletedQuest;
+
+        public QuestInfo NotCompletedQuest
+        {
+            get { return _NotCompletedQuest; }
+            set
+            {
+                if (_NotCompletedQuest == value) return;
+
+                var oldValue = _NotCompletedQuest;
+                _NotCompletedQuest = value;
+
+                OnChanged(oldValue, value, "NotCompletedQuest");
+            }
+        }
+        private QuestInfo _NotCompletedQuest;
+
+
         protected internal override void OnCreated()
         {
             base.OnCreated();
@@ -119,5 +150,4 @@ namespace Library.SystemModels
             RequiredClass = RequiredClass.All;
         }
     }
-
 }

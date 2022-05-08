@@ -1,12 +1,8 @@
 ﻿using System;
-using System.IO;
-using System.Windows.Forms;
 using DevExpress.XtraBars;
-using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using Library;
 using Library.SystemModels;
-using Server.DBModels;
 
 namespace Server.Views
 {
@@ -16,19 +12,20 @@ namespace Server.Views
         {
             InitializeComponent();
 
-            MapInfoGridControl.DataSource =  SMain.Session.GetCollection<MapInfo>().Binding;
-            MonsterLookUpEdit.DataSource =  SMain.Session.GetCollection<MonsterInfo>().Binding;
-            MapInfoLookUpEdit.DataSource =  SMain.Session.GetCollection<MapInfo>().Binding;
+            MapInfoGridControl.DataSource = SMain.Session.GetCollection<MapInfo>().Binding;
+            MonsterLookUpEdit.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding;
+            MapInfoLookUpEdit.DataSource = SMain.Session.GetCollection<MapInfo>().Binding;
             ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
 
             LightComboBox.Items.AddEnum<LightSetting>();
+            WeatherComboBox.Items.AddEnum<WeatherSetting>();
             DirectionImageComboBox.Items.AddEnum<MirDirection>();
             MapIconImageComboBox.Items.AddEnum<MapIcon>();
             StartClassImageComboBox.Items.AddEnum<RequiredClass>();
-            RequiredClassImageComboBox.Items.AddEnum<RequiredClass>();
+
         }
-        
-        
+
+
 
         private void MapInfoView_Load(object sender, EventArgs e)
         {
@@ -44,7 +41,7 @@ namespace Server.Views
 
         private void ClearMapsButton_ItemClick(object sender, ItemClickEventArgs e)
         {
-           
+
         }
 
         private void RenameMiniMapButton_ItemClick(object sender, ItemClickEventArgs e)
@@ -64,11 +61,17 @@ namespace Server.Views
 
             GridView view = MapInfoGridControl.FocusedView as GridView;
 
-            if (view == null) return;
+            if (view == null)
+                return;
 
             MapViewer.CurrentViewer.Save();
 
             MapViewer.CurrentViewer.MapRegion = view.GetFocusedRow() as MapRegion;
+        }
+
+        private void MapInfoGridControl_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

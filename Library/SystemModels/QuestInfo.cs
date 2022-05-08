@@ -121,6 +121,37 @@ namespace Library.SystemModels
         }
         private NPCInfo _FinishNPC;
 
+        public QuestType Type
+        {
+            get { return _Type; }
+            set
+            {
+                if (_Type == value) return;
+
+                var oldValue = _Type;
+                _Type = value;
+
+                OnChanged(oldValue, value, "Type");
+            }
+
+        }
+        private QuestType _Type;
+
+        public long Cooldown
+        {
+            get { return _Cooldown; }
+            set
+            {
+                if (_Cooldown == value) return;
+
+                var oldValue = _Cooldown;
+                _Cooldown = value;
+
+                OnChanged(oldValue, value, "Cooldown");
+            }
+
+        }
+        private long _Cooldown;
 
         [Association("Rewards", true)]
         public DBBindingList<QuestReward> Rewards { get; set; }

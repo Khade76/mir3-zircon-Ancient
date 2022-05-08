@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.SystemModels;
 using Server.Envir;
@@ -21,7 +17,8 @@ namespace Server.Models.Monsters
         {
             base.Process();
 
-            if (Dead) return;
+            if (Dead)
+                return;
 
             if (!SubSpawned && CurrentHP < Stats[Stat.Health] / 4)
             {
@@ -36,7 +33,8 @@ namespace Server.Models.Monsters
                 for (int i = MinionList.Count - 1; i >= 0; i--)
                 {
                     MonsterObject mob = MinionList[i];
-                    if (mob.CurrentMap == CurrentMap && Functions.InRange(CurrentLocation, mob.CurrentLocation, 30)) continue;
+                    if (mob.CurrentMap == CurrentMap && Functions.InRange(CurrentLocation, mob.CurrentLocation, 30))
+                        continue;
 
                     mob.EXPOwner = null;
                     mob.Die();
@@ -51,18 +49,20 @@ namespace Server.Models.Monsters
         }
         public void SpawnSub()
         {
-            if (SubBossInfo == null) return;
+            if (SubBossInfo == null)
+                return;
 
             MonsterObject mob = GetMonster(SubBossInfo);
 
-            if (!SpawnMinion(mob)) return;
+            if (!SpawnMinion(mob))
+                return;
 
             mob.Target = Target;
         }
 
         public override bool SpawnMinion(MonsterObject mob)
         {
-            return mob.Spawn(CurrentMap, CurrentMap.GetRandomLocation(CurrentLocation, 5));
+            return mob.Spawn(CurrentMap.Info, CurrentMap.GetRandomLocation(CurrentLocation, 5));
         }
 
         public override void ProcessRegen()

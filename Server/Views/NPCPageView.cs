@@ -3,7 +3,6 @@ using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using Library;
 using Library.SystemModels;
-using Server.DBModels;
 
 namespace Server.Views
 {
@@ -13,13 +12,11 @@ namespace Server.Views
         {
             InitializeComponent();
 
-            NPCPageGridControl.DataSource = SMain.Session.GetCollection<NPCPage>().Binding; 
+            NPCPageGridControl.DataSource = SMain.Session.GetCollection<NPCPage>().Binding;
 
             PageLookUpEdit.DataSource = SMain.Session.GetCollection<NPCPage>().Binding;
             ItemInfoLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
             MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapInfo>().Binding;
-            InstanceLookUpEdit.DataSource = SMain.Session.GetCollection<InstanceInfo>().Binding;
-            CurrencyInfoLookUpEdit.DataSource = SMain.Session.GetCollection<CurrencyInfo>().Binding;
 
             DialogTypeImageComboBox.Items.AddEnum<NPCDialogType>();
             CheckTypeImageComboBox.Items.AddEnum<NPCCheckType>();

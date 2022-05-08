@@ -14,79 +14,50 @@ namespace MirDB
 {
     public sealed class Session
     {
-        public const string Extension = @".db";
-        public const string TempExtension = @".TMP";
-        public const string CompressExtension = @".gz";
+        private const string Extention = @".db";
+        private const string TempExtention = @".TMP";
+        private const string CompressExtention = @".gz";
 
-        public string Root { get; }
-        public SessionMode Mode { get; }
+        private string Root { get; }
+        internal SessionMode Mode { get; }
 
         public bool BackUp { get; set; } = true;
         public int BackUpDelay { get; set; }
         private string BackupRoot { get; }
 
 
-        public string SystemPath => Root + "System" + Extension;
-        public string SystemBackupPath => BackupRoot + @"System\";
-        public byte[] SystemHeader;
+        private string SystemPath => Root + "System" + Extention;
+        private string SystemBackupPath => BackupRoot + @"System\";
+        private byte[] SystemHeader;
 
-        public string UsersPath => Root + "Users" + Extension;
-        public string UsersBackupPath => BackupRoot + @"Users\";
-
-        public Assembly[] Assemblies { get; private set; }
-
-        public byte[] UsersHeader;
+        private string UsersPath => Root + "Users" + Extention;
+        private string UsersBackupPath => BackupRoot + @"Users\";
+        private byte[] UsersHeader;
 
         //internal ConcurrentQueue<DBObject> KeyedObjects = new ConcurrentQueue<DBObject>();
         internal Dictionary<Type, DBRelationship> Relationships = new Dictionary<Type, DBRelationship>();
 
         private Dictionary<Type, ADBCollection> Collections;
 
-        public Session(string connectionString)
-        {
-            if (string.IsNullOrEmpty(connectionString))
-                throw new ArgumentNullException(nameof(connectionString), "Database:DBConnStr is empty");
-
-            var args = connectionString.Split(';').Select(x => x.Split(new char[] { '=' }, 2)).ToDictionary(x => x[0].ToUpperInvariant(), x => x[1]);
-
-            if (!args.ContainsKey("MODE") || !args.ContainsKey("ROOT") || !args.ContainsKey("BACKUP"))
-                throw new ArgumentException($"Connection string is not valid");
-
-            if (!Enum.TryParse(args["MODE"], out SessionMode mode))
-                throw new ArgumentException($"{args["MODE"]} is not valid option for Mode");
-
-            if (args.ContainsKey("BACKUPDELAY"))
-            {
-                if (!int.TryParse(args["BACKUPDELAY"], out int backupDelay))
-                    throw new ArgumentException($"{args["BACKUPDELAY"]} is not valid number");
-                BackUpDelay = backupDelay;
-            }
-
-            Root = args["ROOT"];
-            BackupRoot = args["BACKUP"];
-            Mode = mode;
-        }
-
         public Session(SessionMode mode, string root = @".\Database\", string backup = @".\Backup\")
         {
             Root = root;
             BackupRoot = backup;
             Mode = mode;
+
+            Initialize();
         }
-
-        public void Initialize(params Assembly[] assemblies)
+        private void Initialize()
         {
-            Assemblies = assemblies;
-
             if (!Directory.Exists(Root))
                 Directory.CreateDirectory(Root);
 
             Collections = new Dictionary<Type, ADBCollection>();
 
-            List<Type> types = assemblies
-                .Select(x => x.GetTypes())
-                .SelectMany(x => x)
-                .ToList();
+            List<Type> types = new List<Type>();
+            types.AddRange(Assembly.GetEntryAssembly().GetTypes());
+            types.AddRange(Assembly.GetExecutingAssembly().GetTypes());
+            types.AddRange(Assembly.GetCallingAssembly().GetTypes());
 
             Type collectionType = typeof(DBCollection<>);
 
@@ -105,6 +76,18 @@ namespace MirDB
             Parallel.ForEach(Relationships, x => x.Value.ConsumeKeys(this));
 
             Relationships = null;
+            /*
+            DBCollection<ItemInfo> itemList = GetCollection<ItemInfo>();
+
+            ItemInfo Female = (ItemInfo)itemList.GetObjectByIndex(1100);
+            ItemInfo Male = (ItemInfo)itemList.GetObjectByIndex(1043);
+
+            int maleIndex = itemList.Binding.IndexOf(Male );
+            Female.Index = 1044;
+            itemList.Binding.Remove(Female);
+            itemList.Binding.Insert(maleIndex  + 1, Female);
+               */
+
 
             foreach (KeyValuePair<Type, ADBCollection> pair in Collections)
                 pair.Value.OnLoaded();
@@ -142,7 +125,7 @@ namespace MirDB
                 int count = reader.ReadInt32();
 
                 for (int i = 0; i < count; i++)
-                    mappings.Add(new DBMapping(Assemblies, reader));
+                    mappings.Add(new DBMapping(reader));
 
                 List<Task> loadingTasks = new List<Task>();
                 foreach (DBMapping mapping in mappings)
@@ -188,7 +171,7 @@ namespace MirDB
                 int count = reader.ReadInt32();
 
                 for (int i = 0; i < count; i++)
-                    mappings.Add(new DBMapping(Assemblies, reader));
+                    mappings.Add(new DBMapping(reader));
 
                 List<Task> loadingTasks = new List<Task>();
                 foreach (DBMapping mapping in mappings)
@@ -208,11 +191,15 @@ namespace MirDB
 
         public void Save(bool commit)
         {
-            Parallel.ForEach(Collections, x => x.Value.SaveObjects());
+            Parallel.ForEach(Collections.Values, currentCollection =>
+            {
+                currentCollection.SaveObjects();
+            });
 
             if (commit)
                 Commit();
         }
+
         public void Commit()
         {
             SaveSystem();
@@ -226,7 +213,7 @@ namespace MirDB
             if (!Directory.Exists(Root))
                 Directory.CreateDirectory(Root);
 
-            using (BinaryWriter writer = new BinaryWriter(File.Create(SystemPath + TempExtension)))
+            using (BinaryWriter writer = new BinaryWriter(File.Create(SystemPath + TempExtention)))
             {
                 writer.Write(SystemHeader);
 
@@ -237,6 +224,9 @@ namespace MirDB
 
                     writer.Write(data.Length);
                     writer.Write(data);
+
+                    // Clear the data
+                    data = null;
                 }
             }
 
@@ -248,7 +238,7 @@ namespace MirDB
                 if (BackUp)
                 {
                     using (FileStream sourceStream = File.OpenRead(SystemPath))
-                    using (FileStream destStream = File.Create(SystemBackupPath + "System " + ToBackUpFileName(DateTime.UtcNow) + Extension + CompressExtension))
+                    using (FileStream destStream = File.Create(SystemBackupPath + "System " + ToBackUpFileName(DateTime.UtcNow) + Extention + CompressExtention))
                     using (GZipStream compress = new GZipStream(destStream, CompressionMode.Compress))
                         sourceStream.CopyTo(compress);
                 }
@@ -256,7 +246,7 @@ namespace MirDB
                 File.Delete(SystemPath);
             }
 
-            File.Move(SystemPath + TempExtension, SystemPath);
+            File.Move(SystemPath + TempExtention, SystemPath);
         }
         private void SaveUsers()
         {
@@ -265,7 +255,7 @@ namespace MirDB
             if (!Directory.Exists(Root))
                 Directory.CreateDirectory(Root);
 
-            using (BinaryWriter writer = new BinaryWriter(File.Create(UsersPath + TempExtension)))
+            using (BinaryWriter writer = new BinaryWriter(File.Create(UsersPath + TempExtention)))
             {
                 writer.Write(UsersHeader);
 
@@ -277,6 +267,9 @@ namespace MirDB
 
                     writer.Write(data.Length);
                     writer.Write(data);
+
+                    // Clear the data
+                    data = null;
                 }
             }
             if (BackUp && !Directory.Exists(UsersBackupPath))
@@ -287,7 +280,7 @@ namespace MirDB
                 if (BackUp)
                 {
                     using (FileStream sourceStream = File.OpenRead(UsersPath))
-                    using (FileStream destStream = File.Create(UsersBackupPath + "Users " + ToBackUpFileName(DateTime.UtcNow) + Extension + CompressExtension))
+                    using (FileStream destStream = File.Create(UsersBackupPath + "Users " + ToBackUpFileName(DateTime.UtcNow) + Extention + CompressExtention))
                     using (GZipStream compress = new GZipStream(destStream, CompressionMode.Compress))
                         sourceStream.CopyTo(compress);
                 }
@@ -295,7 +288,7 @@ namespace MirDB
                 File.Delete(UsersPath);
             }
 
-            File.Move(UsersPath + TempExtension, UsersPath);
+            File.Move(UsersPath + TempExtention, UsersPath);
         }
 
         public DBCollection<T> GetCollection<T>() where T : DBObject, new()
@@ -324,7 +317,7 @@ namespace MirDB
         {
             return $"{time.Year:0000}-{time.Month:00}-{time.Day:00} {time.Hour:00}-{time.Minute:00}";
         }
-        public string ToBackUpFileName(DateTime time)
+        private string ToBackUpFileName(DateTime time)
         {
             if (BackUpDelay == 0)
                 return ToFileName(time);

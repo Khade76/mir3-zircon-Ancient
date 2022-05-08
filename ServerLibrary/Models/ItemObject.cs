@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Linq;
 using Library;
 using Library.Network;
-using S = Library.Network.ServerPackets;
 using Server.DBModels;
 using Server.Envir;
 using Server.Models.Monsters;
+using S = Library.Network.ServerPackets;
 
 namespace Server.Models
 {
@@ -14,12 +13,24 @@ namespace Server.Models
         public override ObjectType Race => ObjectType.Item;
         public override bool Blocking => false;
 
-        public DateTime ExpireTime { get; set; }
+        public DateTime ExpireTime
+        {
+            get; set;
+        }
 
-        public UserItem Item { get; set; }
-        public AccountInfo Account { get; set; } //Use account instead of playerobject incase disconnection
+        public UserItem Item
+        {
+            get; set;
+        }
+        public AccountInfo Account
+        {
+            get; set;
+        } //Use account instead of playerobject incase disconnection
 
-        public bool MonsterDrop { get; set; }
+        public bool MonsterDrop
+        {
+            get; set;
+        }
 
         public override void Process()
         {
@@ -64,43 +75,14 @@ namespace Server.Models
             Account = null;
         }
 
-        public bool CanPickUpItem(PlayerObject ob)
-        {
-            if (Account != null && Account != ob.Character.Account)
-            {
-                if (Config.DropVisibleOtherPlayers)
-                {
-                    var isSameGuild = Account.GuildMember != null
-                        && ob.Character.Account.GuildMember != null
-                        && Account.GuildMember.Guild == ob.Character.Account.GuildMember.Guild;
-
-                    var isSameGroup = ob.GroupMembers != null
-                        && Account.Connection?.Player.GroupMembers == ob.GroupMembers;
-
-                    var spawnElapsed = (int)Math.Floor((SEnvir.Now - SpawnTime).TotalMinutes);
-
-                    if (spawnElapsed >= 10)
-                        return true;
-                    else if (isSameGuild && spawnElapsed >= 5)
-                        return true;
-                    else if (isSameGroup && spawnElapsed >= 2)
-                        return true;
-                }
-
-                return false;
-            }
-
-            return true;
-        }
-
         public bool PickUpItem(PlayerObject ob)
         {
-            if (!CanPickUpItem(ob))
+            if (Account != null && Account != ob.Character.Account)
                 return false;
 
             long amount = 0;
 
-            if (Account != null && Item.Info == Globals.GoldInfo && Account.GuildMember != null && Account.GuildMember.Guild.GuildTax > 0)
+            if (Account != null && Item.Info.Effect == ItemEffect.Gold && Account.GuildMember != null && Account.GuildMember.Guild.GuildTax > 0)
                 amount = (long)Math.Ceiling(Item.Count * Account.GuildMember.Guild.GuildTax);
 
             ItemCheck check = new ItemCheck(Item, Item.Count - amount, Item.Flags, Item.ExpireTime);
@@ -122,7 +104,8 @@ namespace Server.Models
 
                     foreach (GuildMemberInfo member in Account.GuildMember.Guild.Members)
                     {
-                        if (member.Account.Connection?.Player == null) continue;
+                        if (member.Account.Connection?.Player == null)
+                            continue;
 
                         member.Account.Connection.Enqueue(new S.GuildMemberContribution { Index = Account.GuildMember.Index, Contribution = amount, ObserverPacket = false });
                     }
@@ -143,12 +126,12 @@ namespace Server.Models
         }
         public void PickUpItem(Companion ob)
         {
-            if (!CanPickUpItem(ob.CompanionOwner))
+            if (Account != null && Account != ob.CompanionOwner.Character.Account)
                 return;
 
             long amount = 0;
 
-            if (Account != null && Item.Info == Globals.GoldInfo && Account.GuildMember != null && Account.GuildMember.Guild.GuildTax > 0)
+            if (Account != null && Item.Info.Effect == ItemEffect.Gold && Account.GuildMember != null && Account.GuildMember.Guild.GuildTax > 0)
                 amount = (long)Math.Ceiling(Item.Count * Account.GuildMember.Guild.GuildTax);
 
             ItemCheck check = new ItemCheck(Item, Item.Count - amount, Item.Flags, Item.ExpireTime);
@@ -170,7 +153,8 @@ namespace Server.Models
 
                     foreach (GuildMemberInfo member in Account.GuildMember.Guild.Members)
                     {
-                        if (member.Account.Connection?.Player == null) continue;
+                        if (member.Account.Connection?.Player == null)
+                            continue;
 
                         member.Account.Connection.Enqueue(new S.GuildMemberContribution { Index = Account.GuildMember.Index, Contribution = amount, ObserverPacket = false });
                     }
@@ -206,21 +190,22 @@ namespace Server.Models
 
         public override bool CanBeSeenBy(PlayerObject ob)
         {
-            if (!Config.DropVisibleOtherPlayers)
-            {
-                if (Account != null && ob.Character.Account != Account) return false;
-                if (Item.UserTask != null && Item.UserTask.Quest.Character != ob.Character) return false;
-            }
+            if (Account != null && ob.Character.Account != Account)
+                return false;
+
+            if (Item.UserTask != null && Item.UserTask.Quest.Character != ob.Character)
+                return false;
 
             return base.CanBeSeenBy(ob);
         }
 
         public override void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public override void DeActivate()
         {

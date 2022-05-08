@@ -37,7 +37,6 @@
             this.xtraTabControl1 = new DevExpress.XtraTab.XtraTabControl();
             this.xtraTabPage1 = new DevExpress.XtraTab.XtraTabPage();
             this.PacketBanTimeEdit = new DevExpress.XtraEditors.TimeSpanEdit();
-            this.SyncronizeButton = new DevExpress.XtraEditors.SimpleButton();
             this.labelControl86 = new DevExpress.XtraEditors.LabelControl();
             this.labelControl87 = new DevExpress.XtraEditors.LabelControl();
             this.MaxPacketEdit = new DevExpress.XtraEditors.TextEdit();
@@ -106,6 +105,8 @@
             this.labelControl5 = new DevExpress.XtraEditors.LabelControl();
             this.labelControl4 = new DevExpress.XtraEditors.LabelControl();
             this.CheckVersionEdit = new DevExpress.XtraEditors.CheckEdit();
+            this.EnvironmentTickCountEdit = new DevExpress.XtraEditors.TextEdit();
+            this.EnvironmentTickCountEditLabel = new DevExpress.XtraEditors.LabelControl();
             this.xtraTabPage4 = new DevExpress.XtraTab.XtraTabPage();
             this.MailDisplayNameEdit = new DevExpress.XtraEditors.TextEdit();
             this.labelControl31 = new DevExpress.XtraEditors.LabelControl();
@@ -123,7 +124,7 @@
             this.labelControl26 = new DevExpress.XtraEditors.LabelControl();
             this.xtraTabPage5 = new DevExpress.XtraTab.XtraTabPage();
             this.labelControl81 = new DevExpress.XtraEditors.LabelControl();
-            this.AllowBuyGameGoldEdit = new DevExpress.XtraEditors.CheckEdit();
+            this.AllowBuyGammeGoldEdit = new DevExpress.XtraEditors.CheckEdit();
             this.labelControl80 = new DevExpress.XtraEditors.LabelControl();
             this.ProcessGameGoldEdit = new DevExpress.XtraEditors.CheckEdit();
             this.ReceiverEMailEdit = new DevExpress.XtraEditors.TextEdit();
@@ -151,6 +152,24 @@
             this.WebPrefixEdit = new DevExpress.XtraEditors.TextEdit();
             this.labelControl42 = new DevExpress.XtraEditors.LabelControl();
             this.xtraTabPage6 = new DevExpress.XtraTab.XtraTabPage();
+            this.startLeveLEdit = new DevExpress.XtraEditors.TextEdit();
+            this.labelControl88 = new DevExpress.XtraEditors.LabelControl();
+            this.DDMaxDropEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDMaxDropLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DDLegendaryEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDLegendaryLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DDEliteEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDEliteLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DDRareEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDRareLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DDSuperiorEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDSuperiorLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DDCommonEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDCommonLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DDInventoryEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DDInventoryLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DeathDropsEdit = new DevExpress.XtraEditors.CheckEdit();
+            this.DeathDrops = new DevExpress.XtraEditors.LabelControl();
             this.labelControl69 = new DevExpress.XtraEditors.LabelControl();
             this.AutoReviveDelayEdit = new DevExpress.XtraEditors.TimeSpanEdit();
             this.PvPCurseRateEdit = new DevExpress.XtraEditors.TextEdit();
@@ -182,6 +201,8 @@
             this.xtraTabPage7 = new DevExpress.XtraTab.XtraTabPage();
             this.LairRegionIndexEdit = new DevExpress.XtraEditors.LookUpEdit();
             this.labelControl82 = new DevExpress.XtraEditors.LabelControl();
+            this.SeaCaveRegionIndexEdit = new DevExpress.XtraEditors.LookUpEdit();
+            this.labelControl90 = new DevExpress.XtraEditors.LabelControl();
             this.MysteryShipRegionIndexEdit = new DevExpress.XtraEditors.LookUpEdit();
             this.labelControl89 = new DevExpress.XtraEditors.LabelControl();
             this.labelControl74 = new DevExpress.XtraEditors.LabelControl();
@@ -213,6 +234,10 @@
             this.labelControl49 = new DevExpress.XtraEditors.LabelControl();
             this.labelControl48 = new DevExpress.XtraEditors.LabelControl();
             this.DropDurationEdit = new DevExpress.XtraEditors.TimeSpanEdit();
+            this.DropAddedChanceLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DropAddedChanceEdit = new DevExpress.XtraEditors.TextEdit();
+            this.DropRarityIncLabel = new DevExpress.XtraEditors.LabelControl();
+            this.DropRarityIncEdit = new DevExpress.XtraEditors.TextEdit();
             this.xtraTabPage9 = new DevExpress.XtraTab.XtraTabPage();
             this.CompanionRateEdit = new DevExpress.XtraEditors.TextEdit();
             this.labelControl68 = new DevExpress.XtraEditors.LabelControl();
@@ -226,6 +251,8 @@
             this.labelControl55 = new DevExpress.XtraEditors.LabelControl();
             this.OpenDialog = new System.Windows.Forms.OpenFileDialog();
             this.FolderDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.FlowerMapRegionIndexEdit = new DevExpress.XtraEditors.LookUpEdit();
+            this.labelControl91 = new DevExpress.XtraEditors.LabelControl();
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
             this.xtraTabControl1.SuspendLayout();
@@ -265,6 +292,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.DBSaveDelayEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.VersionPathEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CheckVersionEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.EnvironmentTickCountEdit.Properties)).BeginInit();
             this.xtraTabPage4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MailDisplayNameEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MailFromEdit.Properties)).BeginInit();
@@ -274,7 +302,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.MailPortEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MailServerEdit.Properties)).BeginInit();
             this.xtraTabPage5.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.AllowBuyGameGoldEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.AllowBuyGammeGoldEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ProcessGameGoldEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ReceiverEMailEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.IPNPrefixEdit.Properties)).BeginInit();
@@ -289,6 +317,15 @@
             ((System.ComponentModel.ISupportInitialize)(this.WebCommandLinkEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.WebPrefixEdit.Properties)).BeginInit();
             this.xtraTabPage6.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.startLeveLEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDMaxDropEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDLegendaryEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDEliteEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDRareEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDSuperiorEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDCommonEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDInventoryEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DeathDropsEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoReviveDelayEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PvPCurseRateEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PvPCurseDurationEdit.Properties)).BeginInit();
@@ -305,6 +342,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.MaxViewRangeEdit.Properties)).BeginInit();
             this.xtraTabPage7.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.LairRegionIndexEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SeaCaveRegionIndexEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MysteryShipRegionIndexEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HarvestDurationEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DeadDurationEdit.Properties)).BeginInit();
@@ -321,12 +359,15 @@
             ((System.ComponentModel.ISupportInitialize)(this.DropLayersEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropDistanceEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropDurationEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropAddedChanceEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropRarityIncEdit.Properties)).BeginInit();
             this.xtraTabPage9.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CompanionRateEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SkillRateEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.GoldRateEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropRateEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ExperienceRateEdit.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.FlowerMapRegionIndexEdit.Properties)).BeginInit();
             this.SuspendLayout();
             // 
             // ribbon
@@ -341,7 +382,7 @@
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.ribbonPage1});
-            this.ribbon.Size = new System.Drawing.Size(769, 144);
+            this.ribbon.Size = new System.Drawing.Size(775, 143);
             // 
             // SaveButton
             // 
@@ -380,10 +421,10 @@
             // xtraTabControl1
             // 
             this.xtraTabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.xtraTabControl1.Location = new System.Drawing.Point(0, 144);
+            this.xtraTabControl1.Location = new System.Drawing.Point(0, 143);
             this.xtraTabControl1.Name = "xtraTabControl1";
             this.xtraTabControl1.SelectedTabPage = this.xtraTabPage1;
-            this.xtraTabControl1.Size = new System.Drawing.Size(769, 420);
+            this.xtraTabControl1.Size = new System.Drawing.Size(775, 424);
             this.xtraTabControl1.TabIndex = 2;
             this.xtraTabControl1.TabPages.AddRange(new DevExpress.XtraTab.XtraTabPage[] {
             this.xtraTabPage1,
@@ -399,7 +440,6 @@
             // xtraTabPage1
             // 
             this.xtraTabPage1.Controls.Add(this.PacketBanTimeEdit);
-            this.xtraTabPage1.Controls.Add(this.SyncronizeButton);
             this.xtraTabPage1.Controls.Add(this.labelControl86);
             this.xtraTabPage1.Controls.Add(this.labelControl87);
             this.xtraTabPage1.Controls.Add(this.MaxPacketEdit);
@@ -414,7 +454,7 @@
             this.xtraTabPage1.Controls.Add(this.IPAddressEdit);
             this.xtraTabPage1.Controls.Add(this.labelControl1);
             this.xtraTabPage1.Name = "xtraTabPage1";
-            this.xtraTabPage1.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage1.Size = new System.Drawing.Size(769, 396);
             this.xtraTabPage1.Text = "Network";
             // 
             // PacketBanTimeEdit
@@ -429,14 +469,6 @@
             this.PacketBanTimeEdit.Properties.Mask.EditMask = "HH:mm:ss";
             this.PacketBanTimeEdit.Size = new System.Drawing.Size(100, 20);
             this.PacketBanTimeEdit.TabIndex = 40;
-            // 
-            // SyncronizeButton
-            // 
-            this.SyncronizeButton.Location = new System.Drawing.Point(20, 200);
-            this.SyncronizeButton.Name = "SyncronizeButton";
-            this.SyncronizeButton.Size = new System.Drawing.Size(200, 23);
-            this.SyncronizeButton.TabIndex = 41;
-            this.SyncronizeButton.Text = "Syncronize Remote DB";
             // 
             // labelControl86
             // 
@@ -608,7 +640,7 @@
             this.xtraTabPage2.Controls.Add(this.labelControl7);
             this.xtraTabPage2.Controls.Add(this.AllowNewAccountEdit);
             this.xtraTabPage2.Name = "xtraTabPage2";
-            this.xtraTabPage2.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage2.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage2.Text = "Control";
             // 
             // labelControl16
@@ -940,8 +972,10 @@
             this.xtraTabPage3.Controls.Add(this.labelControl5);
             this.xtraTabPage3.Controls.Add(this.labelControl4);
             this.xtraTabPage3.Controls.Add(this.CheckVersionEdit);
+            this.xtraTabPage3.Controls.Add(this.EnvironmentTickCountEdit);
+            this.xtraTabPage3.Controls.Add(this.EnvironmentTickCountEditLabel);
             this.xtraTabPage3.Name = "xtraTabPage3";
-            this.xtraTabPage3.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage3.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage3.Text = "System";
             // 
             // RabbitEventEndEdit
@@ -1109,6 +1143,27 @@
             this.CheckVersionEdit.Size = new System.Drawing.Size(100, 19);
             this.CheckVersionEdit.TabIndex = 22;
             // 
+            // EnvironmentTickCountEdit
+            // 
+            this.EnvironmentTickCountEdit.Location = new System.Drawing.Point(103, 310);
+            this.EnvironmentTickCountEdit.MenuManager = this.ribbon;
+            this.EnvironmentTickCountEdit.Name = "EnvironmentTickCountEdit";
+            this.EnvironmentTickCountEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.EnvironmentTickCountEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.EnvironmentTickCountEdit.Properties.Mask.EditMask = "n0";
+            this.EnvironmentTickCountEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.EnvironmentTickCountEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.EnvironmentTickCountEdit.Size = new System.Drawing.Size(100, 20);
+            this.EnvironmentTickCountEdit.TabIndex = 150;
+            // 
+            // EnvironmentTickCountEditLabel
+            // 
+            this.EnvironmentTickCountEditLabel.Location = new System.Drawing.Point(10, 313);
+            this.EnvironmentTickCountEditLabel.Name = "EnvironmentTickCountEditLabel";
+            this.EnvironmentTickCountEditLabel.Size = new System.Drawing.Size(88, 13);
+            this.EnvironmentTickCountEditLabel.TabIndex = 151;
+            this.EnvironmentTickCountEditLabel.Text = "MainThread tick/s:";
+            // 
             // xtraTabPage4
             // 
             this.xtraTabPage4.Controls.Add(this.MailDisplayNameEdit);
@@ -1126,7 +1181,7 @@
             this.xtraTabPage4.Controls.Add(this.MailServerEdit);
             this.xtraTabPage4.Controls.Add(this.labelControl26);
             this.xtraTabPage4.Name = "xtraTabPage4";
-            this.xtraTabPage4.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage4.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage4.Text = "Mail";
             // 
             // MailDisplayNameEdit
@@ -1261,7 +1316,7 @@
             // xtraTabPage5
             // 
             this.xtraTabPage5.Controls.Add(this.labelControl81);
-            this.xtraTabPage5.Controls.Add(this.AllowBuyGameGoldEdit);
+            this.xtraTabPage5.Controls.Add(this.AllowBuyGammeGoldEdit);
             this.xtraTabPage5.Controls.Add(this.labelControl80);
             this.xtraTabPage5.Controls.Add(this.ProcessGameGoldEdit);
             this.xtraTabPage5.Controls.Add(this.ReceiverEMailEdit);
@@ -1289,7 +1344,7 @@
             this.xtraTabPage5.Controls.Add(this.WebPrefixEdit);
             this.xtraTabPage5.Controls.Add(this.labelControl42);
             this.xtraTabPage5.Name = "xtraTabPage5";
-            this.xtraTabPage5.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage5.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage5.Text = "Web Server";
             // 
             // labelControl81
@@ -1300,14 +1355,14 @@
             this.labelControl81.TabIndex = 101;
             this.labelControl81.Text = "Allow Buy Game Gold:";
             // 
-            // AllowBuyGameGoldEdit
+            // AllowBuyGammeGoldEdit
             // 
-            this.AllowBuyGameGoldEdit.Location = new System.Drawing.Point(485, 200);
-            this.AllowBuyGameGoldEdit.MenuManager = this.ribbon;
-            this.AllowBuyGameGoldEdit.Name = "AllowBuyGameGoldEdit";
-            this.AllowBuyGameGoldEdit.Properties.Caption = "";
-            this.AllowBuyGameGoldEdit.Size = new System.Drawing.Size(100, 19);
-            this.AllowBuyGameGoldEdit.TabIndex = 100;
+            this.AllowBuyGammeGoldEdit.Location = new System.Drawing.Point(485, 200);
+            this.AllowBuyGammeGoldEdit.MenuManager = this.ribbon;
+            this.AllowBuyGammeGoldEdit.Name = "AllowBuyGammeGoldEdit";
+            this.AllowBuyGammeGoldEdit.Properties.Caption = "";
+            this.AllowBuyGammeGoldEdit.Size = new System.Drawing.Size(100, 19);
+            this.AllowBuyGammeGoldEdit.TabIndex = 100;
             // 
             // labelControl80
             // 
@@ -1547,6 +1602,24 @@
             // 
             // xtraTabPage6
             // 
+            this.xtraTabPage6.Controls.Add(this.startLeveLEdit);
+            this.xtraTabPage6.Controls.Add(this.labelControl88);
+            this.xtraTabPage6.Controls.Add(this.DDMaxDropEdit);
+            this.xtraTabPage6.Controls.Add(this.DDMaxDropLabel);
+            this.xtraTabPage6.Controls.Add(this.DDLegendaryEdit);
+            this.xtraTabPage6.Controls.Add(this.DDLegendaryLabel);
+            this.xtraTabPage6.Controls.Add(this.DDEliteEdit);
+            this.xtraTabPage6.Controls.Add(this.DDEliteLabel);
+            this.xtraTabPage6.Controls.Add(this.DDRareEdit);
+            this.xtraTabPage6.Controls.Add(this.DDRareLabel);
+            this.xtraTabPage6.Controls.Add(this.DDSuperiorEdit);
+            this.xtraTabPage6.Controls.Add(this.DDSuperiorLabel);
+            this.xtraTabPage6.Controls.Add(this.DDCommonEdit);
+            this.xtraTabPage6.Controls.Add(this.DDCommonLabel);
+            this.xtraTabPage6.Controls.Add(this.DDInventoryEdit);
+            this.xtraTabPage6.Controls.Add(this.DDInventoryLabel);
+            this.xtraTabPage6.Controls.Add(this.DeathDropsEdit);
+            this.xtraTabPage6.Controls.Add(this.DeathDrops);
             this.xtraTabPage6.Controls.Add(this.labelControl69);
             this.xtraTabPage6.Controls.Add(this.AutoReviveDelayEdit);
             this.xtraTabPage6.Controls.Add(this.PvPCurseRateEdit);
@@ -1576,8 +1649,193 @@
             this.xtraTabPage6.Controls.Add(this.MaxViewRangeEdit);
             this.xtraTabPage6.Controls.Add(this.labelControl23);
             this.xtraTabPage6.Name = "xtraTabPage6";
-            this.xtraTabPage6.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage6.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage6.Text = "Players";
+            // 
+            // startLeveLEdit
+            // 
+            this.startLeveLEdit.Location = new System.Drawing.Point(429, 177);
+            this.startLeveLEdit.MenuManager = this.ribbon;
+            this.startLeveLEdit.Name = "startLeveLEdit";
+            this.startLeveLEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.startLeveLEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.startLeveLEdit.Properties.Mask.EditMask = "n0";
+            this.startLeveLEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.startLeveLEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.startLeveLEdit.Size = new System.Drawing.Size(100, 20);
+            this.startLeveLEdit.TabIndex = 142;
+            // 
+            // labelControl88
+            // 
+            this.labelControl88.Location = new System.Drawing.Point(350, 180);
+            this.labelControl88.Name = "labelControl88";
+            this.labelControl88.Size = new System.Drawing.Size(73, 13);
+            this.labelControl88.TabIndex = 141;
+            this.labelControl88.Text = "Starting Level: ";
+            // 
+            // DDMaxDropEdit
+            // 
+            this.DDMaxDropEdit.Location = new System.Drawing.Point(117, 383);
+            this.DDMaxDropEdit.MenuManager = this.ribbon;
+            this.DDMaxDropEdit.Name = "DDMaxDropEdit";
+            this.DDMaxDropEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDMaxDropEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDMaxDropEdit.Properties.Mask.EditMask = "n0";
+            this.DDMaxDropEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDMaxDropEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDMaxDropEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDMaxDropEdit.TabIndex = 140;
+            // 
+            // DDMaxDropLabel
+            // 
+            this.DDMaxDropLabel.Location = new System.Drawing.Point(33, 386);
+            this.DDMaxDropLabel.Name = "DDMaxDropLabel";
+            this.DDMaxDropLabel.Size = new System.Drawing.Size(77, 13);
+            this.DDMaxDropLabel.TabIndex = 139;
+            this.DDMaxDropLabel.Text = "Max Body Drop:";
+            // 
+            // DDLegendaryEdit
+            // 
+            this.DDLegendaryEdit.Location = new System.Drawing.Point(117, 360);
+            this.DDLegendaryEdit.MenuManager = this.ribbon;
+            this.DDLegendaryEdit.Name = "DDLegendaryEdit";
+            this.DDLegendaryEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDLegendaryEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDLegendaryEdit.Properties.Mask.EditMask = "n0";
+            this.DDLegendaryEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDLegendaryEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDLegendaryEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDLegendaryEdit.TabIndex = 139;
+            // 
+            // DDLegendaryLabel
+            // 
+            this.DDLegendaryLabel.Location = new System.Drawing.Point(29, 363);
+            this.DDLegendaryLabel.Name = "DDLegendaryLabel";
+            this.DDLegendaryLabel.Size = new System.Drawing.Size(81, 13);
+            this.DDLegendaryLabel.TabIndex = 138;
+            this.DDLegendaryLabel.Text = "Legendary Rate:";
+            // 
+            // DDEliteEdit
+            // 
+            this.DDEliteEdit.Location = new System.Drawing.Point(117, 337);
+            this.DDEliteEdit.MenuManager = this.ribbon;
+            this.DDEliteEdit.Name = "DDEliteEdit";
+            this.DDEliteEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDEliteEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDEliteEdit.Properties.Mask.EditMask = "n0";
+            this.DDEliteEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDEliteEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDEliteEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDEliteEdit.TabIndex = 137;
+            // 
+            // DDEliteLabel
+            // 
+            this.DDEliteLabel.Location = new System.Drawing.Point(60, 340);
+            this.DDEliteLabel.Name = "DDEliteLabel";
+            this.DDEliteLabel.Size = new System.Drawing.Size(50, 13);
+            this.DDEliteLabel.TabIndex = 136;
+            this.DDEliteLabel.Text = "Elite Rate:";
+            // 
+            // DDRareEdit
+            // 
+            this.DDRareEdit.Location = new System.Drawing.Point(117, 314);
+            this.DDRareEdit.MenuManager = this.ribbon;
+            this.DDRareEdit.Name = "DDRareEdit";
+            this.DDRareEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDRareEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDRareEdit.Properties.Mask.EditMask = "n0";
+            this.DDRareEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDRareEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDRareEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDRareEdit.TabIndex = 135;
+            // 
+            // DDRareLabel
+            // 
+            this.DDRareLabel.Location = new System.Drawing.Point(59, 317);
+            this.DDRareLabel.Name = "DDRareLabel";
+            this.DDRareLabel.Size = new System.Drawing.Size(53, 13);
+            this.DDRareLabel.TabIndex = 134;
+            this.DDRareLabel.Text = "Rare Rate:";
+            // 
+            // DDSuperiorEdit
+            // 
+            this.DDSuperiorEdit.Location = new System.Drawing.Point(117, 291);
+            this.DDSuperiorEdit.MenuManager = this.ribbon;
+            this.DDSuperiorEdit.Name = "DDSuperiorEdit";
+            this.DDSuperiorEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDSuperiorEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDSuperiorEdit.Properties.Mask.EditMask = "n0";
+            this.DDSuperiorEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDSuperiorEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDSuperiorEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDSuperiorEdit.TabIndex = 133;
+            // 
+            // DDSuperiorLabel
+            // 
+            this.DDSuperiorLabel.Location = new System.Drawing.Point(42, 294);
+            this.DDSuperiorLabel.Name = "DDSuperiorLabel";
+            this.DDSuperiorLabel.Size = new System.Drawing.Size(70, 13);
+            this.DDSuperiorLabel.TabIndex = 132;
+            this.DDSuperiorLabel.Text = "Superior Rate:";
+            // 
+            // DDCommonEdit
+            // 
+            this.DDCommonEdit.Location = new System.Drawing.Point(117, 268);
+            this.DDCommonEdit.MenuManager = this.ribbon;
+            this.DDCommonEdit.Name = "DDCommonEdit";
+            this.DDCommonEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDCommonEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDCommonEdit.Properties.Mask.EditMask = "n0";
+            this.DDCommonEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDCommonEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDCommonEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDCommonEdit.TabIndex = 131;
+            // 
+            // DDCommonLabel
+            // 
+            this.DDCommonLabel.Location = new System.Drawing.Point(40, 271);
+            this.DDCommonLabel.Name = "DDCommonLabel";
+            this.DDCommonLabel.Size = new System.Drawing.Size(71, 13);
+            this.DDCommonLabel.TabIndex = 130;
+            this.DDCommonLabel.Text = "Common Rate:";
+            // 
+            // DDInventoryEdit
+            // 
+            this.DDInventoryEdit.Location = new System.Drawing.Point(117, 245);
+            this.DDInventoryEdit.MenuManager = this.ribbon;
+            this.DDInventoryEdit.Name = "DDInventoryEdit";
+            this.DDInventoryEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DDInventoryEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DDInventoryEdit.Properties.Mask.EditMask = "n0";
+            this.DDInventoryEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DDInventoryEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DDInventoryEdit.Size = new System.Drawing.Size(100, 20);
+            this.DDInventoryEdit.TabIndex = 129;
+            // 
+            // DDInventoryLabel
+            // 
+            this.DDInventoryLabel.Location = new System.Drawing.Point(33, 248);
+            this.DDInventoryLabel.Name = "DDInventoryLabel";
+            this.DDInventoryLabel.Size = new System.Drawing.Size(78, 13);
+            this.DDInventoryLabel.TabIndex = 128;
+            this.DDInventoryLabel.Text = "Inventory Rate:";
+            // 
+            // DeathDropsEdit
+            // 
+            this.DeathDropsEdit.Location = new System.Drawing.Point(117, 225);
+            this.DeathDropsEdit.MenuManager = this.ribbon;
+            this.DeathDropsEdit.Name = "DeathDropsEdit";
+            this.DeathDropsEdit.Properties.Caption = "";
+            this.DeathDropsEdit.Size = new System.Drawing.Size(100, 19);
+            this.DeathDropsEdit.TabIndex = 82;
+            // 
+            // DeathDrops
+            // 
+            this.DeathDrops.Location = new System.Drawing.Point(47, 225);
+            this.DeathDrops.Name = "DeathDrops";
+            this.DeathDrops.Size = new System.Drawing.Size(64, 13);
+            this.DeathDrops.TabIndex = 127;
+            this.DeathDrops.Text = "Death Drops:";
             // 
             // labelControl69
             // 
@@ -1871,8 +2129,12 @@
             // 
             // xtraTabPage7
             // 
+            this.xtraTabPage7.Controls.Add(this.FlowerMapRegionIndexEdit);
+            this.xtraTabPage7.Controls.Add(this.labelControl91);
             this.xtraTabPage7.Controls.Add(this.LairRegionIndexEdit);
             this.xtraTabPage7.Controls.Add(this.labelControl82);
+            this.xtraTabPage7.Controls.Add(this.SeaCaveRegionIndexEdit);
+            this.xtraTabPage7.Controls.Add(this.labelControl90);
             this.xtraTabPage7.Controls.Add(this.MysteryShipRegionIndexEdit);
             this.xtraTabPage7.Controls.Add(this.labelControl89);
             this.xtraTabPage7.Controls.Add(this.labelControl74);
@@ -1880,7 +2142,7 @@
             this.xtraTabPage7.Controls.Add(this.labelControl47);
             this.xtraTabPage7.Controls.Add(this.DeadDurationEdit);
             this.xtraTabPage7.Name = "xtraTabPage7";
-            this.xtraTabPage7.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage7.Size = new System.Drawing.Size(769, 396);
             this.xtraTabPage7.Text = "Monsters";
             // 
             // LairRegionIndexEdit
@@ -1908,6 +2170,32 @@
             this.labelControl82.Size = new System.Drawing.Size(57, 13);
             this.labelControl82.TabIndex = 124;
             this.labelControl82.Text = "Lair Region:";
+            // 
+            // SeaCaveRegionIndexEdit
+            // 
+            this.SeaCaveRegionIndexEdit.Location = new System.Drawing.Point(142, 122);
+            this.SeaCaveRegionIndexEdit.MenuManager = this.ribbon;
+            this.SeaCaveRegionIndexEdit.Name = "SeaCaveRegionIndexEdit";
+            this.SeaCaveRegionIndexEdit.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.SeaCaveRegionIndexEdit.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.SeaCaveRegionIndexEdit.Properties.Columns.AddRange(new DevExpress.XtraEditors.Controls.LookUpColumnInfo[] {
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Index", "Index"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("ServerDescription", "Server Description"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Size", "Size")});
+            this.SeaCaveRegionIndexEdit.Properties.DisplayMember = "ServerDescription";
+            this.SeaCaveRegionIndexEdit.Properties.NullText = "[Region is null]";
+            this.SeaCaveRegionIndexEdit.Properties.ValueMember = "Index";
+            this.SeaCaveRegionIndexEdit.Size = new System.Drawing.Size(174, 20);
+            this.SeaCaveRegionIndexEdit.TabIndex = 126;
+            // 
+            // labelControl90
+            // 
+            this.labelControl90.Location = new System.Drawing.Point(50, 125);
+            this.labelControl90.Name = "labelControl90";
+            this.labelControl90.Size = new System.Drawing.Size(86, 13);
+            this.labelControl90.TabIndex = 126;
+            this.labelControl90.Text = "Sea Cave Region:";
             // 
             // MysteryShipRegionIndexEdit
             // 
@@ -2003,8 +2291,12 @@
             this.xtraTabPage8.Controls.Add(this.labelControl49);
             this.xtraTabPage8.Controls.Add(this.labelControl48);
             this.xtraTabPage8.Controls.Add(this.DropDurationEdit);
+            this.xtraTabPage8.Controls.Add(this.DropAddedChanceLabel);
+            this.xtraTabPage8.Controls.Add(this.DropAddedChanceEdit);
+            this.xtraTabPage8.Controls.Add(this.DropRarityIncLabel);
+            this.xtraTabPage8.Controls.Add(this.DropRarityIncEdit);
             this.xtraTabPage8.Name = "xtraTabPage8";
-            this.xtraTabPage8.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage8.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage8.Text = "Items";
             // 
             // StrengthLossRateEdit
@@ -2259,6 +2551,48 @@
             this.DropDurationEdit.Size = new System.Drawing.Size(100, 20);
             this.DropDurationEdit.TabIndex = 76;
             // 
+            // DropAddedChanceLabel
+            // 
+            this.DropAddedChanceLabel.Location = new System.Drawing.Point(240, 237);
+            this.DropAddedChanceLabel.Name = "DropAddedChanceLabel";
+            this.DropAddedChanceLabel.Size = new System.Drawing.Size(100, 13);
+            this.DropAddedChanceLabel.TabIndex = 101;
+            this.DropAddedChanceLabel.Text = "Added Drop Chance:";
+            // 
+            // DropAddedChanceEdit
+            // 
+            this.DropAddedChanceEdit.Location = new System.Drawing.Point(342, 234);
+            this.DropAddedChanceEdit.MenuManager = this.ribbon;
+            this.DropAddedChanceEdit.Name = "DropAddedChanceEdit";
+            this.DropAddedChanceEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DropAddedChanceEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DropAddedChanceEdit.Properties.Mask.EditMask = "n0";
+            this.DropAddedChanceEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DropAddedChanceEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DropAddedChanceEdit.Size = new System.Drawing.Size(100, 20);
+            this.DropAddedChanceEdit.TabIndex = 102;
+            // 
+            // DropRarityIncLabel
+            // 
+            this.DropRarityIncLabel.Location = new System.Drawing.Point(240, 263);
+            this.DropRarityIncLabel.Name = "DropRarityIncLabel";
+            this.DropRarityIncLabel.Size = new System.Drawing.Size(90, 13);
+            this.DropRarityIncLabel.TabIndex = 103;
+            this.DropRarityIncLabel.Text = "Rarity Inc Chance:";
+            // 
+            // DropRarityIncEdit
+            // 
+            this.DropRarityIncEdit.Location = new System.Drawing.Point(342, 260);
+            this.DropRarityIncEdit.MenuManager = this.ribbon;
+            this.DropRarityIncEdit.Name = "DropRarityIncEdit";
+            this.DropRarityIncEdit.Properties.Appearance.Options.UseTextOptions = true;
+            this.DropRarityIncEdit.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+            this.DropRarityIncEdit.Properties.Mask.EditMask = "n0";
+            this.DropRarityIncEdit.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric;
+            this.DropRarityIncEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+            this.DropRarityIncEdit.Size = new System.Drawing.Size(100, 20);
+            this.DropRarityIncEdit.TabIndex = 104;
+            // 
             // xtraTabPage9
             // 
             this.xtraTabPage9.Controls.Add(this.CompanionRateEdit);
@@ -2272,7 +2606,7 @@
             this.xtraTabPage9.Controls.Add(this.ExperienceRateEdit);
             this.xtraTabPage9.Controls.Add(this.labelControl55);
             this.xtraTabPage9.Name = "xtraTabPage9";
-            this.xtraTabPage9.Size = new System.Drawing.Size(763, 392);
+            this.xtraTabPage9.Size = new System.Drawing.Size(769, 392);
             this.xtraTabPage9.Text = "Rates";
             // 
             // CompanionRateEdit
@@ -2382,24 +2716,50 @@
             // 
             // OpenDialog
             // 
-            this.OpenDialog.FileName = "Zircon.exe";
-            this.OpenDialog.Filter = "Zircon Client|Zircon.exe|All Files|*.*";
+            this.OpenDialog.FileName = "Ancient Mir.exe";
+            this.OpenDialog.Filter = "Ancient Client|Ancient Mir.exe|All Files|*.*";
             // 
             // FolderDialog
             // 
             this.FolderDialog.SelectedPath = ".\\";
             // 
+            // FlowerMapRegionIndexEdit
+            // 
+            this.FlowerMapRegionIndexEdit.Location = new System.Drawing.Point(142, 151);
+            this.FlowerMapRegionIndexEdit.MenuManager = this.ribbon;
+            this.FlowerMapRegionIndexEdit.Name = "FlowerMapRegionIndexEdit";
+            this.FlowerMapRegionIndexEdit.Properties.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.FlowerMapRegionIndexEdit.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.FlowerMapRegionIndexEdit.Properties.Columns.AddRange(new DevExpress.XtraEditors.Controls.LookUpColumnInfo[] {
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Index", "Index"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("ServerDescription", "Server Description"),
+            new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Size", "Size")});
+            this.FlowerMapRegionIndexEdit.Properties.DisplayMember = "ServerDescription";
+            this.FlowerMapRegionIndexEdit.Properties.NullText = "[Region is null]";
+            this.FlowerMapRegionIndexEdit.Properties.ValueMember = "Index";
+            this.FlowerMapRegionIndexEdit.Size = new System.Drawing.Size(174, 20);
+            this.FlowerMapRegionIndexEdit.TabIndex = 127;
+            // 
+            // labelControl91
+            // 
+            this.labelControl91.Location = new System.Drawing.Point(63, 154);
+            this.labelControl91.Name = "labelControl91";
+            this.labelControl91.Size = new System.Drawing.Size(72, 13);
+            this.labelControl91.TabIndex = 128;
+            this.labelControl91.Text = "Flower Region:";
+            this.labelControl91.Click += new System.EventHandler(this.labelControl91_Click);
+            // 
             // ConfigView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(769, 564);
+            this.ClientSize = new System.Drawing.Size(775, 567);
             this.Controls.Add(this.xtraTabControl1);
             this.Controls.Add(this.ribbon);
             this.Name = "ConfigView";
             this.Ribbon = this.ribbon;
             this.Text = "Config View";
-            this.Load += new System.EventHandler(this.ConfigView_Load);
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).EndInit();
             this.xtraTabControl1.ResumeLayout(false);
@@ -2442,6 +2802,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.DBSaveDelayEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.VersionPathEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CheckVersionEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.EnvironmentTickCountEdit.Properties)).EndInit();
             this.xtraTabPage4.ResumeLayout(false);
             this.xtraTabPage4.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MailDisplayNameEdit.Properties)).EndInit();
@@ -2453,7 +2814,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.MailServerEdit.Properties)).EndInit();
             this.xtraTabPage5.ResumeLayout(false);
             this.xtraTabPage5.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.AllowBuyGameGoldEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.AllowBuyGammeGoldEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ProcessGameGoldEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ReceiverEMailEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.IPNPrefixEdit.Properties)).EndInit();
@@ -2469,6 +2830,15 @@
             ((System.ComponentModel.ISupportInitialize)(this.WebPrefixEdit.Properties)).EndInit();
             this.xtraTabPage6.ResumeLayout(false);
             this.xtraTabPage6.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.startLeveLEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDMaxDropEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDLegendaryEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDEliteEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDRareEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDSuperiorEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDCommonEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DDInventoryEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DeathDropsEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.AutoReviveDelayEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PvPCurseRateEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.PvPCurseDurationEdit.Properties)).EndInit();
@@ -2486,6 +2856,7 @@
             this.xtraTabPage7.ResumeLayout(false);
             this.xtraTabPage7.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.LairRegionIndexEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SeaCaveRegionIndexEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MysteryShipRegionIndexEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HarvestDurationEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DeadDurationEdit.Properties)).EndInit();
@@ -2503,6 +2874,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.DropLayersEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropDistanceEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropDurationEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropAddedChanceEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropRarityIncEdit.Properties)).EndInit();
             this.xtraTabPage9.ResumeLayout(false);
             this.xtraTabPage9.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CompanionRateEdit.Properties)).EndInit();
@@ -2510,6 +2883,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.GoldRateEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropRateEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ExperienceRateEdit.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.FlowerMapRegionIndexEdit.Properties)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -2587,6 +2961,8 @@
         private DevExpress.XtraEditors.LabelControl labelControl5;
         private DevExpress.XtraEditors.LabelControl labelControl4;
         private DevExpress.XtraEditors.CheckEdit CheckVersionEdit;
+        private DevExpress.XtraEditors.TextEdit EnvironmentTickCountEdit;
+        private DevExpress.XtraEditors.LabelControl EnvironmentTickCountEditLabel;
         private DevExpress.XtraEditors.TextEdit MailDisplayNameEdit;
         private DevExpress.XtraEditors.LabelControl labelControl31;
         private DevExpress.XtraEditors.TextEdit MailFromEdit;
@@ -2696,7 +3072,7 @@
         private DevExpress.XtraEditors.TextEdit BuyPrefixEdit;
         private DevExpress.XtraEditors.LabelControl labelControl71;
         private DevExpress.XtraEditors.LabelControl labelControl81;
-        private DevExpress.XtraEditors.CheckEdit AllowBuyGameGoldEdit;
+        private DevExpress.XtraEditors.CheckEdit AllowBuyGammeGoldEdit;
         private DevExpress.XtraEditors.LabelControl labelControl80;
         private DevExpress.XtraEditors.CheckEdit ProcessGameGoldEdit;
         private DevExpress.XtraEditors.TextEdit ReceiverEMailEdit;
@@ -2707,12 +3083,37 @@
         private DevExpress.XtraEditors.LabelControl labelControl72;
         private DevExpress.XtraEditors.LookUpEdit LairRegionIndexEdit;
         private DevExpress.XtraEditors.LabelControl labelControl82;
+        private DevExpress.XtraEditors.LookUpEdit SeaCaveRegionIndexEdit;
+        private DevExpress.XtraEditors.LabelControl labelControl90;
         private DevExpress.XtraEditors.TextEdit RabbitEventEndEdit;
         private DevExpress.XtraEditors.LabelControl labelControl85;
         private DevExpress.XtraEditors.TimeSpanEdit PacketBanTimeEdit;
-        private DevExpress.XtraEditors.SimpleButton SyncronizeButton;
         private DevExpress.XtraEditors.LabelControl labelControl86;
         private DevExpress.XtraEditors.LabelControl labelControl87;
         private DevExpress.XtraEditors.TextEdit MaxPacketEdit;
+        private DevExpress.XtraEditors.TextEdit DropAddedChanceEdit;
+        private DevExpress.XtraEditors.LabelControl DropAddedChanceLabel;
+        private DevExpress.XtraEditors.TextEdit DropRarityIncEdit;
+        private DevExpress.XtraEditors.LabelControl DropRarityIncLabel;
+        private DevExpress.XtraEditors.LabelControl DeathDrops;
+        private DevExpress.XtraEditors.CheckEdit DeathDropsEdit;
+        private DevExpress.XtraEditors.TextEdit DDInventoryEdit;
+        private DevExpress.XtraEditors.LabelControl DDInventoryLabel;
+        private DevExpress.XtraEditors.TextEdit DDCommonEdit;
+        private DevExpress.XtraEditors.LabelControl DDCommonLabel;
+        private DevExpress.XtraEditors.TextEdit DDSuperiorEdit;
+        private DevExpress.XtraEditors.LabelControl DDSuperiorLabel;
+        private DevExpress.XtraEditors.TextEdit DDRareEdit;
+        private DevExpress.XtraEditors.LabelControl DDRareLabel;
+        private DevExpress.XtraEditors.TextEdit DDEliteEdit;
+        private DevExpress.XtraEditors.LabelControl DDEliteLabel;
+        private DevExpress.XtraEditors.TextEdit DDLegendaryEdit;
+        private DevExpress.XtraEditors.LabelControl DDLegendaryLabel;
+        private DevExpress.XtraEditors.TextEdit DDMaxDropEdit;
+        private DevExpress.XtraEditors.LabelControl DDMaxDropLabel;
+        private DevExpress.XtraEditors.TextEdit startLeveLEdit;
+        private DevExpress.XtraEditors.LabelControl labelControl88;
+        private DevExpress.XtraEditors.LookUpEdit FlowerMapRegionIndexEdit;
+        private DevExpress.XtraEditors.LabelControl labelControl91;
     }
 }

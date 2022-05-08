@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using MirDB;
 
@@ -13,10 +9,14 @@ namespace Server.DBModels
     {
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -28,10 +28,14 @@ namespace Server.DBModels
 
         public DateTime WarStartDate
         {
-            get { return _WarStartDate; }
+            get
+            {
+                return _WarStartDate;
+            }
             set
             {
-                if (_WarStartDate == value) return;
+                if (_WarStartDate == value)
+                    return;
 
                 var oldValue = _WarStartDate;
                 _WarStartDate = value;
@@ -43,10 +47,14 @@ namespace Server.DBModels
 
         public string CastleName
         {
-            get { return _CastleName; }
+            get
+            {
+                return _CastleName;
+            }
             set
             {
-                if (_CastleName == value) return;
+                if (_CastleName == value)
+                    return;
 
                 var oldValue = _CastleName;
                 _CastleName = value;
@@ -55,14 +63,18 @@ namespace Server.DBModels
             }
         }
         private string _CastleName;
-        
+
 
         public string CharacterName
         {
-            get { return _CharacterName; }
+            get
+            {
+                return _CharacterName;
+            }
             set
             {
-                if (_CharacterName == value) return;
+                if (_CharacterName == value)
+                    return;
 
                 var oldValue = _CharacterName;
                 _CharacterName = value;
@@ -74,10 +86,14 @@ namespace Server.DBModels
 
         public string GuildName
         {
-            get { return _GuildName; }
+            get
+            {
+                return _GuildName;
+            }
             set
             {
-                if (_GuildName == value) return;
+                if (_GuildName == value)
+                    return;
 
                 var oldValue = _GuildName;
                 _GuildName = value;
@@ -89,10 +105,14 @@ namespace Server.DBModels
 
         public int Level
         {
-            get { return _Level; }
+            get
+            {
+                return _Level;
+            }
             set
             {
-                if (_Level == value) return;
+                if (_Level == value)
+                    return;
 
                 var oldValue = _Level;
                 _Level = value;
@@ -104,10 +124,14 @@ namespace Server.DBModels
 
         public MirClass Class
         {
-            get { return _Class; }
+            get
+            {
+                return _Class;
+            }
             set
             {
-                if (_Class == value) return;
+                if (_Class == value)
+                    return;
 
                 var oldValue = _Class;
                 _Class = value;
@@ -116,15 +140,19 @@ namespace Server.DBModels
             }
         }
         private MirClass _Class;
-        
+
 
 
         public int BossDamageTaken
         {
-            get { return _BossDamageTaken; }
+            get
+            {
+                return _BossDamageTaken;
+            }
             set
             {
-                if (_BossDamageTaken == value) return;
+                if (_BossDamageTaken == value)
+                    return;
 
                 var oldValue = _BossDamageTaken;
                 _BossDamageTaken = value;
@@ -136,10 +164,14 @@ namespace Server.DBModels
 
         public int BossDamageDealt
         {
-            get { return _BossDamageDealt; }
+            get
+            {
+                return _BossDamageDealt;
+            }
             set
             {
-                if (_BossDamageDealt == value) return;
+                if (_BossDamageDealt == value)
+                    return;
 
                 var oldValue = _BossDamageDealt;
                 _BossDamageDealt = value;
@@ -151,10 +183,14 @@ namespace Server.DBModels
 
         public int BossDeathCount
         {
-            get { return _BossDeathCount; }
+            get
+            {
+                return _BossDeathCount;
+            }
             set
             {
-                if (_BossDeathCount == value) return;
+                if (_BossDeathCount == value)
+                    return;
 
                 var oldValue = _BossDeathCount;
                 _BossDeathCount = value;
@@ -166,10 +202,14 @@ namespace Server.DBModels
 
         public int BossKillCount
         {
-            get { return _BossKillCount; }
+            get
+            {
+                return _BossKillCount;
+            }
             set
             {
-                if (_BossKillCount == value) return;
+                if (_BossKillCount == value)
+                    return;
 
                 var oldValue = _BossKillCount;
                 _BossKillCount = value;
@@ -178,13 +218,17 @@ namespace Server.DBModels
             }
         }
         private int _BossKillCount;
-        
+
         public int PvPDamageTaken
         {
-            get { return _PvPDamageTaken; }
+            get
+            {
+                return _PvPDamageTaken;
+            }
             set
             {
-                if (_PvPDamageTaken == value) return;
+                if (_PvPDamageTaken == value)
+                    return;
 
                 var oldValue = _PvPDamageTaken;
                 _PvPDamageTaken = value;
@@ -196,10 +240,14 @@ namespace Server.DBModels
 
         public int PvPDamageDealt
         {
-            get { return _PvPDamageDealt; }
+            get
+            {
+                return _PvPDamageDealt;
+            }
             set
             {
-                if (_PvPDamageDealt == value) return;
+                if (_PvPDamageDealt == value)
+                    return;
 
                 var oldValue = _PvPDamageDealt;
                 _PvPDamageDealt = value;
@@ -211,10 +259,14 @@ namespace Server.DBModels
 
         public int PvPKillCount
         {
-            get { return _PvPKillCount; }
+            get
+            {
+                return _PvPKillCount;
+            }
             set
             {
-                if (_PvPKillCount == value) return;
+                if (_PvPKillCount == value)
+                    return;
 
                 var oldValue = _PvPKillCount;
                 _PvPKillCount = value;
@@ -226,10 +278,14 @@ namespace Server.DBModels
 
         public int PvPDeathCount
         {
-            get { return _PvPDeathCount; }
+            get
+            {
+                return _PvPDeathCount;
+            }
             set
             {
-                if (_PvPDeathCount == value) return;
+                if (_PvPDeathCount == value)
+                    return;
 
                 var oldValue = _PvPDeathCount;
                 _PvPDeathCount = value;

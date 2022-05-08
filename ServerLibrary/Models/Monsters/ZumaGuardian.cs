@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Library;
 using Library.Network;
-using Server.DBModels;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
@@ -12,7 +10,7 @@ namespace Server.Models.Monsters
     {
         public override bool CanMove => base.CanMove && Visible;
         public override bool CanAttack => base.CanAttack && Visible;
-        
+
         public int WakeRange = 7;
 
         public ZumaGuardian()
@@ -20,7 +18,7 @@ namespace Server.Models.Monsters
             AvoidFireWall = true;
             Visible = false;
         }
-        
+
         public virtual void Wake()
         {
             ActionTime = SEnvir.Now.AddSeconds(1);
@@ -30,7 +28,8 @@ namespace Server.Models.Monsters
         }
         public override int Attacked(MapObject attacker, int power, Element element, bool canReflect = true, bool ignoreShield = false, bool canCrit = true, bool canStruck = true)
         {
-            if (!Visible) return 0;
+            if (!Visible)
+                return 0;
 
             return base.Attacked(attacker, power, element, ignoreShield, ignoreShield, canCrit);
         }
@@ -38,9 +37,11 @@ namespace Server.Models.Monsters
         {
             base.Process();
 
-            if (Dead || Target == null || Visible) return;
+            if (Dead || Target == null || Visible)
+                return;
 
-            if (!Functions.InRange(CurrentLocation, Target.CurrentLocation, 3)) return;
+            if (!Functions.InRange(CurrentLocation, Target.CurrentLocation, 3))
+                return;
 
             Wake();
             WakeAll(WakeRange);
@@ -54,25 +55,27 @@ namespace Server.Models.Monsters
             {
                 ZumaGuardian zuma = ob as ZumaGuardian;
 
-                if (zuma == null || zuma.Visible) continue;
+                if (zuma == null || zuma.Visible)
+                    continue;
 
                 zuma.Wake();
                 zuma.Target = Target;
             }
 
         }
-        
+
 
         public override bool ApplyPoison(Poison p)
         {
-            if (!Visible) return false;
+            if (!Visible)
+                return false;
 
             return base.ApplyPoison(p);
         }
 
         public override Packet GetInfoPacket(PlayerObject ob)
         {
-            S.ObjectMonster packet = (S.ObjectMonster) base.GetInfoPacket(ob);
+            S.ObjectMonster packet = (S.ObjectMonster)base.GetInfoPacket(ob);
 
             packet.Extra = Visible;
 

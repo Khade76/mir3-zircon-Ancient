@@ -66,6 +66,21 @@ namespace Library.SystemModels
         }
         private NPCPage _EntryPage;
 
+        public CastleInfo Castle
+        {
+            get { return _Castle; }
+            set
+            {
+                if (_Castle == value) return;
+
+                var oldValue = _Castle;
+                _Castle = value;
+
+                OnChanged(oldValue, value, "Castle");
+            }
+        }
+        private CastleInfo _Castle;
+
         [IgnoreProperty]
         public string RegionName => Region?.ServerDescription ?? string.Empty;
 

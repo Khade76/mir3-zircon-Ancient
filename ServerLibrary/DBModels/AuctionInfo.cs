@@ -9,10 +9,14 @@ namespace Server.DBModels
         [Association("Auctions")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -25,10 +29,14 @@ namespace Server.DBModels
         [Association("Auction")]
         public UserItem Item
         {
-            get { return _Item; }
+            get
+            {
+                return _Item;
+            }
             set
             {
-                if (_Item == value) return;
+                if (_Item == value)
+                    return;
 
                 var oldValue = _Item;
                 _Item = value;
@@ -40,10 +48,14 @@ namespace Server.DBModels
 
         public CharacterInfo Character
         {
-            get { return _Character; }
+            get
+            {
+                return _Character;
+            }
             set
             {
-                if (_Character == value) return;
+                if (_Character == value)
+                    return;
 
                 var oldValue = _Character;
                 _Character = value;
@@ -52,13 +64,17 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _Character;
-        
+
         public int Price
         {
-            get { return _Price; }
+            get
+            {
+                return _Price;
+            }
             set
             {
-                if (_Price == value) return;
+                if (_Price == value)
+                    return;
 
                 var oldValue = _Price;
                 _Price = value;
@@ -70,10 +86,14 @@ namespace Server.DBModels
 
         public string Message
         {
-            get { return _Message; }
+            get
+            {
+                return _Message;
+            }
             set
             {
-                if (_Message == value) return;
+                if (_Message == value)
+                    return;
 
                 var oldValue = _Message;
                 _Message = value;

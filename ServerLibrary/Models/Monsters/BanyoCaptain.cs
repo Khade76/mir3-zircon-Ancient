@@ -1,17 +1,21 @@
 ﻿using System;
-using Server.Envir;
 using Library;
+using Server.Envir;
 using S = Library.Network.ServerPackets;
 
 namespace Server.Models.Monsters
 {
     public class BanyoCaptain : MonsterObject
     {
-        public DateTime CastTime { get; set; }
+        public DateTime CastTime
+        {
+            get; set;
+        }
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (CanAttack && SEnvir.Now > CastTime)
             {

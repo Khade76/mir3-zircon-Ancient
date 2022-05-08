@@ -28,13 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DropInfoView));
             this.ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
             this.SavingButton = new DevExpress.XtraBars.BarButtonItem();
             this.ribbonPage1 = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.ribbonPageGroup1 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.DropInfoGridControl = new DevExpress.XtraGrid.GridControl();
             this.DropInfoGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
+            this.gridColumn8 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.DropListLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.gridColumn1 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.MonsterLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
             this.gridColumn2 = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -47,6 +48,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropInfoGridControl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropInfoGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropListLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).BeginInit();
             this.SuspendLayout();
@@ -62,14 +64,12 @@
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.ribbonPage1});
-            this.ribbon.Size = new System.Drawing.Size(706, 143);
+            this.ribbon.Size = new System.Drawing.Size(706, 147);
             // 
             // SavingButton
             // 
             this.SavingButton.Caption = "Save Database";
-            this.SavingButton.Glyph = ((System.Drawing.Image)(resources.GetObject("SavingButton.Glyph")));
             this.SavingButton.Id = 1;
-            this.SavingButton.LargeGlyph = ((System.Drawing.Image)(resources.GetObject("SavingButton.LargeGlyph")));
             this.SavingButton.LargeWidth = 60;
             this.SavingButton.Name = "SavingButton";
             this.SavingButton.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.SavingButton_ItemClick);
@@ -92,14 +92,15 @@
             // DropInfoGridControl
             // 
             this.DropInfoGridControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DropInfoGridControl.Location = new System.Drawing.Point(0, 143);
+            this.DropInfoGridControl.Location = new System.Drawing.Point(0, 147);
             this.DropInfoGridControl.MainView = this.DropInfoGridView;
             this.DropInfoGridControl.MenuManager = this.ribbon;
             this.DropInfoGridControl.Name = "DropInfoGridControl";
             this.DropInfoGridControl.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
             this.MonsterLookUpEdit,
-            this.ItemLookUpEdit});
-            this.DropInfoGridControl.Size = new System.Drawing.Size(706, 439);
+            this.ItemLookUpEdit,
+            this.DropListLookUpEdit});
+            this.DropInfoGridControl.Size = new System.Drawing.Size(706, 435);
             this.DropInfoGridControl.TabIndex = 1;
             this.DropInfoGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.DropInfoGridView});
@@ -107,6 +108,7 @@
             // DropInfoGridView
             // 
             this.DropInfoGridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
+            this.gridColumn8,
             this.gridColumn1,
             this.gridColumn2,
             this.gridColumn3,
@@ -122,6 +124,26 @@
             this.DropInfoGridView.OptionsView.ShowButtonMode = DevExpress.XtraGrid.Views.Base.ShowButtonModeEnum.ShowAlways;
             this.DropInfoGridView.OptionsView.ShowGroupPanel = false;
             // 
+            // gridColumn8
+            // 
+            this.gridColumn8.Caption = "DropList";
+            this.gridColumn8.ColumnEdit = this.DropListLookUpEdit;
+            this.gridColumn8.FieldName = "DropList";
+            this.gridColumn8.Name = "gridColumn8";
+            this.gridColumn8.Visible = true;
+            this.gridColumn8.VisibleIndex = 0;
+            // 
+            // DropListLookUpEdit
+            // 
+            this.DropListLookUpEdit.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
+            this.DropListLookUpEdit.AutoHeight = false;
+            this.DropListLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.DropListLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.DropListLookUpEdit.DisplayMember = "DropTier";
+            this.DropListLookUpEdit.Name = "DropListLookUpEdit";
+            this.DropListLookUpEdit.NullText = "[DropList is null]";
+            // 
             // gridColumn1
             // 
             this.gridColumn1.ColumnEdit = this.MonsterLookUpEdit;
@@ -130,7 +152,7 @@
             this.gridColumn1.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.True;
             this.gridColumn1.SortMode = DevExpress.XtraGrid.ColumnSortMode.DisplayText;
             this.gridColumn1.Visible = true;
-            this.gridColumn1.VisibleIndex = 0;
+            this.gridColumn1.VisibleIndex = 1;
             // 
             // MonsterLookUpEdit
             // 
@@ -157,7 +179,7 @@
             this.gridColumn2.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.True;
             this.gridColumn2.SortMode = DevExpress.XtraGrid.ColumnSortMode.DisplayText;
             this.gridColumn2.Visible = true;
-            this.gridColumn2.VisibleIndex = 1;
+            this.gridColumn2.VisibleIndex = 2;
             // 
             // ItemLookUpEdit
             // 
@@ -180,35 +202,35 @@
             this.gridColumn3.FieldName = "Chance";
             this.gridColumn3.Name = "gridColumn3";
             this.gridColumn3.Visible = true;
-            this.gridColumn3.VisibleIndex = 2;
+            this.gridColumn3.VisibleIndex = 3;
             // 
             // gridColumn4
             // 
             this.gridColumn4.FieldName = "Amount";
             this.gridColumn4.Name = "gridColumn4";
             this.gridColumn4.Visible = true;
-            this.gridColumn4.VisibleIndex = 3;
+            this.gridColumn4.VisibleIndex = 4;
             // 
             // gridColumn5
             // 
             this.gridColumn5.FieldName = "DropSet";
             this.gridColumn5.Name = "gridColumn5";
             this.gridColumn5.Visible = true;
-            this.gridColumn5.VisibleIndex = 4;
+            this.gridColumn5.VisibleIndex = 5;
             // 
             // gridColumn6
             // 
             this.gridColumn6.FieldName = "PartOnly";
             this.gridColumn6.Name = "gridColumn6";
             this.gridColumn6.Visible = true;
-            this.gridColumn6.VisibleIndex = 5;
+            this.gridColumn6.VisibleIndex = 6;
             // 
             // gridColumn7
             // 
             this.gridColumn7.FieldName = "EasterEvent";
             this.gridColumn7.Name = "gridColumn7";
             this.gridColumn7.Visible = true;
-            this.gridColumn7.VisibleIndex = 6;
+            this.gridColumn7.VisibleIndex = 7;
             // 
             // DropInfoView
             // 
@@ -223,6 +245,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropInfoGridControl)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropInfoGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropListLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).EndInit();
             this.ResumeLayout(false);
@@ -247,5 +270,7 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn5;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn6;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn7;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn8;
+        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit DropListLookUpEdit;
     }
 }

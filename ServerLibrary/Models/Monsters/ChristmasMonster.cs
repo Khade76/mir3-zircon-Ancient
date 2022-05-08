@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 
@@ -48,17 +45,23 @@ namespace Server.Models.Monsters
                 {
                     MonsterObject mob = CurrentMap.Objects[i] as MonsterObject;
 
-                    if (mob == null) continue;
+                    if (mob == null)
+                        continue;
 
-                    if (mob.PetOwner != null) continue;
+                    if (mob.PetOwner != null)
+                        continue;
 
-                    if (mob is Guard || mob is ChristmasMonster) continue;
+                    if (mob is Guard || mob is ChristmasMonster)
+                        continue;
 
-                    if (mob.Dead || mob.MoveDelay == 0 || !mob.CanMove) continue;
+                    if (mob.Dead || mob.MoveDelay == 0 || !mob.CanMove)
+                        continue;
 
-                    if (mob.Target != null) continue;
+                    if (mob.Target != null)
+                        continue;
 
-                    if (mob.Level >= 300) continue;
+                    if (mob.Level >= 300)
+                        continue;
 
                     mob.Teleport(CurrentMap, CurrentMap.GetRandomLocation(CurrentLocation, 15));
                 }
@@ -70,22 +73,26 @@ namespace Server.Models.Monsters
 
                 foreach (MapObject mapObject in targets)
                 {
-                    if (mapObject.Race != ObjectType.Monster) continue;
+                    if (mapObject.Race != ObjectType.Monster)
+                        continue;
 
-                    MonsterObject mob = (MonsterObject) mapObject;
+                    MonsterObject mob = (MonsterObject)mapObject;
 
-                    if (mob.MonsterInfo.IsBoss || mob.Dead) continue;
+                    if (mob.MonsterInfo.IsBoss || mob.Dead || mob.SuperMob || mob.MonsterInfo.IsLord)
+                        continue;
 
-                    if (mob.EXPOwner != null && mob.EXPOwner != EXPOwner) continue;
-                    
-                    if (mob is ChristmasMonster) continue;
+                    if (mob.EXPOwner != null && mob.EXPOwner != EXPOwner)
+                        continue;
+
+                    if (mob is ChristmasMonster)
+                        continue;
 
                     mob.ExtraExperienceRate = Math.Max(mob.ExtraExperienceRate, ExtraExperienceRate);
                     mob.EXPOwner = EXPOwner;
                     mob.SetHP(0);
                 }
             }
-            
+
 
             base.Die();
 

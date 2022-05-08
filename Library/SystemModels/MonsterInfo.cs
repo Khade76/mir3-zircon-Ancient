@@ -201,6 +201,36 @@ namespace Library.SystemModels
         }
         private bool _IsBoss;
 
+        public bool IsLord
+        {
+            get { return _IsLord; }
+            set
+            {
+                if (_IsLord == value) return;
+
+                var oldValue = _IsLord;
+                _IsLord = value;
+
+                OnChanged(oldValue, value, "IsLord");
+            }
+        }
+        private bool _IsLord;
+
+        public bool IsDamageDrop
+        {
+            get { return _IsDamageDrop; }
+            set
+            {
+                if (_IsDamageDrop == value) return;
+
+                var oldValue = _IsDamageDrop;
+                _IsDamageDrop = value;
+
+                OnChanged(oldValue, value, "IsDamageDrop");
+            }
+        }
+        private bool _IsDamageDrop;
+
         public MonsterFlag Flag
         {
             get { return _Flag; }
@@ -216,6 +246,50 @@ namespace Library.SystemModels
         }
         private MonsterFlag _Flag;
 
+        public bool CanSuper
+        {
+            get { return _CanSuper; }
+            set
+            {
+                if (_CanSuper == value) return;
+
+                var oldValue = _CanSuper;
+                _CanSuper = value;
+
+                OnChanged(oldValue, value, "_CanSuper");
+            }
+        }
+        private bool _CanSuper;
+
+        public string SuperName
+        {
+            get { return _SuperName; }
+            set
+            {
+                if (_SuperName == value) return;
+
+                var oldValue = _SuperName;
+                _SuperName = value;
+
+                OnChanged(oldValue, value, "SuperName");
+            }
+        }
+        private string _SuperName;
+
+        public int SuperChance
+        {
+            get { return _SuperChance; }
+            set
+            {
+                if (_SuperChance == value) return;
+
+                var oldValue = _SuperChance;
+                _SuperChance = value;
+
+                OnChanged(oldValue, value, "SuperChance");
+            }
+        }
+        private int _SuperChance;
 
         /*
         public MonsterEffect Effect
@@ -232,7 +306,7 @@ namespace Library.SystemModels
             }
         }
         private MonsterEffect _Effect;*/
-        
+
 
         [Association("MonsterInfoStats", true)]
         public DBBindingList<MonsterInfoStat> MonsterInfoStats { get; set; }
@@ -242,6 +316,9 @@ namespace Library.SystemModels
 
         [Association("Drops", true)]
         public DBBindingList<DropInfo> Drops { get; set; }
+
+        [Association("DropLists", true)]
+        public DBBindingList<MonsterDropListInfo> DropLists { get; set; }
 
         [Association("Events", true)]
         public DBBindingList<EventTarget> Events { get; set; }

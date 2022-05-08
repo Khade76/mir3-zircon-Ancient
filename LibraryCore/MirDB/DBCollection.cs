@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using Library;
 using Library.MirDB;
+using System.Linq;
 
 namespace MirDB
 {
@@ -26,7 +27,7 @@ namespace MirDB
         public DBCollection(Session session)
         {
             Type = typeof(T);
-            Mapping = new DBMapping(session.Assemblies, Type);
+            Mapping = new DBMapping(Type);
 
             IsSystemData = Type.GetCustomAttribute<UserObject>() == null;
 
@@ -118,13 +119,16 @@ namespace MirDB
 
         internal override void SaveObjects()
         {
-            if (ReadOnly || SaveList != null) return;
+            if (ReadOnly || SaveList != null) 
+                return;
 
             SaveList = new List<T>(Binding.Count);
 
-            foreach (T ob in Binding)
+            // Use to list to create a referential copy
+            foreach (T ob in Binding.ToList())
             {
-                if (ob.IsTemporary) continue;
+                if (ob == null || ob.IsTemporary) 
+                    continue;
 
                 if (!VersionValid || ob.IsModified)
                     ob.Save();

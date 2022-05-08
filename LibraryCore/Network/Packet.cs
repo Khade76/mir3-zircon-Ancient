@@ -391,7 +391,7 @@ namespace Library.Network
                                     }
                                     else
                                     {
-                                        value = Activator.CreateInstance(genValue);
+                                        value = Activator.CreateInstance(genKey);
 
                                         ReadObject(reader, value);
                                     }

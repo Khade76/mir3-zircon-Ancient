@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 
@@ -54,7 +50,8 @@ namespace Server.Models.Monsters
             base.ProcessAI();
 
 
-            if (Dead) return;
+            if (Dead)
+                return;
 
             if (SEnvir.Now > TingTime)
             {
@@ -104,7 +101,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!Functions.InRange(Target.CurrentLocation, CurrentLocation, 3) && SEnvir.Now > TeleportTime)
             {
@@ -130,7 +128,7 @@ namespace Server.Models.Monsters
                     TeleportTime = SEnvir.Now.AddSeconds(5);
                 }
             }
-            
+
 
             if (Target.Race == ObjectType.Monster)
             {

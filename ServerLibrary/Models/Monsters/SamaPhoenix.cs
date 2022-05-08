@@ -1,6 +1,5 @@
 ﻿using Library;
 using Server.Envir;
-using S = Library.Network.ServerPackets;
 
 
 namespace Server.Models.Monsters
@@ -11,7 +10,8 @@ namespace Server.Models.Monsters
 
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
 
             return Target.CurrentLocation != CurrentLocation && Functions.InRange(CurrentLocation, Target.CurrentLocation, 2);
         }
@@ -19,7 +19,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!InAttackRange())
             {
@@ -37,7 +38,8 @@ namespace Server.Models.Monsters
 
                     for (int d = 0; d < 8; d++)
                     {
-                        if (Walk(direction)) break;
+                        if (Walk(direction))
+                            break;
 
                         direction = Functions.ShiftDirection(direction, rotation);
                     }
@@ -46,14 +48,16 @@ namespace Server.Models.Monsters
                     MoveTo(Target.CurrentLocation);
             }
 
-            if (!CanAttack) return;
+            if (!CanAttack)
+                return;
 
             if (SEnvir.Random.Next(RangeChance) > 0)
             {
                 if (InAttackRange())
                     Attack();
             }
-            else RangeAttack();
+            else
+                RangeAttack();
         }
 
         public virtual void RangeAttack()

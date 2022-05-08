@@ -1,0 +1,189 @@
+diff a/Server/Views/BaseStatView.Designer.cs b/Server/Views/BaseStatView.Designer.cs	(rejected hunks)
+@@ -54,6 +54,7 @@
+             this.gridColumn17 = new DevExpress.XtraGrid.Columns.GridColumn();
+             this.gridColumn18 = new DevExpress.XtraGrid.Columns.GridColumn();
+             this.gridColumn19 = new DevExpress.XtraGrid.Columns.GridColumn();
++            this.gridColumn20 = new DevExpress.XtraGrid.Columns.GridColumn();
+             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
+             ((System.ComponentModel.ISupportInitialize)(this.BaseStatGridControl)).BeginInit();
+             ((System.ComponentModel.ISupportInitialize)(this.BaseStatGridView)).BeginInit();
+@@ -70,14 +71,14 @@
+             this.ribbon.Name = "ribbon";
+             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
+             this.ribbonPage1});
+-            this.ribbon.Size = new System.Drawing.Size(631, 143);
++            this.ribbon.Size = new System.Drawing.Size(1219, 143);
+             // 
+             // SaveButton
+             // 
+             this.SaveButton.Caption = "Save Databasse";
+-            this.SaveButton.Glyph = ((System.Drawing.Image)(resources.GetObject("SaveButton.Glyph")));
+             this.SaveButton.Id = 1;
+-            this.SaveButton.LargeGlyph = ((System.Drawing.Image)(resources.GetObject("SaveButton.LargeGlyph")));
++            this.SaveButton.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("SaveButton.ImageOptions.Image")));
++            this.SaveButton.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("SaveButton.ImageOptions.LargeImage")));
+             this.SaveButton.LargeWidth = 60;
+             this.SaveButton.Name = "SaveButton";
+             this.SaveButton.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.SaveButton_ItemClick);
+@@ -104,7 +105,7 @@
+             this.BaseStatGridControl.MainView = this.BaseStatGridView;
+             this.BaseStatGridControl.MenuManager = this.ribbon;
+             this.BaseStatGridControl.Name = "BaseStatGridControl";
+-            this.BaseStatGridControl.Size = new System.Drawing.Size(631, 291);
++            this.BaseStatGridControl.Size = new System.Drawing.Size(1219, 291);
+             this.BaseStatGridControl.TabIndex = 2;
+             this.BaseStatGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
+             this.BaseStatGridView});
+@@ -130,7 +131,8 @@
+             this.gridColumn16,
+             this.gridColumn17,
+             this.gridColumn18,
+-            this.gridColumn19});
++            this.gridColumn19,
++            this.gridColumn20});
+             this.BaseStatGridView.GridControl = this.BaseStatGridControl;
+             this.BaseStatGridView.Name = "BaseStatGridView";
+             this.BaseStatGridView.OptionsView.EnableAppearanceEvenRow = true;
+@@ -172,111 +174,118 @@
+             this.gridColumn5.FieldName = "BagWeight";
+             this.gridColumn5.Name = "gridColumn5";
+             this.gridColumn5.Visible = true;
+-            this.gridColumn5.VisibleIndex = 4;
++            this.gridColumn5.VisibleIndex = 5;
+             // 
+             // gridColumn6
+             // 
+             this.gridColumn6.FieldName = "WearWeight";
+             this.gridColumn6.Name = "gridColumn6";
+             this.gridColumn6.Visible = true;
+-            this.gridColumn6.VisibleIndex = 5;
++            this.gridColumn6.VisibleIndex = 6;
+             // 
+             // gridColumn7
+             // 
+             this.gridColumn7.FieldName = "HandWeight";
+             this.gridColumn7.Name = "gridColumn7";
+             this.gridColumn7.Visible = true;
+-            this.gridColumn7.VisibleIndex = 6;
++            this.gridColumn7.VisibleIndex = 7;
+             // 
+             // gridColumn8
+             // 
+             this.gridColumn8.FieldName = "Accuracy";
+             this.gridColumn8.Name = "gridColumn8";
+             this.gridColumn8.Visible = true;
+-            this.gridColumn8.VisibleIndex = 7;
++            this.gridColumn8.VisibleIndex = 8;
+             // 
+             // gridColumn9
+             // 
+             this.gridColumn9.FieldName = "Agility";
+             this.gridColumn9.Name = "gridColumn9";
+             this.gridColumn9.Visible = true;
+-            this.gridColumn9.VisibleIndex = 8;
++            this.gridColumn9.VisibleIndex = 9;
+             // 
+             // gridColumn10
+             // 
+             this.gridColumn10.FieldName = "MinAC";
+             this.gridColumn10.Name = "gridColumn10";
+             this.gridColumn10.Visible = true;
+-            this.gridColumn10.VisibleIndex = 9;
++            this.gridColumn10.VisibleIndex = 10;
+             // 
+             // gridColumn11
+             // 
+             this.gridColumn11.FieldName = "MaxAC";
+             this.gridColumn11.Name = "gridColumn11";
+             this.gridColumn11.Visible = true;
+-            this.gridColumn11.VisibleIndex = 10;
++            this.gridColumn11.VisibleIndex = 11;
+             // 
+             // gridColumn12
+             // 
+             this.gridColumn12.FieldName = "MinMR";
+             this.gridColumn12.Name = "gridColumn12";
+             this.gridColumn12.Visible = true;
+-            this.gridColumn12.VisibleIndex = 11;
++            this.gridColumn12.VisibleIndex = 12;
+             // 
+             // gridColumn13
+             // 
+             this.gridColumn13.FieldName = "MaxMR";
+             this.gridColumn13.Name = "gridColumn13";
+             this.gridColumn13.Visible = true;
+-            this.gridColumn13.VisibleIndex = 12;
++            this.gridColumn13.VisibleIndex = 13;
+             // 
+             // gridColumn14
+             // 
+             this.gridColumn14.FieldName = "MinDC";
+             this.gridColumn14.Name = "gridColumn14";
+             this.gridColumn14.Visible = true;
+-            this.gridColumn14.VisibleIndex = 13;
++            this.gridColumn14.VisibleIndex = 14;
+             // 
+             // gridColumn15
+             // 
+             this.gridColumn15.FieldName = "MaxDC";
+             this.gridColumn15.Name = "gridColumn15";
+             this.gridColumn15.Visible = true;
+-            this.gridColumn15.VisibleIndex = 14;
++            this.gridColumn15.VisibleIndex = 15;
+             // 
+             // gridColumn16
+             // 
+             this.gridColumn16.FieldName = "MinMC";
+             this.gridColumn16.Name = "gridColumn16";
+             this.gridColumn16.Visible = true;
+-            this.gridColumn16.VisibleIndex = 15;
++            this.gridColumn16.VisibleIndex = 16;
+             // 
+             // gridColumn17
+             // 
+             this.gridColumn17.FieldName = "MaxMC";
+             this.gridColumn17.Name = "gridColumn17";
+             this.gridColumn17.Visible = true;
+-            this.gridColumn17.VisibleIndex = 16;
++            this.gridColumn17.VisibleIndex = 17;
+             // 
+             // gridColumn18
+             // 
+             this.gridColumn18.FieldName = "MinSC";
+             this.gridColumn18.Name = "gridColumn18";
+             this.gridColumn18.Visible = true;
+-            this.gridColumn18.VisibleIndex = 17;
++            this.gridColumn18.VisibleIndex = 18;
+             // 
+             // gridColumn19
+             // 
+             this.gridColumn19.FieldName = "MaxSC";
+             this.gridColumn19.Name = "gridColumn19";
+             this.gridColumn19.Visible = true;
+-            this.gridColumn19.VisibleIndex = 18;
++            this.gridColumn19.VisibleIndex = 19;
++            // 
++            // gridColumn20
++            // 
++            this.gridColumn20.Caption = "Rage";
++            this.gridColumn20.Name = "gridColumn20";
++            this.gridColumn20.Visible = true;
++            this.gridColumn20.VisibleIndex = 4;
+             // 
+             // BaseStatView
+             // 
+             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+-            this.ClientSize = new System.Drawing.Size(631, 434);
++            this.ClientSize = new System.Drawing.Size(1219, 434);
+             this.Controls.Add(this.BaseStatGridControl);
+             this.Controls.Add(this.ribbon);
+             this.Name = "BaseStatView";
+@@ -317,5 +326,6 @@
+         private DevExpress.XtraGrid.Columns.GridColumn gridColumn17;
+         private DevExpress.XtraGrid.Columns.GridColumn gridColumn18;
+         private DevExpress.XtraGrid.Columns.GridColumn gridColumn19;
++        private DevExpress.XtraGrid.Columns.GridColumn gridColumn20;
+     }
+ }
+\ No newline at end of file

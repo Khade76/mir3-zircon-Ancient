@@ -1,28 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
 
 namespace Server.Models.Monsters
 {
-    public  class JinchonDevil : SpittingSpider
+    public class JinchonDevil : SpittingSpider
     {
         public DateTime CastTime;
         public TimeSpan CastDelay = TimeSpan.FromSeconds(15);
 
+        public JinchonDevil()
+        {
+            AvoidFireWall = true;
+        }
+
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
 
             int x = Math.Abs(Target.CurrentLocation.X - CurrentLocation.X);
             int y = Math.Abs(Target.CurrentLocation.Y - CurrentLocation.Y);
 
-            if (x > 3 || y > 3) return false;
+            if (x > 3 || y > 3)
+                return false;
 
 
             return x == 0 || x == y || y == 0;
@@ -31,7 +36,8 @@ namespace Server.Models.Monsters
 
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (CanAttack && SEnvir.Now > CastTime)
             {
@@ -42,7 +48,8 @@ namespace Server.Models.Monsters
 
                     foreach (MapObject ob in targets)
                     {
-                        if (CurrentHP > Stats[Stat.Health] / 2 && SEnvir.Random.Next(2) > 0) continue;
+                        if (CurrentHP > Stats[Stat.Health] / 2 && SEnvir.Random.Next(2) > 0)
+                            continue;
 
                         DeathCloud(ob.CurrentLocation);
                     }
@@ -63,7 +70,8 @@ namespace Server.Models.Monsters
 
                     for (int d = 0; d < 8; d++)
                     {
-                        if (Walk(direction)) break;
+                        if (Walk(direction))
+                            break;
 
                         direction = Functions.ShiftDirection(direction, rotation);
                     }
@@ -73,7 +81,8 @@ namespace Server.Models.Monsters
                 return;
             }
 
-            if (!CanAttack) return;
+            if (!CanAttack)
+                return;
 
             Attack();
         }

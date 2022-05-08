@@ -5,6 +5,22 @@ namespace Library.SystemModels
     public sealed class DropInfo : DBObject
     {
         [Association("Drops")]
+        public DropListInfo DropList
+        {
+            get { return _DropList; }
+            set
+            {
+                if (_DropList == value) return;
+
+                var oldValue = _DropList;
+                _DropList = value;
+
+                OnChanged(oldValue, value, "DropList");
+            }
+        }
+        private DropListInfo _DropList;
+
+        [Association("Drops")]
         public MonsterInfo Monster
         {
             get { return _Monster; }

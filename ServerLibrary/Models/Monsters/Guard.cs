@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
+﻿using System.Drawing;
 using Library;
 using Server.Envir;
 using S = Library.Network.ServerPackets;
@@ -46,17 +43,18 @@ namespace Server.Models.Monsters
 
         public override int Attacked(MapObject ob, int power, Element element, bool canReflect = true, bool ignoreShield = false, bool canCrit = true, bool canStruck = true)
         {
-            return 0;
+            return 1;
         }
-        
+
         public override bool ShouldAttackTarget(MapObject ob)
         {
             return CanAttackTarget(ob);
         }
         public override bool CanAttackTarget(MapObject ob)
         {
-            if (ob?.Node == null || ob.Dead || !ob.Visible || ob is Guard || ob is CastleLord) return false;
-            
+            if (ob.HasNoNode() || ob.Dead || !ob.Visible || ob is Guard || ob is CastleLord)
+                return false;
+
             switch (ob.Race)
             {
                 case ObjectType.Player:
@@ -101,13 +99,14 @@ namespace Server.Models.Monsters
 
         private void Attack(MapObject ob)
         {
-            if (ob?.Node == null || ob.Dead) return;
+            if (ob.HasNoNode() || ob.Dead)
+                return;
 
             int power;
 
             if (ob.Race == ObjectType.Monster)
             {
-                MonsterObject mob = (MonsterObject) ob;
+                MonsterObject mob = (MonsterObject)ob;
                 mob.EXPOwner = null;
                 power = ob.CurrentHP;
             }
@@ -119,10 +118,11 @@ namespace Server.Models.Monsters
 
         public override void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public override void DeActivate()
         {

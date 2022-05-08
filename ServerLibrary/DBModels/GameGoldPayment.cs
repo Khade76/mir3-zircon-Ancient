@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MirDB;
+﻿using MirDB;
 
 namespace Server.DBModels
 {
@@ -12,10 +7,14 @@ namespace Server.DBModels
     {
         public string RawMessage
         {
-            get { return _RawMessage; }
+            get
+            {
+                return _RawMessage;
+            }
             set
             {
-                if (_RawMessage == value) return;
+                if (_RawMessage == value)
+                    return;
 
                 var oldValue = _RawMessage;
                 _RawMessage = value;
@@ -27,10 +26,14 @@ namespace Server.DBModels
 
         public string CharacterName
         {
-            get { return _CharacterName; }
+            get
+            {
+                return _CharacterName;
+            }
             set
             {
-                if (_CharacterName == value) return;
+                if (_CharacterName == value)
+                    return;
 
                 var oldValue = _CharacterName;
                 _CharacterName = value;
@@ -42,10 +45,14 @@ namespace Server.DBModels
 
         public string Name
         {
-            get { return _Name; }
+            get
+            {
+                return _Name;
+            }
             set
             {
-                if (_Name == value) return;
+                if (_Name == value)
+                    return;
 
                 var oldValue = _Name;
                 _Name = value;
@@ -57,10 +64,14 @@ namespace Server.DBModels
 
         public string PaymentDate
         {
-            get { return _PaymentDate; }
+            get
+            {
+                return _PaymentDate;
+            }
             set
             {
-                if (_PaymentDate == value) return;
+                if (_PaymentDate == value)
+                    return;
 
                 var oldValue = _PaymentDate;
                 _PaymentDate = value;
@@ -69,14 +80,18 @@ namespace Server.DBModels
             }
         }
         private string _PaymentDate;
-        
+
         [Association("Payments")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -88,10 +103,14 @@ namespace Server.DBModels
 
         public string TransactionID
         {
-            get { return _TransactionID; }
+            get
+            {
+                return _TransactionID;
+            }
             set
             {
-                if (_TransactionID == value) return;
+                if (_TransactionID == value)
+                    return;
 
                 var oldValue = _TransactionID;
                 _TransactionID = value;
@@ -103,10 +122,14 @@ namespace Server.DBModels
 
         public string TransactionType
         {
-            get { return _TransactionType; }
+            get
+            {
+                return _TransactionType;
+            }
             set
             {
-                if (_TransactionType == value) return;
+                if (_TransactionType == value)
+                    return;
 
                 var oldValue = _TransactionType;
                 _TransactionType = value;
@@ -118,10 +141,14 @@ namespace Server.DBModels
 
         public string Status
         {
-            get { return _Status; }
+            get
+            {
+                return _Status;
+            }
             set
             {
-                if (_Status == value) return;
+                if (_Status == value)
+                    return;
 
                 var oldValue = _Status;
                 _Status = value;
@@ -131,12 +158,16 @@ namespace Server.DBModels
         }
         private string _Status;
 
-        public long GameGoldAmount
+        public int GameGoldAmount
         {
-            get { return _GameGoldAmount; }
+            get
+            {
+                return _GameGoldAmount;
+            }
             set
             {
-                if (_GameGoldAmount == value) return;
+                if (_GameGoldAmount == value)
+                    return;
 
                 var oldValue = _GameGoldAmount;
                 _GameGoldAmount = value;
@@ -144,14 +175,18 @@ namespace Server.DBModels
                 OnChanged(oldValue, value, "GameGoldAmount");
             }
         }
-        private long _GameGoldAmount;
+        private int _GameGoldAmount;
 
         public string Receiver_EMail
         {
-            get { return _Receiver_EMail; }
+            get
+            {
+                return _Receiver_EMail;
+            }
             set
             {
-                if (_Receiver_EMail == value) return;
+                if (_Receiver_EMail == value)
+                    return;
 
                 var oldValue = _Receiver_EMail;
                 _Receiver_EMail = value;
@@ -163,10 +198,14 @@ namespace Server.DBModels
 
         public string Payer_EMail
         {
-            get { return _Payer_EMail; }
+            get
+            {
+                return _Payer_EMail;
+            }
             set
             {
-                if (_Payer_EMail == value) return;
+                if (_Payer_EMail == value)
+                    return;
 
                 var oldValue = _Payer_EMail;
                 _Payer_EMail = value;
@@ -175,14 +214,18 @@ namespace Server.DBModels
             }
         }
         private string _Payer_EMail;
-        
+
 
         public string Payer_ID
         {
-            get { return _Payer_ID; }
+            get
+            {
+                return _Payer_ID;
+            }
             set
             {
-                if (_Payer_ID == value) return;
+                if (_Payer_ID == value)
+                    return;
 
                 var oldValue = _Payer_ID;
                 _Payer_ID = value;
@@ -194,10 +237,14 @@ namespace Server.DBModels
 
         public decimal Price
         {
-            get { return _Price; }
+            get
+            {
+                return _Price;
+            }
             set
             {
-                if (_Price == value) return;
+                if (_Price == value)
+                    return;
 
                 var oldValue = _Price;
                 _Price = value;
@@ -209,10 +256,14 @@ namespace Server.DBModels
 
         public string Currency
         {
-            get { return _Currency; }
+            get
+            {
+                return _Currency;
+            }
             set
             {
-                if (_Currency == value) return;
+                if (_Currency == value)
+                    return;
 
                 var oldValue = _Currency;
                 _Currency = value;
@@ -224,10 +275,14 @@ namespace Server.DBModels
 
         public decimal Fee
         {
-            get { return _Fee; }
+            get
+            {
+                return _Fee;
+            }
             set
             {
-                if (_Fee == value) return;
+                if (_Fee == value)
+                    return;
 
                 var oldValue = _Fee;
                 _Fee = value;
@@ -239,10 +294,14 @@ namespace Server.DBModels
 
         public bool Error
         {
-            get { return _Error; }
+            get
+            {
+                return _Error;
+            }
             set
             {
-                if (_Error == value) return;
+                if (_Error == value)
+                    return;
 
                 var oldValue = _Error;
                 _Error = value;
@@ -256,7 +315,7 @@ namespace Server.DBModels
         protected override void OnDeleted()
         {
             Account = null;
-            
+
             base.OnDeleted();
         }
 

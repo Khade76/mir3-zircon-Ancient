@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MirDB;
 
 namespace Server.DBModels
@@ -13,10 +9,14 @@ namespace Server.DBModels
     {
         public GuildInfo Guild1
         {
-            get { return _Guild1; }
+            get
+            {
+                return _Guild1;
+            }
             set
             {
-                if (_Guild1 == value) return;
+                if (_Guild1 == value)
+                    return;
 
                 var oldValue = _Guild1;
                 _Guild1 = value;
@@ -28,10 +28,14 @@ namespace Server.DBModels
 
         public GuildInfo Guild2
         {
-            get { return _Guild2; }
+            get
+            {
+                return _Guild2;
+            }
             set
             {
-                if (_Guild2 == value) return;
+                if (_Guild2 == value)
+                    return;
 
                 var oldValue = _Guild2;
                 _Guild2 = value;
@@ -40,13 +44,17 @@ namespace Server.DBModels
             }
         }
         private GuildInfo _Guild2;
-        
+
         public TimeSpan Duration
         {
-            get { return _Duration; }
+            get
+            {
+                return _Duration;
+            }
             set
             {
-                if (_Duration == value) return;
+                if (_Duration == value)
+                    return;
 
                 var oldValue = _Duration;
                 _Duration = value;

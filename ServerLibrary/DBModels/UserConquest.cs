@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library.SystemModels;
 using MirDB;
 
@@ -14,10 +10,14 @@ namespace Server.DBModels
         [Association("Conquest")]
         public GuildInfo Guild
         {
-            get { return _Guild; }
+            get
+            {
+                return _Guild;
+            }
             set
             {
-                if (_Guild == value) return;
+                if (_Guild == value)
+                    return;
 
                 var oldValue = _Guild;
                 _Guild = value;
@@ -29,10 +29,14 @@ namespace Server.DBModels
 
         public CastleInfo Castle
         {
-            get { return _Castle; }
+            get
+            {
+                return _Castle;
+            }
             set
             {
-                if (_Castle == value) return;
+                if (_Castle == value)
+                    return;
 
                 var oldValue = _Castle;
                 _Castle = value;
@@ -41,13 +45,17 @@ namespace Server.DBModels
             }
         }
         private CastleInfo _Castle;
-        
+
         public DateTime WarDate
         {
-            get { return _WarDate; }
+            get
+            {
+                return _WarDate;
+            }
             set
             {
-                if (_WarDate == value) return;
+                if (_WarDate == value)
+                    return;
 
                 var oldValue = _WarDate;
                 _WarDate = value;

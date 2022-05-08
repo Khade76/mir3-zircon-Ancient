@@ -16,6 +16,8 @@ namespace Library
             [LibraryFile.Equip] = @"Data\Equip.Zl",
             [LibraryFile.EquipEffect_UI] = @"Data\EquipEffect-UI.Zl",
             [LibraryFile.EquipEffect_Part] = @"Data\EquipEffect-Part.Zl",
+            [LibraryFile.EquipEffect_Full] = @"Data\EquipEffect-Full.Zl",
+            [LibraryFile.EquipEffect_Wings] = @"Data\EquipEffect-Wings.Zl",
             [LibraryFile.ProgUse] = @"Data\ProgUse.Zl",
             [LibraryFile.StoreItems] = @"Data\StoreItems.Zl",
             [LibraryFile.Inventory] = @"Data\Inventory.Zl",
@@ -26,10 +28,6 @@ namespace Library
             
             [LibraryFile.MagicIcon] = @"Data\MIcon.Zl",
             [LibraryFile.CBIcon] = @"Data\CBIcons.Zl",
-            [LibraryFile.QuestIcon] = @"Data\QuestIcons.Zl",
-
-            [LibraryFile.NPCImage] = @"Data\NPCface.Zl",
-            [LibraryFile.MonImage] = @"Data\MonImg.Zl",
 
             [LibraryFile.PEquipB1] = @"Data\PEquipB1.Zl",
             [LibraryFile.PEquipH1] = @"Data\PEquipH1.Zl",
@@ -43,6 +41,7 @@ namespace Library
             [LibraryFile.M_HumEx11] = @"Data\M-HumEx11.Zl",
             [LibraryFile.M_HumEx12] = @"Data\M-HumEx12.Zl",
             [LibraryFile.M_HumEx13] = @"Data\M-HumEx13.Zl",
+            [LibraryFile.M_Costume] = @"Data\M-Costume.Zl",
 
             [LibraryFile.WM_Hum] = @"Data\WM-Hum.Zl",
             [LibraryFile.WM_HumEx1] = @"Data\WM-HumEx1.Zl",
@@ -53,6 +52,7 @@ namespace Library
             [LibraryFile.WM_HumEx11] = @"Data\WM-HumEx11.Zl",
             [LibraryFile.WM_HumEx12] = @"Data\WM-HumEx12.Zl",
             [LibraryFile.WM_HumEx13] = @"Data\WM-HumEx13.Zl",
+            [LibraryFile.WM_Costume] = @"Data\WM-Costume.Zl",
 
             [LibraryFile.M_Hair] = @"Data\M-Hair.Zl",
             [LibraryFile.WM_Hair] = @"Data\WM-Hair.Zl",
@@ -61,14 +61,18 @@ namespace Library
             [LibraryFile.M_HumAEx1] = @"Data\M-HumAEx1.Zl",
             [LibraryFile.M_HumAEx2] = @"Data\M-HumAEx2.Zl",
             [LibraryFile.M_HumAEx3] = @"Data\M-HumAEx3.Zl",
+            [LibraryFile.M_CostumeA] = @"Data\M-CostumeA.Zl",
 
             [LibraryFile.WM_HumA] = @"Data\WM-HumA.Zl",
             [LibraryFile.WM_HumAEx1] = @"Data\WM-HumAEx1.Zl",
             [LibraryFile.WM_HumAEx2] = @"Data\WM-HumAEx2.Zl",
             [LibraryFile.WM_HumAEx3] = @"Data\WM-HumAEx3.Zl",
+            [LibraryFile.WM_CostumeA] =@"Data\WM-CostumeA.Zl",
 
             [LibraryFile.M_HairA] = @"Data\M-HairA.Zl",
             [LibraryFile.WM_HairA] = @"Data\WM-HairA.Zl",
+            [LibraryFile.M_SHumEx1] = @"Data\M-SHumEx1.Zl",
+            [LibraryFile.WM_SHumEx1] = @"Data\WM-SHumEx1.Zl",
 
             [LibraryFile.Horse] = @"Data\Horse.Zl",
             [LibraryFile.HorseIron] = @"Data\Horse_Iron.Zl",
@@ -77,8 +81,6 @@ namespace Library
             [LibraryFile.HorseBlue] = @"Data\Horse_Blue.Zl",
             [LibraryFile.HorseDark] = @"Data\Horse_Dark.Zl",
             [LibraryFile.HorseDarkEffect] = @"Data\Horse_DarkEffect.Zl",
-            [LibraryFile.HorseRoyal] = @"Data\Horse_Royal.Zl",
-            [LibraryFile.HorseRoyalEffect] = @"Data\Horse_RoyalEffect.Zl",
 
             [LibraryFile.M_Shield1] = @"Data\M-Shield1.Zl",
             [LibraryFile.M_Shield2] = @"Data\M-Shield2.Zl",
@@ -194,12 +196,12 @@ namespace Library
             [LibraryFile.MonMagicEx7] = @"Data\MonMagicEx7.Zl", //
             [LibraryFile.MonMagicEx8] = @"Data\MonMagicEx8.Zl", //
             [LibraryFile.MonMagicEx9] = @"Data\MonMagicEx9.Zl", //
+            [LibraryFile.MonMagicEx12] = @"Data\MonMagicEx12.Zl", //
             [LibraryFile.MonMagicEx19] = @"Data\MonMagicEx19.Zl", //
             [LibraryFile.MonMagicEx20] = @"Data\MonMagicEx20.Zl", //
             [LibraryFile.MonMagicEx21] = @"Data\MonMagicEx21.Zl", //
             [LibraryFile.MonMagicEx22] = @"Data\MonMagicEx22.Zl", //
             [LibraryFile.MonMagicEx23] = @"Data\MonMagicEx23.Zl", //
-            [LibraryFile.MonMagicEx26] = @"Data\MonMagicEx26.Zl", //
 
             [LibraryFile.Mon_1] = @"Data\Mon-1.Zl",
             [LibraryFile.Mon_2] = @"Data\Mon-2.Zl",
@@ -262,7 +264,18 @@ namespace Library
             [LibraryFile.Mon_54] = @"Data\Mon-54.Zl",
             [LibraryFile.Mon_55] = @"Data\Mon-55.Zl",
             [LibraryFile.Mon_56] = @"Data\Mon-56.Zl",
-            
+            [LibraryFile.Mon_57] = @"Data\Mon-57.Zl",
+            [LibraryFile.Mon_58] = @"Data\Mon-58.Zl",
+            [LibraryFile.Mon_59] = @"Data\Mon-59.Zl",
+            [LibraryFile.Mon_60] = @"Data\Mon-60.Zl",
+            [LibraryFile.Mon_61] = @"Data\Mon-61.Zl",
+            [LibraryFile.Mon_62] = @"Data\Mon-62.Zl",
+            [LibraryFile.Mon_63] = @"Data\Mon-63.Zl",
+            [LibraryFile.Mon_64] = @"Data\Mon-64.Zl",
+            [LibraryFile.Mon_65] = @"Data\Mon-65.Zl",
+            [LibraryFile.Mon_66] = @"Data\Mon-66.Zl",
+            [LibraryFile.Mon_67] = @"Data\Mon-67.Zl",
+
             [LibraryFile.Magic] = @"Data\Magic.Zl",
             [LibraryFile.MagicEx] = @"Data\MagicEx.Zl",
             [LibraryFile.MagicEx2] = @"Data\MagicEx2.Zl",
@@ -341,6 +354,8 @@ namespace Library
             [LibraryFile.Wood_Tiles30c] = @"Data\Map Data\Wood\Tiles30c.Zl",
             [LibraryFile.Wood_Tilesc] = @"Data\Map Data\Wood\Tilesc.Zl",
             [LibraryFile.Wood_Wallsc] = @"Data\Map Data\Wood\Wallsc.Zl",
+
+            [LibraryFile.Flags] = @"Data\Flag.Zl",
 
         };
 
@@ -430,6 +445,8 @@ namespace Library
         Equip,
         EquipEffect_UI,
         EquipEffect_Part,
+        EquipEffect_Full,
+        EquipEffect_Wings,
         ProgUse,
         StoreItems,
         Inventory,
@@ -438,10 +455,6 @@ namespace Library
         MiniMap,
         MagicIcon,
         CBIcon,
-        QuestIcon,
-
-        NPCImage,
-        MonImage,
 
         PEquipB1,
         PEquipH1,
@@ -456,6 +469,8 @@ namespace Library
         M_HumEx12,
         M_HumEx13,
         M_Hair,
+        M_SHumEx1,
+        M_Costume,
 
         WM_Hum,
         WM_HumEx1,
@@ -467,18 +482,22 @@ namespace Library
         WM_HumEx12,
         WM_HumEx13,
         WM_Hair,
+        WM_Costume,
 
         M_HumA,
         M_HumAEx1,
         M_HumAEx2,
         M_HumAEx3,
         M_HairA,
+        M_CostumeA,
 
         WM_HumA,
         WM_HumAEx1,
         WM_HumAEx2,
         WM_HumAEx3,
         WM_HairA,
+        WM_SHumEx1,
+        WM_CostumeA,
 
         Horse,
 
@@ -488,8 +507,7 @@ namespace Library
         HorseBlue,
         HorseDark,
         HorseDarkEffect,
-        HorseRoyal,
-        HorseRoyalEffect,
+
 
         M_Weapon1,
         M_Weapon2,
@@ -597,12 +615,12 @@ namespace Library
         MonMagicEx7,
         MonMagicEx8,
         MonMagicEx9,
+        MonMagicEx12,
         MonMagicEx19,
         MonMagicEx20,
         MonMagicEx21,
         MonMagicEx22,
         MonMagicEx23,
-        MonMagicEx26,
 
         Mon_1,
         Mon_2,
@@ -665,7 +683,17 @@ namespace Library
         Mon_54,
         Mon_55,
         Mon_56,
-
+        Mon_57,
+        Mon_58,
+        Mon_59,
+        Mon_60,
+        Mon_61,
+        Mon_62,
+        Mon_63,
+        Mon_64,
+        Mon_65,
+        Mon_66,
+        Mon_67,
 
         Magic, 
         MagicEx,
@@ -744,5 +772,7 @@ namespace Library
         Wood_Tiles30c,
         Wood_Tilesc,
         Wood_Wallsc,
+
+        Flags,
     }
 }

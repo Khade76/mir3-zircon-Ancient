@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using MirDB;
 using Server.Envir;
@@ -15,10 +12,14 @@ namespace Server.DBModels
         [Association("Members")]
         public GuildInfo Guild
         {
-            get { return _Guild; }
+            get
+            {
+                return _Guild;
+            }
             set
             {
-                if (_Guild == value) return;
+                if (_Guild == value)
+                    return;
 
                 var oldValue = _Guild;
                 _Guild = value;
@@ -30,10 +31,14 @@ namespace Server.DBModels
 
         public string Rank
         {
-            get { return _Rank; }
+            get
+            {
+                return _Rank;
+            }
             set
             {
-                if (_Rank == value) return;
+                if (_Rank == value)
+                    return;
 
                 var oldValue = _Rank;
                 _Rank = value;
@@ -46,10 +51,14 @@ namespace Server.DBModels
         [Association("Member")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -61,10 +70,14 @@ namespace Server.DBModels
 
         public DateTime JoinDate
         {
-            get { return _JoinDate; }
+            get
+            {
+                return _JoinDate;
+            }
             set
             {
-                if (_JoinDate == value) return;
+                if (_JoinDate == value)
+                    return;
 
                 var oldValue = _JoinDate;
                 _JoinDate = value;
@@ -76,10 +89,14 @@ namespace Server.DBModels
 
         public long TotalContribution
         {
-            get { return _TotalContribution; }
+            get
+            {
+                return _TotalContribution;
+            }
             set
             {
-                if (_TotalContribution == value) return;
+                if (_TotalContribution == value)
+                    return;
 
                 var oldValue = _TotalContribution;
                 _TotalContribution = value;
@@ -91,10 +108,14 @@ namespace Server.DBModels
 
         public long DailyContribution
         {
-            get { return _DailyContribution; }
+            get
+            {
+                return _DailyContribution;
+            }
             set
             {
-                if (_DailyContribution == value) return;
+                if (_DailyContribution == value)
+                    return;
 
                 var oldValue = _DailyContribution;
                 _DailyContribution = value;
@@ -106,10 +127,14 @@ namespace Server.DBModels
 
         public GuildPermission Permission
         {
-            get { return _Permission; }
+            get
+            {
+                return _Permission;
+            }
             set
             {
-                if (_Permission == value) return;
+                if (_Permission == value)
+                    return;
 
                 var oldValue = _Permission;
                 _Permission = value;

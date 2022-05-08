@@ -11,33 +11,58 @@ namespace Library.Network
 {
     public abstract class BaseConnection
     {
-        public static Dictionary<string, DiagnosticValue> Diagnostics = new Dictionary<string, DiagnosticValue>();
-        public static Dictionary<Type, MethodInfo> PacketMethods = new Dictionary<Type, MethodInfo>();
+        public static ConcurrentDictionary<string, DiagnosticValue> Diagnostics = new ConcurrentDictionary<string, DiagnosticValue>();
+        private static ConcurrentDictionary<Type, MethodInfo> PacketMethods = new ConcurrentDictionary<Type, MethodInfo>();
         public static bool Monitor;
 
-        public bool Connected { get; set; }
-        protected bool Sending { get; set; }
+        public bool Connected
+        {
+            get; set;
+        }
+        protected bool Sending
+        {
+            get; set;
+        }
 
-        public int TotalBytesSent { get; set; }
-        public int TotalBytesReceived { get; set; }
+        public int TotalBytesSent
+        {
+            get; set;
+        }
+        public int TotalBytesReceived
+        {
+            get; set;
+        }
 
         public bool AdditionalLogging;
 
         protected TcpClient Client;
 
-        public DateTime TimeConnected { get; set; }
+        public DateTime TimeConnected
+        {
+            get; set;
+        }
         public TimeSpan Duration => Time.Now - TimeConnected;
 
-        protected abstract TimeSpan TimeOutDelay { get; }
-        public DateTime TimeOutTime { get; set; }
+        protected abstract TimeSpan TimeOutDelay
+        {
+            get;
+        }
+        public DateTime TimeOutTime
+        {
+            get; set;
+        }
 
         private bool _disconnecting;
         public bool Disconnecting
         {
-            get { return _disconnecting; }
+            get
+            {
+                return _disconnecting;
+            }
             set
             {
-                if (_disconnecting == value) return;
+                if (_disconnecting == value)
+                    return;
                 _disconnecting = value;
                 TimeOutTime = Time.Now.AddSeconds(2);
             }
@@ -63,7 +88,8 @@ namespace Library.Network
         {
             try
             {
-                if (Client == null || !Client.Connected) return;
+                if (Client == null || !Client.Connected)
+                    return;
 
                 byte[] rawBytes = new byte[8 * 1024];
 
@@ -80,7 +106,8 @@ namespace Library.Network
         {
             try
             {
-                if (!Connected) return;
+                if (!Connected)
+                    return;
 
                 int dataRead = Client.Client.EndReceive(result);
 
@@ -116,7 +143,8 @@ namespace Library.Network
         }
         private void BeginSend(List<byte> data)
         {
-            if (!Connected || data.Count == 0) return;
+            if (!Connected || data.Count == 0)
+                return;
 
             try
             {
@@ -150,7 +178,8 @@ namespace Library.Network
         }
         public virtual void Enqueue(Packet p)
         {
-            if (!Connected || p == null) return;
+            if (!Connected || p == null)
+                return;
 
             SendList.Enqueue(p);
         }
@@ -159,7 +188,8 @@ namespace Library.Network
 
         public virtual void Disconnect()
         {
-            if (!Connected) return;
+            if (!Connected)
+                return;
 
             Connected = false;
 
@@ -189,9 +219,11 @@ namespace Library.Network
         }
         private void BeginSendDisconnect(List<byte> data)
         {
-            if (!Connected || data.Count == 0) return;
+            if (!Connected || data.Count == 0)
+                return;
 
-            if (Disconnecting) return;
+            if (Disconnecting)
+                return;
 
             try
             {
@@ -228,24 +260,34 @@ namespace Library.Network
                 return;
             }
 
-            while (!ReceiveList.IsEmpty && !Disconnecting)
+            Packet inPacket = null;
+            try
             {
-                try
+                while (ReceiveList.TryDequeue(out inPacket) && !Disconnecting)
                 {
-                    Packet p;
-                    if (!ReceiveList.TryDequeue(out p)) continue;
-
-                    ProcessPacket(p);
+                    try
+                    {
+                        ProcessPacket(inPacket);
+                    }
+                    catch (NotImplementedException ex)
+                    {
+                        OnException(this, ex);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnException(this, ex);
+                        throw;
+                    }
                 }
-                catch (NotImplementedException ex)
-                {
-                    OnException(this, ex);
-                }
-                catch (Exception ex)
-                {
-                    OnException(this, ex);
-                    throw ex;
-                }
+            }
+            catch (NotImplementedException ex)
+            {
+                OnException(this, ex);
+            }
+            catch (Exception ex)
+            {
+                OnException(this, ex);
+                throw;
             }
 
             if (Time.Now >= TimeOutTime)
@@ -261,21 +303,20 @@ namespace Library.Network
             if (!Disconnecting && Sending)
                 UpdateTimeOut();
 
-            if (SendList.IsEmpty || Sending) return;
+            if (SendList.IsEmpty || Sending)
+                return;
 
             List<byte> data = new List<byte>();
-            while (!SendList.IsEmpty)
+            Packet outPacket = null;
+
+            while (SendList.TryDequeue(out outPacket))
             {
-                Packet p;
-
-                if (!SendList.TryDequeue(out p)) continue;
-
-                if (p == null) continue;
+                if (outPacket == null)
+                    continue;
 
                 try
                 {
-                    byte[] bytes = p.GetPacketBytes();
-
+                    byte[] bytes = outPacket.GetPacketBytes();
                     data.AddRange(bytes);
                 }
                 catch (Exception ex)
@@ -285,20 +326,20 @@ namespace Library.Network
                     return;
                 }
 
+                if (!Monitor)
+                    continue;
 
-                if (!Monitor) continue;
-                
                 DiagnosticValue value;
-                Type type = p.GetType();
+                Type type = outPacket.GetType();
 
                 if (!Diagnostics.TryGetValue(type.FullName, out value))
                     Diagnostics[type.FullName] = value = new DiagnosticValue { Name = type.FullName };
 
                 value.Count++;
-                value.TotalSize += p.Length;
-                
-                if (p.Length > value.LargestSize)
-                    value.LargestSize = p.Length;
+                value.TotalSize += outPacket.Length;
+
+                if (outPacket.Length > value.LargestSize)
+                    value.LargestSize = outPacket.Length;
             }
 
             BeginSend(data);
@@ -306,20 +347,43 @@ namespace Library.Network
 
         private void ProcessPacket(Packet p)
         {
-            if (p == null) return;
+            if (p == null)
+                return;
 
             DateTime start = Time.Now;
-            
-            MethodInfo info;
+
+            MethodInfo info = null;
+
             if (!PacketMethods.TryGetValue(p.PacketType, out info))
-                PacketMethods[p.PacketType] = info = GetType().GetMethod("Process", new[] { p.PacketType });
+            {
+                info = GetType().GetMethod("Process", new[] { p.PacketType });
+
+                if (info != null)
+                    PacketMethods.TryAdd(p.PacketType, info);
+            }
 
             if (info == null)
                 throw new NotImplementedException($"Not Implemented Exception: Method Process({p.PacketType}).");
 
-            info.Invoke(this, new object[] { p });
+            try
+            {
+                info.Invoke(this, new object[] { p });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(
+                    String.Format(
+                        "Expection on packet: {0} with method: {1}",
 
-            if (!Monitor) return;
+                        p.PacketType.ToString(),
+                        info.Name
+                    ),
+                    ex
+                );
+            }
+
+            if (!Monitor)
+                return;
 
             TimeSpan execution = Time.Now - start;
             DiagnosticValue value;
@@ -341,7 +405,8 @@ namespace Library.Network
         }
         public void UpdateTimeOut()
         {
-            if (Disconnecting) return;
+            if (Disconnecting)
+                return;
 
             TimeOutTime = Time.Now + TimeOutDelay;
         }
@@ -350,12 +415,30 @@ namespace Library.Network
 
     public class DiagnosticValue
     {
-        public string Name { get; set; }
-        public TimeSpan TotalTime { get; set; }
-        public TimeSpan LargestTime { get; set; }
-        public int Count { get; set; }
-        public long TotalSize { get; set; }
-        public long LargestSize { get; set; }
+        public string Name
+        {
+            get; set;
+        }
+        public TimeSpan TotalTime
+        {
+            get; set;
+        }
+        public TimeSpan LargestTime
+        {
+            get; set;
+        }
+        public int Count
+        {
+            get; set;
+        }
+        public long TotalSize
+        {
+            get; set;
+        }
+        public long LargestSize
+        {
+            get; set;
+        }
 
         public long TotalTicks => TotalTime.Ticks;
         public long TotalMilliseconds => TotalTicks / TimeSpan.TicksPerMillisecond;

@@ -12,26 +12,57 @@ using S = Library.Network.ServerPackets;
 
 namespace Server.Models
 {
+    public static class MapObjectExtensions
+    {
+
+
+        public static Boolean HasNode(this MapObject mapObject)
+        {
+            if (mapObject != null && SEnvir.HasObject(mapObject.ObjectID))
+                return true;
+            return false;
+        }
+
+        public static Boolean HasNoNode(this MapObject mapObject)
+        {
+            return !HasNode(mapObject);
+        }
+    }
+
     public abstract class MapObject
     {
-        public uint ObjectID { get; }
-        public LinkedListNode<MapObject> Node;
 
+        public uint ObjectID
+        {
+            get;
+        }
 
-        public DateTime SpawnTime { get; set; }
-        public abstract ObjectType Race { get; }
+        public abstract ObjectType Race
+        {
+            get;
+        }
 
         public virtual bool Blocking => !Dead;
 
-        public virtual string Name { get; set; }
-        public virtual int Level { get; set; }
+        public virtual string Name
+        {
+            get; set;
+        }
+        public virtual int Level
+        {
+            get; set;
+        }
 
         public Cell CurrentCell
         {
-            get { return _CurrentCell; }
+            get
+            {
+                return _CurrentCell;
+            }
             set
             {
-                if (_CurrentCell == value) return;
+                if (_CurrentCell == value)
+                    return;
 
                 var oldValue = _CurrentCell;
                 _CurrentCell = value;
@@ -43,10 +74,14 @@ namespace Server.Models
 
         public Map CurrentMap
         {
-            get { return _CurrentMap; }
+            get
+            {
+                return _CurrentMap;
+            }
             set
             {
-                if (_CurrentMap == value) return;
+                if (_CurrentMap == value)
+                    return;
 
                 var oldValue = _CurrentMap;
                 _CurrentMap = value;
@@ -56,23 +91,35 @@ namespace Server.Models
         }
         private Map _CurrentMap;
 
-        public virtual Point CurrentLocation { get; set; }
-        public virtual MirDirection Direction { get; set; }
+        public virtual Point CurrentLocation
+        {
+            get; set;
+        }
+        public virtual MirDirection Direction
+        {
+            get; set;
+        }
 
         public bool DisplayCrit, DisplayMiss, DisplayResist, DisplayBlock;
 
         public int DisplayHP;
         public int DisplayMP;
 
-        public virtual int CurrentHP { get; set; }
-        public virtual int CurrentMP { get; set; }
+        public virtual int CurrentHP
+        {
+            get; set;
+        }
+        public virtual int CurrentMP
+        {
+            get; set;
+        }
 
         public bool Spawned, Dead, CoolEye, Activated;
         public bool InSafeZone;
 
         public DateTime FrostBiteImmunity;
 
-        public DateTime ActionTime, MoveTime, RegenTime, AttackTime, MagicTime, CellTime, StruckTime, BuffTime, ShockTime, DisplayHPMPTime, ItemReviveTime;
+        public DateTime ActionTime, MoveTime, RegenTime, AttackTime, MagicTime, CellTime, StruckTime, BuffTime, ShockTime, DisplayHPMPTime, ItemReviveTime, DeathDropPreventTime;
         public List<DelayedAction> ActionList;
 
         public virtual bool CanMove => !Dead && SEnvir.Now >= ActionTime && SEnvir.Now >= MoveTime && SEnvir.Now > ShockTime && (Poison & PoisonType.Paralysis) != PoisonType.Paralysis && (Poison & PoisonType.WraithGrip) != PoisonType.WraithGrip && Buffs.All(x => x.Type != BuffType.DragonRepulse && x.Type != BuffType.FrostBite);
@@ -89,7 +136,8 @@ namespace Server.Models
 
         public TimeSpan RegenDelay;
 
-        public Color NameColour;
+        public Color NameColour, FlagColour;
+        public int FlagShape;
 
         public List<PlayerObject> NearByPlayers;
         public List<PlayerObject> SeenByPlayers;
@@ -98,6 +146,7 @@ namespace Server.Models
         public PoisonType Poison;
         public List<Poison> PoisonList;
         public List<PlayerObject> GroupMembers;
+        public int EventTeam = 0;
 
         protected MapObject()
         {
@@ -124,7 +173,8 @@ namespace Server.Models
             //Other things
             for (int i = ActionList.Count - 1; i >= 0; i--)
             {
-                if (SEnvir.Now < ActionList[i].Time) continue;
+                if (SEnvir.Now < ActionList[i].Time)
+                    continue;
 
                 DelayedAction ac = ActionList[i];
                 ActionList.RemoveAt(i);
@@ -152,7 +202,8 @@ namespace Server.Models
 
         public virtual void ProcessHPMP()
         {
-            if (SEnvir.Now < DisplayHPMPTime) return;
+            if (SEnvir.Now < DisplayHPMPTime)
+                return;
 
             DisplayHPMPTime = SEnvir.Now.AddMilliseconds(200);
 
@@ -181,7 +232,8 @@ namespace Server.Models
                 changed = true;
             }
 
-            if (!changed) return;
+            if (!changed)
+                return;
 
             S.DataObjectHealthMana p = new S.DataObjectHealthMana { ObjectID = ObjectID, Health = DisplayHP, Mana = DisplayMP, Dead = Dead };
 
@@ -196,7 +248,7 @@ namespace Server.Models
             for (int i = PoisonList.Count - 1; i >= 0; i--)
             {
                 Poison poison = PoisonList[i];
-                if (poison.Owner?.Node == null || poison.Owner.Dead || poison.Owner.CurrentMap != CurrentMap || !Functions.InRange(poison.Owner.CurrentLocation, CurrentLocation, Config.MaxViewRange))
+                if (!poison.Owner.HasNode() || poison.Owner.Dead || poison.Owner.CurrentMap != CurrentMap || !Functions.InRange(poison.Owner.CurrentLocation, CurrentLocation, Config.MaxViewRange))
                 {
                     PoisonList.Remove(poison);
                     continue;
@@ -205,8 +257,10 @@ namespace Server.Models
 
                 current |= poison.Type;
 
-                if (SEnvir.Now < poison.TickTime) continue;
-                if (poison.TickCount-- <= 0) PoisonList.RemoveAt(i);
+                if (SEnvir.Now < poison.TickTime)
+                    continue;
+                if (poison.TickCount-- <= 0)
+                    PoisonList.RemoveAt(i);
                 poison.TickTime = SEnvir.Now + poison.TickFrequency;
 
                 bool infection = false;
@@ -234,7 +288,7 @@ namespace Server.Models
                             damage += poison.Value;
 
                             for (int x = 0; x < poison.Owner.Stats[Stat.Rebirth]; x++)
-                                damage = (int)(damage * 1.5F);
+                                damage = (int)(damage * 1.3F);
                         }
 
                         infection = true;
@@ -247,16 +301,19 @@ namespace Server.Models
                                 mob.EXPOwner = (PlayerObject)poison.Owner;
                         }
 
-                        if (poison.TickCount <= 0) break;
+                        if (poison.TickCount <= 0)
+                            break;
 
                         foreach (MapObject ob in poison.Owner.GetTargets(CurrentMap, CurrentLocation, 1))
                         {
                             //if (ob.Race != ObjectType.Monster) continue;
 
 
-                            if (ob.Race == ObjectType.Monster && ((MonsterObject)ob).MonsterInfo.IsBoss) continue;
+                            if (ob.Race == ObjectType.Monster && ((MonsterObject)ob).MonsterInfo.IsBoss)
+                                continue;
 
-                            if (ob.PoisonList.Any(x => x.Type == PoisonType.Infection)) continue;
+                            if (ob.PoisonList.Any(x => x.Type == PoisonType.Infection))
+                                continue;
 
                             ob.ApplyPoison(new Poison
                             {
@@ -271,6 +328,9 @@ namespace Server.Models
                         break;
                 }
 
+                if (Stats[Stat.Invincibility] > 0)
+                    damage = 0;
+
                 if (damage > 0)
                 {
                     if (Race == ObjectType.Monster && ((MonsterObject)this).MonsterInfo.IsBoss)
@@ -283,6 +343,7 @@ namespace Server.Models
                         #region Conquest Stats
 
                         UserConquestStats conquest;
+                        PlayerObject player = null;
 
                         switch (Race)
                         {
@@ -318,6 +379,9 @@ namespace Server.Models
                                             break;
                                     }
                                 }
+
+                                player = (PlayerObject)this;
+                                player.LastHitter = poison.Owner;
                                 break;
                             case ObjectType.Monster:
                                 mob = (MonsterObject)this;
@@ -348,24 +412,68 @@ namespace Server.Models
                                 break;
                         }
                         #endregion
+                        #region Arena PvP Stats
+
+                        UserArenaPvPStats ArenaPvP;
+
+                        switch (Race)
+                        {
+                            case ObjectType.Player:
+                                ArenaPvP = SEnvir.GetArenaPvPStats((PlayerObject)this);
+
+                                if (ArenaPvP != null)
+                                {
+                                    switch (poison.Owner.Race)
+                                    {
+                                        case ObjectType.Player:
+                                            ArenaPvP.PvPDamageTaken += damage;
+
+                                            ArenaPvP = SEnvir.GetArenaPvPStats((PlayerObject)poison.Owner);
+
+                                            if (ArenaPvP != null)
+                                                ArenaPvP.PvPDamageDealt += damage;
+                                            break;
+                                        case ObjectType.Monster:
+                                            mob = (MonsterObject)poison.Owner;
+
+                                            if (mob.PetOwner != null)
+                                            {
+                                                ArenaPvP.PvPDamageTaken += damage;
+
+                                                ArenaPvP = SEnvir.GetArenaPvPStats(mob.PetOwner);
+
+                                                if (ArenaPvP != null)
+                                                    ArenaPvP.PvPDamageDealt += damage;
+                                            }
+                                            break;
+                                    }
+                                }
+                                break;
+                        }
+                        #endregion
 
                         ChangeHP(-damage);
+                        if (player != null)
+                            player.LastHitter = null;
                     }
 
-                    if (Dead) break;
+                    if (Dead)
+                        break;
 
                     RegenTime = SEnvir.Now + RegenDelay;
                     ShockTime = DateTime.MinValue;
                 }
             }
 
-            if (current == Poison) return;
+            if (current == Poison)
+                return;
 
             Poison = current;
             Broadcast(new S.ObjectPoison { ObjectID = ObjectID, Poison = Poison });
         }
         public virtual void ProcessNameColour()
-        { }
+        {
+        }
         public virtual void ProcessBuff()
         {
             TimeSpan ticks = SEnvir.Now - BuffTime;
@@ -380,23 +488,25 @@ namespace Server.Models
 
                 UserMagic magic;
 
-                if (buff.Pause) continue;
+                if (buff.Pause)
+                    continue;
 
                 switch (buff.Type)
                 {
                     case BuffType.Companion:
                         buff.TickTime -= ticks;
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickTime += buff.TickFrequency;
 
                         player = (PlayerObject)this;
 
-                        if (!player.InSafeZone || player.Companion.UserCompanion.Level < 15)
+                        if (!player.InSafeZone )
                             player.Companion.UserCompanion.Hunger--;
 
-                        if (player.Companion.LevelInfo.MaxExperience > 0)
+                        /*if (player.Companion.LevelInfo.MaxExperience > 0)
                         {
                             int highest = player.Character.Account.Companions.Max(x => x.Level);
 
@@ -405,7 +515,7 @@ namespace Server.Models
 
                             player.Companion.UserCompanion.Experience += highest + Stats[Stat.CompanionRate];
 
-
+                            
 
                             if (player.Companion.UserCompanion.Experience >= player.Companion.LevelInfo.MaxExperience)
                             {
@@ -415,7 +525,7 @@ namespace Server.Models
                                 player.Companion.RefreshStats();
                             }
 
-                        }
+                        }*/ //removed afk pig levelling
 
                         player.Companion.AutoFeed();
 
@@ -432,7 +542,8 @@ namespace Server.Models
                     case BuffType.Heal:
                         buff.TickTime -= ticks;
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickTime += buff.TickFrequency;
 
@@ -453,7 +564,8 @@ namespace Server.Models
                     case BuffType.Cloak:
                         buff.TickTime -= ticks;
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickTime += buff.TickFrequency;
 
@@ -470,7 +582,8 @@ namespace Server.Models
                     case BuffType.DarkConversion:
                         buff.TickTime -= ticks;
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickTime += buff.TickFrequency;
 
@@ -483,18 +596,21 @@ namespace Server.Models
                         }
 
                         ChangeMP(-amount);
-                        ChangeHP(amount * 2);
-                        if (Race != ObjectType.Player) break;
+                        ChangeHP(amount);
+                        if (Race != ObjectType.Player)
+                            break;
 
                         player = (PlayerObject)this;
 
-                        if (!player.Magics.TryGetValue(MagicType.DarkConversion, out magic)) break;
+                        if (!player.Magics.TryGetValue(MagicType.DarkConversion, out magic))
+                            break;
                         player.LevelMagic(magic);
                         break;
                     case BuffType.PKPoint:
                         buff.TickTime -= ticks;
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickFrequency = Config.PKPointTickRate;
 
@@ -515,7 +631,8 @@ namespace Server.Models
                     case BuffType.HuntGold:
                         buff.TickTime -= ticks;
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickTime += buff.TickFrequency;
 
@@ -526,16 +643,14 @@ namespace Server.Models
                         {
                             if (SEnvir.ConquestWars.Any(war => war.Map == CurrentMap))
                             {
-                                player.Character.Account.HuntGold2.Amount += 1;
-
-                                player.CurrencyChanged(player.Character.Account.HuntGold2);
-
+                                player.Enqueue(new S.HuntGoldChanged { HuntGold = ++player.Character.Account.HuntGold });
                                 continue;
                             }
                         }
 
 
-                        if (buff.Stats[Stat.AvailableHuntGold] >= buff.Stats[Stat.AvailableHuntGoldCap]) continue;
+                        if (buff.Stats[Stat.AvailableHuntGold] >= buff.Stats[Stat.AvailableHuntGoldCap])
+                            continue;
 
                         buff.Stats[Stat.AvailableHuntGold]++;
 
@@ -553,7 +668,8 @@ namespace Server.Models
                                 expiredBuffs.Add(buff);
                         }
 
-                        if (buff.TickTime > TimeSpan.Zero) continue;
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
 
                         buff.TickTime += buff.TickFrequency;
 
@@ -566,21 +682,25 @@ namespace Server.Models
                             case ObjectType.Player:
                                 player = (PlayerObject)this;
 
-                                if (!player.Magics.TryGetValue(MagicType.DragonRepulse, out magic)) break;
+                                if (!player.Magics.TryGetValue(MagicType.DragonRepulse, out magic))
+                                    break;
                                 player.LevelMagic(magic);
 
                                 for (int c = cells.Count - 1; c >= 0; c--)
                                 {
                                     Cell cell = cells[c];
-                                    if (cell.Objects == null) continue;
+                                    if (cell.Objects == null)
+                                        continue;
 
-                                    if (Functions.Distance4Directions(CurrentLocation, cell.Location) > 5) continue;
+                                    if (Functions.Distance4Directions(CurrentLocation, cell.Location) > 5)
+                                        continue;
 
                                     for (int o = cell.Objects.Count - 1; o >= 0; o--)
                                     {
                                         MapObject ob = cell.Objects[o];
 
-                                        if (!CanAttackTarget(ob)) continue;
+                                        if (!CanAttackTarget(ob))
+                                            continue;
 
 
                                         ActionList.Add(new DelayedAction(
@@ -595,15 +715,18 @@ namespace Server.Models
                                 for (int c = cells.Count - 1; c >= 0; c--)
                                 {
                                     Cell cell = cells[c];
-                                    if (cell.Objects == null) continue;
+                                    if (cell.Objects == null)
+                                        continue;
 
-                                    if (Functions.Distance4Directions(CurrentLocation, cell.Location) > 5) continue;
+                                    if (Functions.Distance4Directions(CurrentLocation, cell.Location) > 5)
+                                        continue;
 
                                     for (int o = cell.Objects.Count - 1; o >= 0; o--)
                                     {
                                         MapObject ob = cell.Objects[o];
 
-                                        if (!CanAttackTarget(ob)) continue;
+                                        if (!CanAttackTarget(ob))
+                                            continue;
 
                                         ActionList.Add(new DelayedAction(
                                             SEnvir.Now.AddMilliseconds(400),
@@ -619,7 +742,8 @@ namespace Server.Models
                     case BuffType.FrostBite:
                         buff.RemainingTime -= ticks;
 
-                        if (buff.RemainingTime > TimeSpan.Zero) continue;
+                        if (buff.RemainingTime > TimeSpan.Zero)
+                            continue;
 
                         Broadcast(new S.ObjectEffect { ObjectID = ObjectID, Effect = Effect.FrostBiteEnd });
 
@@ -628,18 +752,22 @@ namespace Server.Models
                             case ObjectType.Player:
                                 player = (PlayerObject)this;
 
-                                if (!player.Magics.TryGetValue(MagicType.FrostBite, out magic)) break;
+                                if (!player.Magics.TryGetValue(MagicType.FrostBite, out magic))
+                                    break;
                                 player.LevelMagic(magic);
 
                                 foreach (MapObject ob in GetTargets(CurrentMap, CurrentLocation, 3))
                                 {
-                                    if (!CanAttackTarget(ob)) continue;
+                                    if (!CanAttackTarget(ob))
+                                        continue;
 
-                                    if (ob.Race != ObjectType.Monster) continue;
+                                    if (ob.Race != ObjectType.Monster)
+                                        continue;
 
                                     MonsterObject mob = (MonsterObject)ob;
 
-                                    if (mob.MonsterInfo.IsBoss) continue;
+                                    if (mob.MonsterInfo.IsBoss)
+                                        continue;
 
                                     ActionList.Add(new DelayedAction(
                                         SEnvir.Now.AddMilliseconds(SEnvir.Random.Next(500)),
@@ -658,12 +786,37 @@ namespace Server.Models
 
                         expiredBuffs.Add(buff);
                         break;
+                    case BuffType.LifeStealHeal:
+                        buff.TickTime -= ticks;
+
+                        if (buff.TickTime > TimeSpan.Zero)
+                            continue;
+
+                        buff.TickTime += buff.TickFrequency;
+                        int minCap = Math.Max(10, Stats[Stat.LSHealingCap]);
+
+                        amount = Math.Min(buff.Stats[Stat.LSHealing], minCap);
+
+                        ChangeHP(amount);
+                        buff.Stats[Stat.LSHealing] -= amount;
+
+                        if (buff.Stats[Stat.LSHealing] > 0)
+                        {
+                            if (Race == ObjectType.Player)
+                                ((PlayerObject)this).Enqueue(new S.BuffChanged { Index = buff.Index, Stats = buff.Stats });
+                        }
+                        else
+                            expiredBuffs.Add(buff);
+
+                        break;
                     default:
-                        if (buff.RemainingTime == TimeSpan.MaxValue) continue;
+                        if (buff.RemainingTime == TimeSpan.MaxValue)
+                            continue;
 
                         buff.RemainingTime -= ticks;
 
-                        if (buff.RemainingTime > TimeSpan.Zero) continue;
+                        if (buff.RemainingTime > TimeSpan.Zero)
+                            continue;
 
                         expiredBuffs.Add(buff);
                         break;
@@ -685,82 +838,61 @@ namespace Server.Models
             }
         }
 
-        public bool Spawn(MapRegion region, InstanceInfo instance, byte instanceIndex)
+        public bool Spawn(MapRegion region)
         {
-            if (region == null) return false;
+            if (region == null)
+                return false;
 
-            Map map = SEnvir.GetMap(region.Map, instance, instanceIndex);
+            Map map = SEnvir.GetMap(region.Map);
 
-            if (map == null) return false;
+            if (map == null)
+                return false;
 
-            if (region.PointList.Count == 0) return false;
+            if (region.PointList.Count == 0)
+                return false;
 
             for (int i = 0; i < 20; i++)
-                if (Spawn(map, region.PointList[SEnvir.Random.Next(region.PointList.Count)])) break;
+                if (Spawn(region.Map, region.PointList[SEnvir.Random.Next(region.PointList.Count)]))
+                    break;
 
 
             return true;
         }
 
-        public bool Spawn(MapInfo info, InstanceInfo instance, byte instanceIndex, Point location)
+
+        public bool Spawn(MapInfo info, Point location)
         {
-            var map = SEnvir.GetMap(info, instance, instanceIndex);
-
-            if (map == null)
-            {
-                return false;
-            }
-
-            return Spawn(map, location);
-        }
-
-
-
-        public bool Spawn(Map map, Point location)
-        {
-            if (Node != null)
+            if (this.HasNode())
                 throw new InvalidOperationException("Node is not null, Object already spawned");
 
-            if (map == null || map.Info == null) return false;
+            if (info == null)
+                return false;
 
-            if (Race == ObjectType.Player && map.Info.MinimumLevel > Level && !((PlayerObject)this).Character.Account.TempAdmin) return false;
-            if (Race == ObjectType.Player && map.Info.MaximumLevel > 0 && map.Info.MaximumLevel < Level && !((PlayerObject)this).Character.Account.TempAdmin) return false;
-            if (Race == ObjectType.Player && map.Info.RequiredClass != RequiredClass.None && map.Info.RequiredClass != RequiredClass.All && !((PlayerObject)this).Character.Account.TempAdmin)
-            {
-                switch (((PlayerObject)this).Class)
-                {
-                    case MirClass.Warrior:
-                        if ((map.Info.RequiredClass & RequiredClass.Warrior) != RequiredClass.Warrior)
-                            return false;
-                        break;
-                    case MirClass.Wizard:
-                        if ((map.Info.RequiredClass & RequiredClass.Wizard) != RequiredClass.Wizard)
-                            return false;
-                        break;
-                    case MirClass.Taoist:
-                        if ((map.Info.RequiredClass & RequiredClass.Taoist) != RequiredClass.Taoist)
-                            return false;
-                        break;
-                    case MirClass.Assassin:
-                        if ((map.Info.RequiredClass & RequiredClass.Assassin) != RequiredClass.Assassin)
-                            return false;
-                        break;
-                }
-            }
+            Map map;
+
+            if (!SEnvir.Maps.TryGetValue(info, out map))
+                return false;
+
+            if (Race == ObjectType.Player && info.MinimumLevel > Level && !((PlayerObject)this).Character.Account.TempAdmin)
+                return false;
+            if (Race == ObjectType.Player && info.MaximumLevel > 0 && info.MaximumLevel < Level && !((PlayerObject)this).Character.Account.TempAdmin)
+                return false;
 
             Cell cell = map.GetCell(location);
 
-            if (cell == null) return false;
+            if (cell == null)
+                return false;
 
             CurrentCell = cell;
 
             Spawned = true;
-            Node = SEnvir.Objects.AddLast(this);
+            SEnvir.AddObject(this);
 
             OnSpawned();
 
             return true;
         }
+
         protected void MapChanged(Map oMap, Map nMap)
         {
             oMap?.RemoveObject(this);
@@ -783,7 +915,8 @@ namespace Server.Models
 
             if (CurrentCell != null)
             {
-                if (!PreventSpellCheck) CheckSpellObjects();
+                if (!PreventSpellCheck)
+                    CheckSpellObjects();
 
                 S.DataObjectLocation p = new S.DataObjectLocation { ObjectID = ObjectID, MapIndex = CurrentCell.Map.Info.Index, CurrentLocation = CurrentLocation };
 
@@ -797,37 +930,39 @@ namespace Server.Models
 
             for (int i = CurrentCell.Objects.Count - 1; i >= 0; i--)
             {
+                if (Dead)
+                    break;
+
                 MapObject ob = CurrentCell.Objects[i];
-                if (Dead) break;
-                if (ob.Race != ObjectType.Spell) continue;
+
+                if (ob == null || ob.Race != ObjectType.Spell)
+                    continue;
 
                 ((SpellObject)ob).ProcessSpell(this);
 
-                if (cell != CurrentCell) break; //Tempest could repel this 
+                if (cell != CurrentCell)
+                    break; //Tempest could repel this 
             }
         }
-        protected virtual void OnMapChanged() { }
+        protected virtual void OnMapChanged()
+        {
+        }
         protected virtual void OnSpawned()
         {
-            SpawnTime = SEnvir.Now;
         }
 
         public void TeleportNearby(int minDistance, int maxDistance)
         {
             List<Cell> cells = CurrentMap.GetCells(CurrentLocation, minDistance, maxDistance);
 
-            if (cells.Count == 0) return;
+            if (cells.Count == 0)
+                return;
 
             Teleport(CurrentMap, cells[SEnvir.Random.Next(cells.Count)].Location);
         }
-        public bool Teleport(MapRegion region, InstanceInfo instance, byte instanceIndex, bool leaveEffect = true)
+        public bool Teleport(MapRegion region, bool leaveEffect = true)
         {
-            Map map = SEnvir.GetMap(region.Map, instance, instanceIndex);
-
-            if (map == null)
-            {
-                return false;
-            }
+            Map map = SEnvir.GetMap(region.Map);
 
             Point point = region.PointList.Count > 0 ? region.PointList[SEnvir.Random.Next(region.PointList.Count)] : map.GetRandomLocation();
 
@@ -835,12 +970,15 @@ namespace Server.Models
         }
         public virtual bool Teleport(Map map, Point location, bool leaveEffect = true)
         {
-            if (Race == ObjectType.Player && map.Info.MinimumLevel > Level && !((PlayerObject)this).Character.Account.TempAdmin) return false;
-            if (Race == ObjectType.Player && map.Info.MaximumLevel > 0 && map.Info.MaximumLevel < Level && !((PlayerObject)this).Character.Account.TempAdmin) return false;
+            if (Race == ObjectType.Player && map.Info.MinimumLevel > Level && !((PlayerObject)this).Character.Account.TempAdmin)
+                return false;
+            if (Race == ObjectType.Player && map.Info.MaximumLevel > 0 && map.Info.MaximumLevel < Level && !((PlayerObject)this).Character.Account.TempAdmin)
+                return false;
 
             Cell cell = map?.GetCell(location);
 
-            if (cell == null || cell.Movements != null) return false;
+            if (cell == null || cell.Movements != null)
+                return false;
 
             if (leaveEffect)
                 Broadcast(new S.ObjectEffect { ObjectID = ObjectID, Effect = Effect.TeleportOut });
@@ -875,78 +1013,96 @@ namespace Server.Models
         {
             for (int i = SeenByPlayers.Count - 1; i >= 0; i--)
             {
-                if (CanBeSeenBy(SeenByPlayers[i])) continue;
+                if (CanBeSeenBy(SeenByPlayers[i]))
+                    continue;
 
                 SeenByPlayers[i].RemoveObject(this);
             }
 
             for (int i = DataSeenByPlayers.Count - 1; i >= 0; i--)
             {
-                if (CanDataBeSeenBy(DataSeenByPlayers[i])) continue;
+                if (CanDataBeSeenBy(DataSeenByPlayers[i]))
+                    continue;
 
                 DataSeenByPlayers[i].RemoveDataObject(this);
             }
 
             for (int i = NearByPlayers.Count - 1; i >= 0; i--)
             {
-                if (IsNearBy(NearByPlayers[i])) continue;
+                if (IsNearBy(NearByPlayers[i]))
+                    continue;
 
                 NearByPlayers[i].RemoveNearBy(this);
             }
         }
         public virtual void Activate()
         {
-            if (Activated) return;
+            if (Activated)
+                return;
 
-            if (NearByPlayers.Count == 0) return;
+            if (NearByPlayers.Count == 0)
+                return;
 
             Activated = true;
-            SEnvir.ActiveObjects.Add(this);
+            SEnvir.AddActiveObject(this);
         }
         public virtual void DeActivate()
         {
-            if (!Activated) return;
+            if (!Activated)
+                return;
 
-            if (NearByPlayers.Count > 0 && ActionList.Count == 0) return;
+            if (NearByPlayers.Count > 0 && ActionList.Count == 0)
+                return;
 
             Activated = false;
-            SEnvir.ActiveObjects.Remove(this);
+            SEnvir.RemoveActiveObject(this.ObjectID);
         }
 
         public virtual bool CanDataBeSeenBy(PlayerObject ob)
         {
-            if (ob == this) return true;
+            if (ob == this)
+                return true;
 
-            if (CurrentMap == null || ob.CurrentMap == null) return false;
+            if (CurrentMap == null || ob.CurrentMap == null)
+                return false;
 
             switch (Race)
             {
                 case ObjectType.Player:
                     PlayerObject player = (PlayerObject)this;
-                    if (player.Observer) return false;
+                    if (player.Observer)
+                        return false;
 
-                    if (InGroup(ob)) return true;
+                    if (InGroup(ob))
+                        return true;
 
-                    if (player.InGuild(ob)) return true;
+                    if (player.InGuild(ob))
+                        return true;
 
-                    if (player.Character?.Partner?.Player == ob) return true;
+                    if (player.Character?.Partner?.Player == ob)
+                        return true;
 
-                    if (ob.CurrentMap == CurrentMap && ob.Stats[Stat.PlayerTracker] > 0) return true;
+                    if (ob.CurrentMap == CurrentMap && ob.Stats[Stat.PlayerTracker] > 0)
+                        return true;
 
                     break;
                 case ObjectType.Monster:
 
                     MonsterObject mob = (MonsterObject)this;
 
-                    if (ob.CurrentMap == CurrentMap && mob.MonsterInfo.IsBoss && ob.Stats[Stat.BossTracker] > 0) return true;
+                    if (ob.CurrentMap == CurrentMap && (mob.MonsterInfo.IsBoss || mob.SuperMob) && ob.Stats[Stat.BossTracker] > 0)
+                        return true;
                     break;
             }
 
             return CanBeSeenBy(ob);
         }
+
         public virtual bool CanBeSeenBy(PlayerObject ob)
         {
-            if (ob == this) return true;
+
+            if (ob == this)
+                return true;
 
             if (CurrentMap != ob.CurrentMap)
                 return false;
@@ -954,9 +1110,10 @@ namespace Server.Models
             if (!Functions.InRange(CurrentLocation, ob.CurrentLocation, Config.MaxViewRange))
                 return false;
 
-            if (Race == ObjectType.Player && ((PlayerObject)this).Observer) return false;
+            if (Race == ObjectType.Player && ((PlayerObject)this).Observer)
+                return false;
 
-            if (ob.Character.Account.TempAdmin)
+            if (ob.Character.Account.TempAdmin || ob.Character.Account.Developer)
                 return true;
 
             if (Buffs.Any(x => x.Type == BuffType.Cloak || x.Type == BuffType.Transparency))
@@ -968,11 +1125,20 @@ namespace Server.Models
                 {
                     PlayerObject player = (PlayerObject)this;
 
-                    if (player.Observer) return false;
+                    if (player.Observer)
+                        return false;
 
-                    if (player.InGuild(ob)) return true;
+                    if (player.InGuild(ob))
+                        return true;
 
-                    if (player.Character?.Partner?.Player == ob) return true;
+                    if (player.Character?.Partner?.Player == ob)
+                        return true;
+
+                    int viewlevel = Math.Min(Globals.CloakRange,Math.Max(0,ob.Level - Level + Globals.CloakRange));
+
+                    if (viewlevel > 0 && Functions.InRange(CurrentLocation, ob.CurrentLocation, viewlevel))
+                        return true;
+
                 }
 
                 if (ob.Level < Level || !Functions.InRange(CurrentLocation, ob.CurrentLocation, Globals.CloakRange))
@@ -984,14 +1150,15 @@ namespace Server.Models
 
         public virtual bool IsNearBy(PlayerObject ob)
         {
-            if (ob == this) return true;
+            if (ob == this)
+                return true;
 
             return CurrentMap == ob.CurrentMap && Functions.InRange(CurrentLocation, ob.CurrentLocation, Config.MaxViewRange);
         }
 
         public void Despawn()
         {
-            if (Node == null)
+            if (!this.HasNode())
                 throw new InvalidOperationException("Node is null, Object already Despawned");
 
             CurrentMap = null;
@@ -999,15 +1166,12 @@ namespace Server.Models
 
             RemoveAllObjects();
 
-            //Clear Lists
-
-            Node.List.Remove(Node);
-            Node = null;
+            SEnvir.RemoveObject(ObjectID);
 
             if (Activated)
             {
                 Activated = false;
-                SEnvir.ActiveObjects.Remove(this);
+                SEnvir.RemoveActiveObject(this.ObjectID);
             }
 
             OnDespawned();
@@ -1021,13 +1185,7 @@ namespace Server.Models
             CurrentCell = null;
 
             RemoveAllObjects();
-
-            if (Node != null)
-            {
-                Node.List.Remove(Node);
-                Node = null;
-            }
-
+            SEnvir.RemoveObject(ObjectID);
             OnSafeDespawn();
 
             CleanUp();
@@ -1061,11 +1219,14 @@ namespace Server.Models
             for (int i = SpellList.Count - 1; i >= 0; i--)
                 SpellList[i].Despawn();
         }
-        public virtual void RefreshStats() { }
+        public virtual void RefreshStats()
+        {
+        }
 
         public virtual Cell GetDropLocation(int distance, PlayerObject player)
         {
-            if (CurrentMap == null || CurrentCell == null) return null;
+            if (CurrentMap == null || CurrentCell == null)
+                return null;
 
 
             Cell bestCell = null;
@@ -1075,17 +1236,22 @@ namespace Server.Models
             {
                 for (int y = CurrentLocation.Y - d; y <= CurrentLocation.Y + d; y++)
                 {
-                    if (y < 0) continue;
-                    if (y >= CurrentMap.Height) break;
+                    if (y < 0)
+                        continue;
+                    if (y >= CurrentMap.Height)
+                        break;
 
                     for (int x = CurrentLocation.X - d; x <= CurrentLocation.X + d; x += Math.Abs(y - CurrentLocation.Y) == d ? 1 : d * 2)
                     {
-                        if (x < 0) continue;
-                        if (x >= CurrentMap.Width) break;
+                        if (x < 0)
+                            continue;
+                        if (x >= CurrentMap.Width)
+                            break;
 
                         Cell cell = CurrentMap.Cells[x, y]; //Direct Access we've checked the boudaries.
 
-                        if (cell == null || cell.Movements != null) continue;
+                        if (cell == null || cell.Movements != null)
+                            continue;
 
                         bool blocking = false;
 
@@ -1100,18 +1266,23 @@ namespace Server.Models
                                     break;
                                 }
 
-                                if (ob.Race != ObjectType.Item) continue;
+                                if (ob.Race != ObjectType.Item)
+                                    continue;
 
-                                if (player != null && !ob.CanBeSeenBy(player)) continue;
+                                if (player != null && !ob.CanBeSeenBy(player))
+                                    continue;
 
                                 count++;
                             }
 
-                        if (blocking) continue;
+                        if (blocking)
+                            continue;
 
-                        if (count == 0) return cell;
+                        if (count == 0)
+                            return cell;
 
-                        if (bestCell != null && count >= layers) continue;
+                        if (bestCell != null && count >= layers)
+                            continue;
 
                         bestCell = cell;
                         layers = count;
@@ -1120,14 +1291,16 @@ namespace Server.Models
             }
 
 
-            if (bestCell == null || layers >= Config.DropLayers) return null;
+            if (bestCell == null || layers >= Config.DropLayers)
+                return null;
 
             return bestCell;
         }
 
         public void SetHP(int amount)
         {
-            if (Dead) return;
+            if (Dead)
+                return;
 
             CurrentHP = Math.Min(amount, Stats[Stat.Health]);
 
@@ -1138,7 +1311,7 @@ namespace Server.Models
                     CelestialLightActivate();
                     return;
                 }
-                if (Stats[Stat.ItemReviveTime] > 0 && SEnvir.Now >= ItemReviveTime)
+                if (Stats[Stat.ItemReviveTime] > 0 && SEnvir.Now >= ItemReviveTime )
                 {
                     ItemRevive();
                     return;
@@ -1149,7 +1322,8 @@ namespace Server.Models
         }
         public void ChangeHP(int amount)
         {
-            if (Dead) return;
+            if (Dead)
+                return;
 
             if (amount < 0 && Stats[Stat.ProtectionRing] > 0)
             {
@@ -1211,9 +1385,14 @@ namespace Server.Models
             CurrentMP = Stats[Stat.Mana];
             ItemReviveTime = SEnvir.Now.AddSeconds(Stats[Stat.ItemReviveTime]);
         }
+        public virtual void DeathDropPrevent()
+        {
+            DeathDropPreventTime = SEnvir.Now.AddSeconds(Stats[Stat.DeathDropPrevention]);
+        }
         public virtual int Purify(MapObject ob)
         {
-            if (ob?.Node == null || ob.Dead) return 0;
+            if (!ob.HasNode() || ob.Dead)
+                return 0;
 
             int result = 0;
 
@@ -1226,7 +1405,8 @@ namespace Server.Models
 
                 for (int i = ob.PoisonList.Count - 1; i >= 0; i--)
                 {
-                    if (ob.PoisonList[i].Type == PoisonType.Infection) continue;
+                    if (ob.PoisonList[i].Type == PoisonType.Infection)
+                        continue;
 
                     ob.PoisonList.RemoveAt(i);
                 }
@@ -1235,7 +1415,9 @@ namespace Server.Models
                 {
                     switch (buff.Type)
                     {
+                        case BuffType.DesecratedArmour:
                         case BuffType.MagicWeakness:
+                        case BuffType.AuraofDread:
                             buffs.Add(buff);
                             result++;
                             break;
@@ -1244,9 +1426,10 @@ namespace Server.Models
                     }
 
                 }
+
             }
 
-            if (CanAttackTarget(ob) && (ob.Level <= Level || SEnvir.Random.Next(100) < 42))
+            if (CanAttackTarget(ob) && LevelGap( ob.Level, Level))
             {
                 foreach (BuffInfo buff in ob.Buffs)
                 {
@@ -1257,6 +1440,8 @@ namespace Server.Models
                         case BuffType.MagicResistance:
                         case BuffType.Resilience:
                         case BuffType.MagicShield:
+                        case BuffType.MagicShieldPhysical:
+                        case BuffType.SuperiorMagicShield:
                         case BuffType.ElementalSuperiority:
                         case BuffType.BloodLust:
                         case BuffType.Defiance:
@@ -1288,6 +1473,18 @@ namespace Server.Models
             return result;
         }
 
+        public bool LevelGap(int tlevel, int alevel)
+        {
+            int value = 100;
+            if (alevel > tlevel) return true; //100% chance to work if attacker is greater level
+            if (alevel == tlevel) value = 20; //80% chance to work if same level
+            if (alevel == tlevel - 1) value = 40; //60% chance to work if target is 1 level higher
+            if (alevel == tlevel - 2) value = 60; //40% chance to work if attacker is 2 level higher
+            if (alevel == tlevel - 3) value = 80; //20% chance to work if attacker is 3 level higher
+
+            return SEnvir.Random.Next(100) > value; //target is over 3 levels higher so fail
+
+        }
         public virtual BuffInfo BuffAdd(BuffType type, TimeSpan remainingTicks, Stats stats, bool visible, bool pause, TimeSpan tickRate)
         {
             BuffRemove(type);
@@ -1321,15 +1518,18 @@ namespace Server.Models
                     break;
                 case BuffType.RagingWind:
                 case BuffType.MagicWeakness:
+                case BuffType.DesecratedArmour:
+                case BuffType.AuraofDread:
                     RefreshStats();
                     break;
                 case BuffType.Invisibility:
                     //Much faster than checking nearby cells?
                     foreach (MapObject mapOb in CurrentMap.Objects)
                     {
-                        if (mapOb.Race != ObjectType.Monster) continue;
+                        if (mapOb == null || mapOb.Race != ObjectType.Monster || !(mapOb is MonsterObject))
+                            continue;
 
-                        MonsterObject mob = (MonsterObject)mapOb;
+                        MonsterObject mob = mapOb as MonsterObject;
 
                         if (mob.Target == this && !mob.CoolEye)
                         {
@@ -1343,11 +1543,12 @@ namespace Server.Models
                     //Much faster than checking nearby cells?
                     foreach (MapObject mapOb in CurrentMap.Objects)
                     {
-                        if (mapOb.Race != ObjectType.Monster) continue;
+                        if (mapOb == null || mapOb.Race != ObjectType.Monster || !(mapOb is MonsterObject))
+                            continue;
 
-                        MonsterObject mob = (MonsterObject)mapOb;
+                        MonsterObject mob = mapOb as MonsterObject;
 
-                        if (mob.Target == this)
+                        if (mob != null && mob.Target == this)
                         {
                             mob.Target = null;
                             mob.SearchTime = SEnvir.Now;
@@ -1367,7 +1568,8 @@ namespace Server.Models
             }
 
 
-            if (!info.Visible) return info;
+            if (!info.Visible)
+                return info;
 
             Broadcast(new S.ObjectBuffAdd { ObjectID = ObjectID, Type = type });
 
@@ -1400,6 +1602,8 @@ namespace Server.Models
                     break;
                 case BuffType.RagingWind:
                 case BuffType.MagicWeakness:
+                case BuffType.DesecratedArmour:
+                case BuffType.AuraofDread:
                     RefreshStats();
                     break;
             }
@@ -1412,9 +1616,10 @@ namespace Server.Models
                     //Much faster than checking nearby cells?
                     foreach (MapObject mapOb in CurrentMap.Objects)
                     {
-                        if (mapOb.Race != ObjectType.Monster) continue;
+                        if (mapOb == null || mapOb.Race != ObjectType.Monster || !(mapOb is MonsterObject))
+                            continue;
 
-                        MonsterObject mob = (MonsterObject)mapOb;
+                        MonsterObject mob = mapOb as MonsterObject;
 
                         mob.SearchTime = DateTime.MinValue;
                     }
@@ -1430,7 +1635,10 @@ namespace Server.Models
             if (info != null)
                 BuffRemove(info);
         }
-        public virtual int Attacked(MapObject attacker, int power, Element elemnet, bool canReflect = true, bool ignoreShield = false, bool canCrit = true, bool canStruck = true) { return 0; }
+        public virtual int Attacked(MapObject attacker, int power, Element elemnet, bool canReflect = true, bool ignoreShield = false, bool canCrit = true, bool canStruck = true)
+        {
+            return 0;
+        }
 
         public List<MapObject> GetTargets(Map map, Point location, int radius)
         {
@@ -1438,21 +1646,27 @@ namespace Server.Models
 
             for (int y = location.Y - radius; y <= location.Y + radius; y++)
             {
-                if (y < 0) continue;
-                if (y >= map.Height) break;
+                if (y < 0)
+                    continue;
+                if (y >= map.Height)
+                    break;
 
                 for (int x = location.X - radius; x <= location.X + radius; x++)
                 {
-                    if (x < 0) continue;
-                    if (x >= map.Width) break;
+                    if (x < 0)
+                        continue;
+                    if (x >= map.Width)
+                        break;
 
                     Cell cell = map.Cells[x, y];
 
-                    if (cell?.Objects == null) continue;
+                    if (cell?.Objects == null)
+                        continue;
 
                     foreach (MapObject ob in cell.Objects)
                     {
-                        if (!CanAttackTarget(ob)) continue;
+                        if (!CanAttackTarget(ob))
+                            continue;
 
                         targets.Add(ob);
                     }
@@ -1467,17 +1681,22 @@ namespace Server.Models
 
             for (int y = location.Y - radius; y <= location.Y + radius; y++)
             {
-                if (y < 0) continue;
-                if (y >= CurrentMap.Height) break;
+                if (y < 0)
+                    continue;
+                if (y >= CurrentMap.Height)
+                    break;
 
                 for (int x = location.X - radius; x <= location.X + radius; x++)
                 {
-                    if (x < 0) continue;
-                    if (x >= CurrentMap.Width) break;
+                    if (x < 0)
+                        continue;
+                    if (x >= CurrentMap.Width)
+                        break;
 
                     Cell cell = CurrentMap.Cells[x, y];
 
-                    if (cell?.Objects == null) continue;
+                    if (cell?.Objects == null)
+                        continue;
 
                     obs.AddRange(cell.Objects);
                 }
@@ -1509,15 +1728,19 @@ namespace Server.Models
 
         public virtual bool ApplyPoison(Poison p)
         {
-            if (Dead) return false;
+            if (Dead)
+                return false;
 
-            if (SEnvir.Random.Next(100) < Stats[Stat.PoisonResistance]) return false;
+            if (SEnvir.Random.Next(100) < Stats[Stat.PoisonResistance])
+                return false;
 
             foreach (Poison poison in PoisonList)
             {
-                if (poison.Type != p.Type) continue;
+                if (poison.Type != p.Type)
+                    continue;
 
-                if (poison.Value > p.Value) return false;
+                if (poison.Value > p.Value)
+                    return false;
 
                 PoisonList.Remove(poison);
                 break;
@@ -1538,8 +1761,10 @@ namespace Server.Models
             BuffRemove(BuffType.DragonRepulse);
 
             PoisonList.Clear();
-
-            Broadcast(new S.ObjectDied { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation });
+            if (CurrentMap.Info.Fight == FightSetting.Event)
+                Broadcast(new S.ObjectDied { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation, eventmap = true });
+            else
+                Broadcast(new S.ObjectDied { ObjectID = ObjectID, Direction = Direction, Location = CurrentLocation, eventmap = false });
         }
 
         public abstract Packet GetInfoPacket(PlayerObject ob);
@@ -1553,16 +1778,20 @@ namespace Server.Models
         public virtual int Pushed(MirDirection direction, int distance)
         {
             int count = 0;
-            if (Dead) return count;
-            if (Buffs.Any(x => x.Type == BuffType.Endurance || x.Type == BuffType.DragonRepulse)) return count;
+            if (Dead)
+                return count;
+            if (Buffs.Any(x => x.Type == BuffType.Endurance || x.Type == BuffType.DragonRepulse))
+                return count;
 
             PreventSpellCheck = true;
             for (int i = 0; i < distance; i++)
             {
                 Cell cell = CurrentMap.GetCell(Functions.Move(CurrentLocation, direction));
 
-                if (cell == null || cell.IsBlocking(this, false)) break;
-                if (Race == ObjectType.Monster && cell.Movements != null) break;
+                if (cell == null || cell.IsBlocking(this, false))
+                    break;
+                if (Race == ObjectType.Monster && cell.Movements != null)
+                    break;
 
                 Direction = Functions.ShiftDirection(direction, 4);
 
@@ -1592,90 +1821,110 @@ namespace Server.Models
         }
 
 
-        public int GetDC()
+        public int GetDC(int elepower = 0)
         {
-            int min = Stats[Stat.MinDC];
-            int max = Stats[Stat.MaxDC];
+            int min = Stats[Stat.MinDC] + elepower;
+            int max = Stats[Stat.MaxDC] + (elepower * 2);
             int luck = Stats[Stat.Luck];
 
-            if (min < 0) min = 0;
-            if (min >= max) return max;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return max;
 
             if (luck > 0)
             {
-                if (luck >= 10) return max;
+                if (luck >= 10)
+                    return max;
 
-                if (SEnvir.Random.Next(10) < luck) return max;
+                if (SEnvir.Random.Next(10) < luck)
+                    return max;
             }
             else if (luck < 0)
             {
-                if (luck < -SEnvir.Random.Next(10)) return min;
+                if (luck < -SEnvir.Random.Next(10))
+                    return min;
             }
 
             return SEnvir.Random.Next(min, max + 1);
         }
-        public int GetMC()
+        public int GetMC(int elepower = 0)
         {
-            int min = Stats[Stat.MinMC];
-            int max = Stats[Stat.MaxMC];
+            int min = Stats[Stat.MinMC] + elepower;
+            int max = Stats[Stat.MaxMC] + (elepower * 2);
             int luck = Stats[Stat.Luck];
 
-            if (min < 0) min = 0;
-            if (min >= max) return max;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return max;
 
             if (luck > 0)
             {
-                if (luck >= 10) return max;
+                if (luck >= 10)
+                    return max;
 
-                if (SEnvir.Random.Next(10) < luck) return max;
+                if (SEnvir.Random.Next(10) < luck)
+                    return max;
             }
             else if (luck < 0)
             {
-                if (luck < -SEnvir.Random.Next(10)) return min;
+                if (luck < -SEnvir.Random.Next(10))
+                    return min;
             }
 
             return SEnvir.Random.Next(min, max + 1);
         }
-        public int GetSC()
+        public int GetSC(int elepower = 0)
         {
-            int min = Stats[Stat.MinSC];
-            int max = Stats[Stat.MaxSC];
+            int min = Stats[Stat.MinSC] + elepower;
+            int max = Stats[Stat.MaxSC] + (elepower * 2);
             int luck = Stats[Stat.Luck];
 
-            if (min < 0) min = 0;
-            if (min >= max) return max;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return max;
 
             if (luck > 0)
             {
-                if (luck >= 10) return max;
+                if (luck >= 10)
+                    return max;
 
-                if (SEnvir.Random.Next(10) < luck) return max;
+                if (SEnvir.Random.Next(10) < luck)
+                    return max;
             }
             else if (luck < 0)
             {
-                if (luck < -SEnvir.Random.Next(10)) return min;
+                if (luck < -SEnvir.Random.Next(10))
+                    return min;
             }
 
             return SEnvir.Random.Next(min, max + 1);
         }
-        public int GetSP()
+        public int GetSP(int elepower = 0)
         {
-            int min = Math.Min(Stats[Stat.MinMC], Stats[Stat.MinSC]);
-            int max = Math.Min(Stats[Stat.MaxMC], Stats[Stat.MaxSC]);
+            int min = Math.Min(Stats[Stat.MinMC], Stats[Stat.MinSC]) + elepower;
+            int max = Math.Min(Stats[Stat.MaxMC], Stats[Stat.MaxSC]) + (elepower * 2);
             int luck = Stats[Stat.Luck];
 
-            if (min < 0) min = 0;
-            if (min >= max) return max;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return max;
 
             if (luck > 0)
             {
-                if (luck >= 10) return max;
+                if (luck >= 10)
+                    return max;
 
-                if (SEnvir.Random.Next(10) < luck) return max;
+                if (SEnvir.Random.Next(10) < luck)
+                    return max;
             }
             else if (luck < 0)
             {
-                if (luck < -SEnvir.Random.Next(10)) return min;
+                if (luck < -SEnvir.Random.Next(10))
+                    return min;
             }
 
             return SEnvir.Random.Next(min, max + 1);
@@ -1685,8 +1934,10 @@ namespace Server.Models
             int min = Stats[Stat.MinAC];
             int max = Stats[Stat.MaxAC];
 
-            if (min < 0) min = 0;
-            if (min >= max) return max;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return max;
 
             return SEnvir.Random.Next(min, max + 1);
         }
@@ -1695,8 +1946,10 @@ namespace Server.Models
             int min = Stats[Stat.MinMR];
             int max = Stats[Stat.MaxMR];
 
-            if (min < 0) min = 0;
-            if (min >= max) return max;
+            if (min < 0)
+                min = 0;
+            if (min >= max)
+                return max;
 
             return SEnvir.Random.Next(min, max + 1);
         }

@@ -1,22 +1,16 @@
-﻿using System;
-using Library;
-using Library.SystemModels;
-using Server.DBModels;
+﻿using Library;
 using Server.Envir;
-using S = Library.Network.ServerPackets;
 
 namespace Server.Models.Monsters
 {
     public class ZumaKing : ZumaGuardian
     {
-        public int MaxStage = 7;
-        public int Stage;
-        
         public ZumaKing()
         {
-            AvoidFireWall = false;
+            MaxStage = 7;
+            AvoidFireWall = true;
         }
-        
+
 
         protected override void OnSpawned()
         {
@@ -36,17 +30,20 @@ namespace Server.Models.Monsters
         {
             base.Process();
 
-            if (Dead) return;
+            if (Dead)
+                return;
 
-            if (CurrentHP*MaxStage/Stats[Stat.Health] >= Stage || Stage <= 0) return;
+            if (CurrentHP * MaxStage / Stats[Stat.Health] >= Stage || Stage <= 0)
+                return;
 
             Stage--;
             SpawnMinions(4, 8, Target);
         }
-        
+
         public override void ProcessTarget()
         {
-            if (Target == null) return;
+            if (Target == null)
+                return;
 
             if (!InAttackRange())
             {
@@ -64,7 +61,8 @@ namespace Server.Models.Monsters
 
                     for (int d = 0; d < 8; d++)
                     {
-                        if (Walk(direction)) break;
+                        if (Walk(direction))
+                            break;
 
                         direction = Functions.ShiftDirection(direction, rotation);
                     }
@@ -73,14 +71,17 @@ namespace Server.Models.Monsters
                     MoveTo(Target.CurrentLocation);
             }
 
-            if (!CanAttack) return;
+            if (!CanAttack)
+                return;
 
             if (SEnvir.Random.Next(5) > 0)
             {
                 if (InAttackRange())
                     Attack();
+                RangeAttack();
             }
-            else RangeAttack();
+            else
+                RangeAttack();
         }
 
         public void RangeAttack()
@@ -91,7 +92,7 @@ namespace Server.Models.Monsters
                     FireWall();
                     break;
                 default:
-                    LineAoE(12, -2, 2, MagicType.MonsterScortchedEarth, Element.Fire);
+                    LineAoE(8, 0, 7, MagicType.MonsterScortchedEarth, Element.Fire);
                     break;
             }
         }

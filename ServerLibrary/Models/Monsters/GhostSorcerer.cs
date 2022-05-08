@@ -7,17 +7,18 @@ namespace Server.Models.Monsters
 {
     public class GhostSorcerer : MonsterObject
     {
-        public int AttackRange = 6;
-
         protected override bool InAttackRange()
         {
-            if (Target.CurrentMap != CurrentMap) return false;
-            if (Target.CurrentLocation == CurrentLocation) return false;
+            if (Target.CurrentMap != CurrentMap)
+                return false;
+            if (Target.CurrentLocation == CurrentLocation)
+                return false;
 
             int x = Math.Abs(Target.CurrentLocation.X - CurrentLocation.X);
             int y = Math.Abs(Target.CurrentLocation.Y - CurrentLocation.Y);
 
-            if (x > AttackRange || y > AttackRange) return false;
+            if (x > AttackRange || y > AttackRange)
+                return false;
 
 
             return x == 0 || x == y || y == 0;
@@ -33,7 +34,7 @@ namespace Server.Models.Monsters
 
             LineAttack(AttackRange);
         }
-        
+
         private void LineAttack(int distance)
         {
             for (int i = 1; i <= distance; i++)
@@ -52,11 +53,13 @@ namespace Server.Models.Monsters
                 else
                 {
                     Cell cell = CurrentMap.GetCell(target);
-                    if (cell?.Objects == null) continue;
+                    if (cell?.Objects == null)
+                        continue;
 
                     foreach (MapObject ob in cell.Objects)
                     {
-                        if (!CanAttackTarget(ob)) continue;
+                        if (!CanAttackTarget(ob))
+                            continue;
 
                         ActionList.Add(new DelayedAction(
                             SEnvir.Now.AddMilliseconds(400),

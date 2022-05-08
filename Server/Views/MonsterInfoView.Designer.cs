@@ -28,9 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             DevExpress.XtraGrid.GridLevelNode gridLevelNode1 = new DevExpress.XtraGrid.GridLevelNode();
             DevExpress.XtraGrid.GridLevelNode gridLevelNode2 = new DevExpress.XtraGrid.GridLevelNode();
             DevExpress.XtraGrid.GridLevelNode gridLevelNode3 = new DevExpress.XtraGrid.GridLevelNode();
+            DevExpress.XtraGrid.GridLevelNode gridLevelNode4 = new DevExpress.XtraGrid.GridLevelNode();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MonsterInfoView));
             this.MonsterInfoStatsGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.colStat = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -38,11 +40,14 @@
             this.colAmount = new DevExpress.XtraGrid.Columns.GridColumn();
             this.MonsterInfoGridControl = new DevExpress.XtraGrid.GridControl();
             this.RespawnsGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.colRegion = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.RegionLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
+            this.colMap = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.MapLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
+            this.colX = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colY = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colDelay = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.colCount = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colSpread = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colCount = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn2 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.DropsGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.ColItem = new DevExpress.XtraGrid.Columns.GridColumn();
             this.ItemLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
@@ -51,6 +56,10 @@
             this.gridColumn1 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn6 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn7 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.DropLists = new DevExpress.XtraGrid.Views.Grid.GridView();
+            this.colDropList = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.DropListLookUpEdit = new DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit();
+            this.colMultiplier = new DevExpress.XtraGrid.Columns.GridColumn();
             this.MonsterInfoGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.colMonsterName = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colImage = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -63,22 +72,28 @@
             this.colAttackDelay = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colMoveDelay = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colIsBoss = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colIsLord = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colIsDamageDrop = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colUndead = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn3 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn4 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn5 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colCanSuper = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colSuperName = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colSuperChance = new DevExpress.XtraGrid.Columns.GridColumn();
             this.ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
             this.SaveButton = new DevExpress.XtraBars.BarButtonItem();
             this.ribbonPage1 = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.ribbonPageGroup1 = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
-            this.colFaceImage = new DevExpress.XtraGrid.Columns.GridColumn();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterInfoStatsGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.StatComboBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterInfoGridControl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RespawnsGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.RegionLookUpEdit)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.MapLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropsGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropLists)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropListLookUpEdit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterInfoGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterImageComboBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
@@ -128,10 +143,13 @@
             gridLevelNode2.RelationName = "Respawns";
             gridLevelNode3.LevelTemplate = this.DropsGridView;
             gridLevelNode3.RelationName = "Drops";
+            gridLevelNode4.LevelTemplate = this.DropLists;
+            gridLevelNode4.RelationName = "DropLists";
             this.MonsterInfoGridControl.LevelTree.Nodes.AddRange(new DevExpress.XtraGrid.GridLevelNode[] {
             gridLevelNode1,
             gridLevelNode2,
-            gridLevelNode3});
+            gridLevelNode3,
+            gridLevelNode4});
             this.MonsterInfoGridControl.Location = new System.Drawing.Point(0, 143);
             this.MonsterInfoGridControl.MainView = this.MonsterInfoGridView;
             this.MonsterInfoGridControl.MenuManager = this.ribbon;
@@ -140,23 +158,27 @@
             this.MonsterImageComboBox,
             this.StatComboBox,
             this.ItemLookUpEdit,
-            this.RegionLookUpEdit});
+            this.MapLookUpEdit});
             this.MonsterInfoGridControl.ShowOnlyPredefinedDetails = true;
             this.MonsterInfoGridControl.Size = new System.Drawing.Size(775, 374);
             this.MonsterInfoGridControl.TabIndex = 2;
             this.MonsterInfoGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.RespawnsGridView,
             this.DropsGridView,
+            this.DropLists,
             this.MonsterInfoGridView,
             this.MonsterInfoStatsGridView});
             // 
             // RespawnsGridView
             // 
             this.RespawnsGridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
-            this.colRegion,
+            this.colMap,
+            this.colX,
+            this.colY,
             this.colDelay,
+            this.colSpread,
             this.colCount,
-            this.colSpread});
+            this.gridColumn2});
             this.RespawnsGridView.GridControl = this.MonsterInfoGridControl;
             this.RespawnsGridView.Name = "RespawnsGridView";
             this.RespawnsGridView.OptionsView.EnableAppearanceEvenRow = true;
@@ -165,49 +187,69 @@
             this.RespawnsGridView.OptionsView.ShowButtonMode = DevExpress.XtraGrid.Views.Base.ShowButtonModeEnum.ShowAlways;
             this.RespawnsGridView.OptionsView.ShowGroupPanel = false;
             // 
-            // colRegion
+            // colMap
             // 
-            this.colRegion.ColumnEdit = this.RegionLookUpEdit;
-            this.colRegion.FieldName = "Region";
-            this.colRegion.Name = "colRegion";
-            this.colRegion.SortMode = DevExpress.XtraGrid.ColumnSortMode.DisplayText;
-            this.colRegion.Visible = true;
-            this.colRegion.VisibleIndex = 0;
+            this.colMap.ColumnEdit = this.MapLookUpEdit;
+            this.colMap.FieldName = "Map";
+            this.colMap.Name = "colMap";
+            this.colMap.Visible = true;
+            this.colMap.VisibleIndex = 0;
             // 
-            // RegionLookUpEdit
+            // MapLookUpEdit
             // 
-            this.RegionLookUpEdit.AutoHeight = false;
-            this.RegionLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
-            this.RegionLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            this.MapLookUpEdit.AutoHeight = false;
+            this.MapLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.MapLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.RegionLookUpEdit.Columns.AddRange(new DevExpress.XtraEditors.Controls.LookUpColumnInfo[] {
+            this.MapLookUpEdit.Columns.AddRange(new DevExpress.XtraEditors.Controls.LookUpColumnInfo[] {
             new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Index", "Index"),
             new DevExpress.XtraEditors.Controls.LookUpColumnInfo("FileName", "File Name"),
             new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Description", "Description")});
-            this.RegionLookUpEdit.DisplayMember = "ServerDescription";
-            this.RegionLookUpEdit.Name = "RegionLookUpEdit";
-            this.RegionLookUpEdit.NullText = "[Region is null]";
+            this.MapLookUpEdit.DisplayMember = "Description";
+            this.MapLookUpEdit.Name = "MapLookUpEdit";
+            this.MapLookUpEdit.NullText = "[Map is null]";
+            // 
+            // colX
+            // 
+            this.colX.FieldName = "X";
+            this.colX.Name = "colX";
+            this.colX.Visible = true;
+            this.colX.VisibleIndex = 1;
+            // 
+            // colY
+            // 
+            this.colY.FieldName = "Y";
+            this.colY.Name = "colY";
+            this.colY.Visible = true;
+            this.colY.VisibleIndex = 2;
             // 
             // colDelay
             // 
             this.colDelay.FieldName = "Delay";
             this.colDelay.Name = "colDelay";
             this.colDelay.Visible = true;
-            this.colDelay.VisibleIndex = 1;
-            // 
-            // colCount
-            // 
-            this.colCount.FieldName = "Count";
-            this.colCount.Name = "colCount";
-            this.colCount.Visible = true;
-            this.colCount.VisibleIndex = 3;
+            this.colDelay.VisibleIndex = 3;
             // 
             // colSpread
             // 
             this.colSpread.FieldName = "Spread";
             this.colSpread.Name = "colSpread";
             this.colSpread.Visible = true;
-            this.colSpread.VisibleIndex = 2;
+            this.colSpread.VisibleIndex = 4;
+            // 
+            // colCount
+            // 
+            this.colCount.FieldName = "Count";
+            this.colCount.Name = "colCount";
+            this.colCount.Visible = true;
+            this.colCount.VisibleIndex = 5;
+            // 
+            // gridColumn2
+            // 
+            this.gridColumn2.FieldName = "DropSet";
+            this.gridColumn2.Name = "gridColumn2";
+            this.gridColumn2.Visible = true;
+            this.gridColumn2.VisibleIndex = 6;
             // 
             // DropsGridView
             // 
@@ -287,6 +329,46 @@
             this.gridColumn7.Visible = true;
             this.gridColumn7.VisibleIndex = 5;
             // 
+            // DropLists
+            // 
+            this.DropLists.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
+            this.colDropList,
+            this.colMultiplier});
+            this.DropLists.GridControl = this.MonsterInfoGridControl;
+            this.DropLists.Name = "DropLists";
+            this.DropLists.OptionsDetail.AllowExpandEmptyDetails = true;
+            this.DropLists.OptionsView.EnableAppearanceEvenRow = true;
+            this.DropLists.OptionsView.EnableAppearanceOddRow = true;
+            this.DropLists.OptionsView.NewItemRowPosition = DevExpress.XtraGrid.Views.Grid.NewItemRowPosition.Top;
+            this.DropLists.OptionsView.ShowButtonMode = DevExpress.XtraGrid.Views.Base.ShowButtonModeEnum.ShowAlways;
+            this.DropLists.OptionsView.ShowGroupPanel = false;
+            // 
+            // colDropList
+            // 
+            this.colDropList.ColumnEdit = this.DropListLookUpEdit;
+            this.colDropList.FieldName = "DropList";
+            this.colDropList.Name = "colDropList";
+            this.colDropList.Visible = true;
+            this.colDropList.VisibleIndex = 0;
+            // 
+            // DropListLookUpEdit
+            // 
+            this.DropListLookUpEdit.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
+            this.DropListLookUpEdit.AutoHeight = false;
+            this.DropListLookUpEdit.BestFitMode = DevExpress.XtraEditors.Controls.BestFitMode.BestFitResizePopup;
+            this.DropListLookUpEdit.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.DropListLookUpEdit.DisplayMember = "DropTier";
+            this.DropListLookUpEdit.Name = "DropListLookUpEdit";
+            this.DropListLookUpEdit.NullText = "[DropList is null]";
+            // 
+            // colMultiplier
+            // 
+            this.colMultiplier.FieldName = "Multiplier";
+            this.colMultiplier.Name = "colMultiplier";
+            this.colMultiplier.Visible = true;
+            this.colMultiplier.VisibleIndex = 1;
+            // 
             // MonsterInfoGridView
             // 
             this.MonsterInfoGridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
@@ -300,11 +382,15 @@
             this.colAttackDelay,
             this.colMoveDelay,
             this.colIsBoss,
+            this.colIsLord,
+            this.colIsDamageDrop,
             this.colUndead,
             this.gridColumn3,
             this.gridColumn4,
             this.gridColumn5,
-            this.colFaceImage});
+            this.colCanSuper,
+            this.colSuperName,
+            this.colSuperChance});
             this.MonsterInfoGridView.GridControl = this.MonsterInfoGridControl;
             this.MonsterInfoGridView.Name = "MonsterInfoGridView";
             this.MonsterInfoGridView.OptionsDetail.AllowExpandEmptyDetails = true;
@@ -392,33 +478,68 @@
             this.colIsBoss.Visible = true;
             this.colIsBoss.VisibleIndex = 9;
             // 
+            // colIsLord
+            // 
+            this.colIsLord.FieldName = "IsLord";
+            this.colIsLord.Name = "colIsLord";
+            this.colIsLord.Visible = true;
+            this.colIsLord.VisibleIndex = 10;
+            // 
+            // colIsDamageDrop
+            // 
+            this.colIsDamageDrop.FieldName = "IsDamageDrop";
+            this.colIsDamageDrop.Name = "colIsDamageDrop";
+            this.colIsDamageDrop.Visible = true;
+            this.colIsDamageDrop.VisibleIndex = 11;
+            // 
             // colUndead
             // 
             this.colUndead.FieldName = "Undead";
             this.colUndead.Name = "colUndead";
             this.colUndead.Visible = true;
-            this.colUndead.VisibleIndex = 10;
+            this.colUndead.VisibleIndex = 12;
             // 
             // gridColumn3
             // 
             this.gridColumn3.FieldName = "CanPush";
             this.gridColumn3.Name = "gridColumn3";
             this.gridColumn3.Visible = true;
-            this.gridColumn3.VisibleIndex = 11;
+            this.gridColumn3.VisibleIndex = 13;
             // 
             // gridColumn4
             // 
             this.gridColumn4.FieldName = "CanTame";
             this.gridColumn4.Name = "gridColumn4";
             this.gridColumn4.Visible = true;
-            this.gridColumn4.VisibleIndex = 12;
+            this.gridColumn4.VisibleIndex = 14;
             // 
             // gridColumn5
             // 
             this.gridColumn5.FieldName = "Flag";
             this.gridColumn5.Name = "gridColumn5";
             this.gridColumn5.Visible = true;
-            this.gridColumn5.VisibleIndex = 13;
+            this.gridColumn5.VisibleIndex = 15;
+            // 
+            // colCanSuper
+            // 
+            this.colCanSuper.FieldName = "CanSuper";
+            this.colCanSuper.Name = "colCanSuper";
+            this.colCanSuper.Visible = true;
+            this.colCanSuper.VisibleIndex = 16;
+            // 
+            // colSuperName
+            // 
+            this.colSuperName.FieldName = "SuperName";
+            this.colSuperName.Name = "colSuperName";
+            this.colSuperName.Visible = true;
+            this.colSuperName.VisibleIndex = 17;
+            // 
+            // colSuperChance
+            // 
+            this.colSuperChance.FieldName = "SuperChance";
+            this.colSuperChance.Name = "colSuperChance";
+            this.colSuperChance.Visible = true;
+            this.colSuperChance.VisibleIndex = 18;
             // 
             // ribbon
             // 
@@ -458,14 +579,6 @@
             this.ribbonPageGroup1.ShowCaptionButton = false;
             this.ribbonPageGroup1.Text = "Saving";
             // 
-            // colFaceImage
-            // 
-            this.colFaceImage.Caption = "Face Image";
-            this.colFaceImage.FieldName = "FaceImage";
-            this.colFaceImage.Name = "colFaceImage";
-            this.colFaceImage.Visible = true;
-            this.colFaceImage.VisibleIndex = 14;
-            // 
             // MonsterInfoView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -480,9 +593,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.StatComboBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterInfoGridControl)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RespawnsGridView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.RegionLookUpEdit)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.MapLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DropsGridView)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ItemLookUpEdit)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropLists)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DropListLookUpEdit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterInfoGridView)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.MonsterImageComboBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).EndInit();
@@ -514,7 +629,9 @@
         private DevExpress.XtraGrid.Columns.GridColumn colAttackDelay;
         private DevExpress.XtraGrid.Columns.GridColumn colMoveDelay;
         private DevExpress.XtraGrid.Views.Grid.GridView RespawnsGridView;
-        private DevExpress.XtraGrid.Columns.GridColumn colRegion;
+        private DevExpress.XtraGrid.Columns.GridColumn colMap;
+        private DevExpress.XtraGrid.Columns.GridColumn colX;
+        private DevExpress.XtraGrid.Columns.GridColumn colY;
         private DevExpress.XtraGrid.Columns.GridColumn colDelay;
         private DevExpress.XtraGrid.Columns.GridColumn colSpread;
         private DevExpress.XtraGrid.Columns.GridColumn colCount;
@@ -522,9 +639,13 @@
         private DevExpress.XtraGrid.Columns.GridColumn ColItem;
         private DevExpress.XtraGrid.Columns.GridColumn colChance;
         private DevExpress.XtraGrid.Columns.GridColumn colDAmount;
-        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit RegionLookUpEdit;
+        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit MapLookUpEdit;
+        private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit DropListLookUpEdit;
         private DevExpress.XtraEditors.Repository.RepositoryItemLookUpEdit ItemLookUpEdit;
         private DevExpress.XtraGrid.Columns.GridColumn colIsBoss;
+        private DevExpress.XtraGrid.Columns.GridColumn colIsLord;
+        private DevExpress.XtraGrid.Columns.GridColumn colIsDamageDrop;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn2;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn1;
         private DevExpress.XtraGrid.Columns.GridColumn colUndead;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn3;
@@ -532,6 +653,11 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn5;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn6;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn7;
-        private DevExpress.XtraGrid.Columns.GridColumn colFaceImage;
+        private DevExpress.XtraGrid.Columns.GridColumn colCanSuper;
+        private DevExpress.XtraGrid.Columns.GridColumn colSuperName;
+        private DevExpress.XtraGrid.Columns.GridColumn colSuperChance;
+        private DevExpress.XtraGrid.Views.Grid.GridView DropLists;
+        private DevExpress.XtraGrid.Columns.GridColumn colDropList;
+        private DevExpress.XtraGrid.Columns.GridColumn colMultiplier;
     }
 }

@@ -39,6 +39,50 @@ namespace Library.SystemModels
         }
         private int _MaxValue;
 
+        public EventTypes EventType
+        {
+            get { return _EventType; }
+            set
+            {
+                if (_EventType == value) return;
+
+                var oldValue = _EventType;
+                _EventType = value;
+
+                OnChanged(oldValue, value, "EventType");
+            }
+        }
+        private EventTypes _EventType;
+
+        public MapInfo MapParameter
+        {
+            get { return _MapParameter; }
+            set
+            {
+                if (_MapParameter == value) return;
+
+                var oldValue = _MapParameter;
+                _MapParameter = value;
+
+                OnChanged(oldValue, value, "MapParameter");
+            }
+        }
+        private MapInfo _MapParameter;
+
+        public int CoolDownTime
+        {
+            get { return _CoolDownTime; }
+            set
+            {
+                if (_CoolDownTime == value) return;
+
+                var oldValue = _CoolDownTime;
+                _CoolDownTime = value;
+
+                OnChanged(oldValue, value, "CoolDownTime");
+            }
+        }
+        private int _CoolDownTime;
 
 
         [Association("Targets", true)]
@@ -48,7 +92,7 @@ namespace Library.SystemModels
         public DBBindingList<EventAction> Actions { get; set; }
 
 
-        public int CurrentValue; //Server Variable.
+        public int CurrentValue;
 
     }
 
@@ -134,7 +178,7 @@ namespace Library.SystemModels
             }
         }
         private EventInfo _Event;
-        
+
 
         public int TriggerValue
         {
@@ -210,8 +254,23 @@ namespace Library.SystemModels
             }
         }
         private RespawnInfo _RespawnParameter1;
-        
-        
+
+        public int BonusParameter1
+        {
+            get { return _BonusParameter1; }
+            set
+            {
+                if (_BonusParameter1 == value) return;
+
+                var oldValue = _BonusParameter1;
+                _BonusParameter1 = value;
+
+                OnChanged(oldValue, value, "BonusParameter1");
+            }
+        }
+        private int _BonusParameter1;
+
+
         public MapRegion RegionParameter1
         {
             get { return _RegionParameter1; }
@@ -241,11 +300,16 @@ namespace Library.SystemModels
             }
         }
         private MapInfo _MapParameter1;
-        
-        
-        
+
+
+
     }
 
+    public enum EventTypes
+    {
+        KR,
+        KILLSTREAK,
+    }
 
     public enum EventActionType
     {
@@ -258,5 +322,7 @@ namespace Library.SystemModels
         MovementSettings,
         PlayerRecall,
         PlayerEscape,
+        KillStreak,
+        SuperRespawn,
     }
 }

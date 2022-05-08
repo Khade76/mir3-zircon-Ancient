@@ -49,6 +49,12 @@
             this.gridColumn16 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn17 = new DevExpress.XtraGrid.Columns.GridColumn();
             this.gridColumn18 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn19 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn20 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn21 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn22 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.gridColumn23 = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.Temp = new DevExpress.XtraGrid.Columns.GridColumn();
             ((System.ComponentModel.ISupportInitialize)(this.AccountGridControl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AccountGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.AccountLookUpEdit)).BeginInit();
@@ -62,7 +68,7 @@
             this.AccountGridControl.Name = "AccountGridControl";
             this.AccountGridControl.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
             this.AccountLookUpEdit});
-            this.AccountGridControl.Size = new System.Drawing.Size(937, 373);
+            this.AccountGridControl.Size = new System.Drawing.Size(941, 373);
             this.AccountGridControl.TabIndex = 0;
             this.AccountGridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.AccountGridView});
@@ -87,7 +93,13 @@
             this.gridColumn15,
             this.gridColumn16,
             this.gridColumn17,
-            this.gridColumn18});
+            this.gridColumn18,
+            this.gridColumn19,
+            this.gridColumn20,
+            this.gridColumn21,
+            this.gridColumn22,
+            this.gridColumn23,
+            this.Temp});
             this.AccountGridView.GridControl = this.AccountGridControl;
             this.AccountGridView.Name = "AccountGridView";
             this.AccountGridView.OptionsView.EnableAppearanceEvenRow = true;
@@ -228,20 +240,63 @@
             this.gridColumn17.FieldName = "Admin";
             this.gridColumn17.Name = "gridColumn17";
             this.gridColumn17.Visible = true;
-            this.gridColumn17.VisibleIndex = 16;
+            this.gridColumn17.VisibleIndex = 20;
             // 
             // gridColumn18
             // 
             this.gridColumn18.FieldName = "Observer";
             this.gridColumn18.Name = "gridColumn18";
             this.gridColumn18.Visible = true;
-            this.gridColumn18.VisibleIndex = 17;
+            this.gridColumn18.VisibleIndex = 22;
+            // 
+            // gridColumn19
+            // 
+            this.gridColumn19.FieldName = "Developer";
+            this.gridColumn19.Name = "gridColumn19";
+            this.gridColumn19.Visible = true;
+            this.gridColumn19.VisibleIndex = 21;
+            // 
+            // gridColumn20
+            // 
+            this.gridColumn20.FieldName = "FamePoints";
+            this.gridColumn20.Name = "gridColumn20";
+            this.gridColumn20.Visible = true;
+            this.gridColumn20.VisibleIndex = 16;
+            // 
+            // gridColumn21
+            // 
+            this.gridColumn21.FieldName = "Horse";
+            this.gridColumn21.Name = "gridColumn21";
+            this.gridColumn21.Visible = true;
+            this.gridColumn21.VisibleIndex = 17;
+            // 
+            // gridColumn22
+            // 
+            this.gridColumn22.FieldName = "Admin1";
+            this.gridColumn22.Name = "gridColumn22";
+            this.gridColumn22.Visible = true;
+            this.gridColumn22.VisibleIndex = 18;
+            // 
+            // gridColumn23
+            // 
+            this.gridColumn23.FieldName = "Admin2";
+            this.gridColumn23.Name = "gridColumn23";
+            this.gridColumn23.Visible = true;
+            this.gridColumn23.VisibleIndex = 19;
+            // 
+            // Temp
+            // 
+            this.Temp.Caption = "Temporary";
+            this.Temp.FieldName = "IsTemporary";
+            this.Temp.Name = "Temp";
+            this.Temp.Visible = true;
+            this.Temp.VisibleIndex = 23;
             // 
             // AccountView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(937, 373);
+            this.ClientSize = new System.Drawing.Size(941, 373);
             this.Controls.Add(this.AccountGridControl);
             this.Name = "AccountView";
             this.Text = "Account View";
@@ -275,5 +330,11 @@
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn16;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn17;
         private DevExpress.XtraGrid.Columns.GridColumn gridColumn18;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn19;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn20;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn21;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn22;
+        private DevExpress.XtraGrid.Columns.GridColumn gridColumn23;
+        private DevExpress.XtraGrid.Columns.GridColumn Temp;
     }
 }

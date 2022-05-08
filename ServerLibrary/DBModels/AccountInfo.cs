@@ -12,10 +12,14 @@ namespace Server.DBModels
     {
         public string EMailAddress
         {
-            get { return _EMailAddress; }
+            get
+            {
+                return _EMailAddress;
+            }
             set
             {
-                if (_EMailAddress == value) return;
+                if (_EMailAddress == value)
+                    return;
 
                 var oldValue = _EMailAddress;
                 _EMailAddress = value;
@@ -24,13 +28,17 @@ namespace Server.DBModels
             }
         }
         private string _EMailAddress;
-        
+
         public byte[] Password
         {
-            get { return _Password; }
+            get
+            {
+                return _Password;
+            }
             set
             {
-                if (_Password == value) return;
+                if (_Password == value)
+                    return;
 
                 var oldValue = _Password;
                 _Password = value;
@@ -42,10 +50,14 @@ namespace Server.DBModels
 
         public string RealName
         {
-            get { return _RealName; }
+            get
+            {
+                return _RealName;
+            }
             set
             {
-                if (_RealName == value) return;
+                if (_RealName == value)
+                    return;
 
                 var oldValue = _RealName;
                 _RealName = value;
@@ -57,10 +69,14 @@ namespace Server.DBModels
 
         public DateTime BirthDate
         {
-            get { return _BirthDate; }
+            get
+            {
+                return _BirthDate;
+            }
             set
             {
-                if (_BirthDate == value) return;
+                if (_BirthDate == value)
+                    return;
 
                 var oldValue = _BirthDate;
                 _BirthDate = value;
@@ -72,10 +88,14 @@ namespace Server.DBModels
 
         public string Question
         {
-            get { return _Question; }
+            get
+            {
+                return _Question;
+            }
             set
             {
-                if (_Question == value) return;
+                if (_Question == value)
+                    return;
 
                 var oldValue = _Question;
                 _Question = value;
@@ -87,10 +107,14 @@ namespace Server.DBModels
 
         public string Answer
         {
-            get { return _Answer; }
+            get
+            {
+                return _Answer;
+            }
             set
             {
-                if (_Answer == value) return;
+                if (_Answer == value)
+                    return;
 
                 var oldValue = _Answer;
                 _Answer = value;
@@ -103,10 +127,14 @@ namespace Server.DBModels
         [Association("Referrals")]
         public AccountInfo Referral
         {
-            get { return _Referral; }
+            get
+            {
+                return _Referral;
+            }
             set
             {
-                if (_Referral == value) return;
+                if (_Referral == value)
+                    return;
 
                 var oldValue = _Referral;
                 _Referral = value;
@@ -115,13 +143,17 @@ namespace Server.DBModels
             }
         }
         private AccountInfo _Referral;
-        
+
         public string CreationIP
         {
-            get { return _CreationIP; }
+            get
+            {
+                return _CreationIP;
+            }
             set
             {
-                if (_CreationIP == value) return;
+                if (_CreationIP == value)
+                    return;
 
                 var oldValue = _CreationIP;
                 _CreationIP = value;
@@ -130,13 +162,17 @@ namespace Server.DBModels
             }
         }
         private string _CreationIP;
-        
+
         public DateTime CreationDate
         {
-            get { return _CreationDate; }
+            get
+            {
+                return _CreationDate;
+            }
             set
             {
-                if (_CreationDate == value) return;
+                if (_CreationDate == value)
+                    return;
 
                 var oldValue = _CreationDate;
                 _CreationDate = value;
@@ -148,10 +184,14 @@ namespace Server.DBModels
 
         public string LastIP
         {
-            get { return _LastIP; }
+            get
+            {
+                return _LastIP;
+            }
             set
             {
-                if (_LastIP == value) return;
+                if (_LastIP == value)
+                    return;
 
                 var oldValue = _LastIP;
                 _LastIP = value;
@@ -163,10 +203,14 @@ namespace Server.DBModels
 
         public DateTime LastLogin
         {
-            get { return _LastLogin; }
+            get
+            {
+                return _LastLogin;
+            }
             set
             {
-                if (_LastLogin == value) return;
+                if (_LastLogin == value)
+                    return;
 
                 var oldValue = _LastLogin;
                 _LastLogin = value;
@@ -178,10 +222,14 @@ namespace Server.DBModels
 
         public string ActivationKey
         {
-            get { return _ActivationKey; }
+            get
+            {
+                return _ActivationKey;
+            }
             set
             {
-                if (_ActivationKey == value) return;
+                if (_ActivationKey == value)
+                    return;
 
                 var oldValue = _ActivationKey;
                 _ActivationKey = value;
@@ -193,10 +241,14 @@ namespace Server.DBModels
 
         public DateTime ActivationTime
         {
-            get { return _ActivationTime; }
+            get
+            {
+                return _ActivationTime;
+            }
             set
             {
-                if (_ActivationTime == value) return;
+                if (_ActivationTime == value)
+                    return;
 
                 var oldValue = _ActivationTime;
                 _ActivationTime = value;
@@ -205,13 +257,17 @@ namespace Server.DBModels
             }
         }
         private DateTime _ActivationTime;
-        
+
         public bool Activated
         {
-            get { return _Activated; }
+            get
+            {
+                return _Activated;
+            }
             set
             {
-                if (_Activated == value) return;
+                if (_Activated == value)
+                    return;
 
                 var oldValue = _Activated;
                 _Activated = value;
@@ -223,10 +279,14 @@ namespace Server.DBModels
 
         public string ResetKey
         {
-            get { return _ResetKey; }
+            get
+            {
+                return _ResetKey;
+            }
             set
             {
-                if (_ResetKey == value) return;
+                if (_ResetKey == value)
+                    return;
 
                 var oldValue = _ResetKey;
                 _ResetKey = value;
@@ -238,10 +298,14 @@ namespace Server.DBModels
 
         public DateTime ResetTime
         {
-            get { return _ResetTime; }
+            get
+            {
+                return _ResetTime;
+            }
             set
             {
-                if (_ResetTime == value) return;
+                if (_ResetTime == value)
+                    return;
 
                 var oldValue = _ResetTime;
                 _ResetTime = value;
@@ -253,10 +317,14 @@ namespace Server.DBModels
 
         public DateTime PasswordTime
         {
-            get { return _PasswordTime; }
+            get
+            {
+                return _PasswordTime;
+            }
             set
             {
-                if (_PasswordTime == value) return;
+                if (_PasswordTime == value)
+                    return;
 
                 var oldValue = _PasswordTime;
                 _PasswordTime = value;
@@ -268,10 +336,14 @@ namespace Server.DBModels
 
         public DateTime ChatBanExpiry
         {
-            get { return _ChatBanExpiry; }
+            get
+            {
+                return _ChatBanExpiry;
+            }
             set
             {
-                if (_ChatBanExpiry == value) return;
+                if (_ChatBanExpiry == value)
+                    return;
 
                 var oldValue = _ChatBanExpiry;
                 _ChatBanExpiry = value;
@@ -283,10 +355,14 @@ namespace Server.DBModels
 
         public bool Banned
         {
-            get { return _Banned; }
+            get
+            {
+                return _Banned;
+            }
             set
             {
-                if (_Banned == value) return;
+                if (_Banned == value)
+                    return;
 
                 var oldValue = _Banned;
                 _Banned = value;
@@ -298,10 +374,14 @@ namespace Server.DBModels
 
         public DateTime ExpiryDate
         {
-            get { return _ExpiryDate; }
+            get
+            {
+                return _ExpiryDate;
+            }
             set
             {
-                if (_ExpiryDate == value) return;
+                if (_ExpiryDate == value)
+                    return;
 
                 var oldValue = _ExpiryDate;
                 _ExpiryDate = value;
@@ -313,10 +393,14 @@ namespace Server.DBModels
 
         public string BanReason
         {
-            get { return _BanReason; }
+            get
+            {
+                return _BanReason;
+            }
             set
             {
-                if (_BanReason == value) return;
+                if (_BanReason == value)
+                    return;
 
                 var oldValue = _BanReason;
                 _BanReason = value;
@@ -326,25 +410,16 @@ namespace Server.DBModels
         }
         private string _BanReason;
 
-        [IgnoreProperty]
-        public UserCurrency Gold2 => Currencies.First(x => x.Info.Type == CurrencyType.Gold);
-
-        [IgnoreProperty]
-        public UserCurrency GameGold2 => Currencies.First(x => x.Info.Type == CurrencyType.GameGold);
-
-        [IgnoreProperty]
-        public UserCurrency HuntGold2 => Currencies.First(x => x.Info.Type == CurrencyType.HuntGold);
-
-
-        /// <summary>
-        /// OLD PROPERTY. DO NOT USE.
-        /// </summary>
         public long Gold
         {
-            get { return _Gold; }
+            get
+            {
+                return _Gold;
+            }
             set
             {
-                if (_Gold == value) return;
+                if (_Gold == value)
+                    return;
 
                 var oldValue = _Gold;
                 _Gold = value;
@@ -354,15 +429,16 @@ namespace Server.DBModels
         }
         private long _Gold;
 
-        /// <summary>
-        /// OLD PROPERTY. DO NOT USE.
-        /// </summary>
         public int GameGold
         {
-            get { return _GameGold; }
+            get
+            {
+                return _GameGold;
+            }
             set
             {
-                if (_GameGold == value) return;
+                if (_GameGold == value)
+                    return;
 
                 var oldValue = _GameGold;
                 _GameGold = value;
@@ -372,30 +448,16 @@ namespace Server.DBModels
         }
         private int _GameGold;
 
-        /// <summary>
-        /// OLD PROPERTY. DO NOT USE.
-        /// </summary>
-        public int HuntGold
-        {
-            get { return _HuntGold; }
-            set
-            {
-                if (_HuntGold == value) return;
-
-                var oldValue = _HuntGold;
-                _HuntGold = value;
-
-                OnChanged(oldValue, value, "HuntGold");
-            }
-        }
-        private int _HuntGold;
-
         public bool AllowGroup
         {
-            get { return _AllowGroup; }
+            get
+            {
+                return _AllowGroup;
+            }
             set
             {
-                if (_AllowGroup == value) return;
+                if (_AllowGroup == value)
+                    return;
 
                 var oldValue = _AllowGroup;
                 _AllowGroup = value;
@@ -407,10 +469,14 @@ namespace Server.DBModels
 
         public bool AllowTrade
         {
-            get { return _AllowTrade; }
+            get
+            {
+                return _AllowTrade;
+            }
             set
             {
-                if (_AllowTrade == value) return;
+                if (_AllowTrade == value)
+                    return;
 
                 var oldValue = _AllowTrade;
                 _AllowTrade = value;
@@ -422,10 +488,14 @@ namespace Server.DBModels
 
         public bool AllowGuild
         {
-            get { return _AllowGuild; }
+            get
+            {
+                return _AllowGuild;
+            }
             set
             {
-                if (_AllowGuild == value) return;
+                if (_AllowGuild == value)
+                    return;
 
                 var oldValue = _AllowGuild;
                 _AllowGuild = value;
@@ -437,10 +507,14 @@ namespace Server.DBModels
 
         public bool AllowGroupRecall
         {
-            get { return _AllowGroupRecall; }
+            get
+            {
+                return _AllowGroupRecall;
+            }
             set
             {
-                if (_AllowGroupRecall == value) return;
+                if (_AllowGroupRecall == value)
+                    return;
 
                 var oldValue = _AllowGroupRecall;
                 _AllowGroupRecall = value;
@@ -449,16 +523,40 @@ namespace Server.DBModels
             }
         }
         private bool _AllowGroupRecall;
-        
+
+
+        public bool ReturningHuntGold
+        {
+            get
+            {
+                return _ReturningHuntGold;
+            }
+            set
+            {
+                if (_ReturningHuntGold == value)
+                    return;
+
+                var oldValue = _ReturningHuntGold;
+                _ReturningHuntGold = value;
+
+                OnChanged(oldValue, value, "ReturningHuntGold");
+            }
+        }
+        private bool _ReturningHuntGold;
+
 
 
         [Association("Member")]
         public GuildMemberInfo GuildMember
         {
-            get { return _GuildMember; }
+            get
+            {
+                return _GuildMember;
+            }
             set
             {
-                if (_GuildMember == value) return;
+                if (_GuildMember == value)
+                    return;
 
                 var oldValue = _GuildMember;
                 _GuildMember = value;
@@ -467,13 +565,17 @@ namespace Server.DBModels
             }
         }
         private GuildMemberInfo _GuildMember;
-        
+
         public DateTime GlobalTime
         {
-            get { return _GlobalTime; }
+            get
+            {
+                return _GlobalTime;
+            }
             set
             {
-                if (_GlobalTime == value) return;
+                if (_GlobalTime == value)
+                    return;
 
                 var oldValue = _GlobalTime;
                 _GlobalTime = value;
@@ -485,10 +587,14 @@ namespace Server.DBModels
 
         public HorseType Horse
         {
-            get { return _Horse; }
+            get
+            {
+                return _Horse;
+            }
             set
             {
-                if (_Horse == value) return;
+                if (_Horse == value)
+                    return;
 
                 var oldValue = _Horse;
                 _Horse = value;
@@ -498,12 +604,35 @@ namespace Server.DBModels
         }
         private HorseType _Horse;
 
-        public bool Admin
+        public int HuntGold
         {
-            get { return _Admin; }
+            get
+            {
+                return _HuntGold;
+            }
             set
             {
-                if (_Admin == value) return;
+                if (_HuntGold == value)
+                    return;
+
+                var oldValue = _HuntGold;
+                _HuntGold = value;
+
+                OnChanged(oldValue, value, "HuntGold");
+            }
+        }
+        private int _HuntGold;
+
+        public bool Admin
+        {
+            get
+            {
+                return _Admin;
+            }
+            set
+            {
+                if (_Admin == value)
+                    return;
 
                 var oldValue = _Admin;
                 _Admin = value;
@@ -513,12 +642,73 @@ namespace Server.DBModels
         }
         private bool _Admin;
 
-        public int StorageSize
+        public bool Admin1
         {
-            get { return _StorageSize; }
+            get
+            {
+                return _Admin1;
+            }
             set
             {
-                if (_StorageSize == value) return;
+                if (_Admin1 == value)
+                    return;
+
+                var oldValue = _Admin1;
+                _Admin1 = value;
+
+                OnChanged(oldValue, value, "Admin1");
+            }
+        }
+        private bool _Admin1;
+
+        public bool Admin2
+        {
+            get
+            {
+                return _Admin2;
+            }
+            set
+            {
+                if (_Admin2 == value)
+                    return;
+
+                var oldValue = _Admin2;
+                _Admin2 = value;
+
+                OnChanged(oldValue, value, "Admin2");
+            }
+        }
+        private bool _Admin2;
+
+        public bool Developer
+        {
+            get
+            {
+                return _Developer;
+            }
+            set
+            {
+                if (_Developer == value)
+                    return;
+
+                var oldValue = _Developer;
+                _Developer = value;
+
+                OnChanged(oldValue, value, "Developer");
+            }
+        }
+        private bool _Developer;
+
+        public int StorageSize
+        {
+            get
+            {
+                return _StorageSize;
+            }
+            set
+            {
+                if (_StorageSize == value)
+                    return;
 
                 var oldValue = _StorageSize;
                 _StorageSize = value;
@@ -530,10 +720,14 @@ namespace Server.DBModels
 
         public string LastSum
         {
-            get { return _LastSum; }
+            get
+            {
+                return _LastSum;
+            }
             set
             {
-                if (_LastSum == value) return;
+                if (_LastSum == value)
+                    return;
 
                 var oldValue = _LastSum;
                 _LastSum = value;
@@ -545,10 +739,14 @@ namespace Server.DBModels
 
         public bool GoldBot
         {
-            get { return _GoldBot; }
+            get
+            {
+                return _GoldBot;
+            }
             set
             {
-                if (_GoldBot == value) return;
+                if (_GoldBot == value)
+                    return;
 
                 var oldValue = _GoldBot;
                 _GoldBot = value;
@@ -560,10 +758,14 @@ namespace Server.DBModels
 
         public bool ItemBot
         {
-            get { return _ItemBot; }
+            get
+            {
+                return _ItemBot;
+            }
             set
             {
-                if (_ItemBot == value) return;
+                if (_ItemBot == value)
+                    return;
 
                 var oldValue = _ItemBot;
                 _ItemBot = value;
@@ -572,14 +774,18 @@ namespace Server.DBModels
             }
         }
         private bool _ItemBot;
-        
+
 
         public DateTime GuildTime
         {
-            get { return _GuildTime; }
+            get
+            {
+                return _GuildTime;
+            }
             set
             {
-                if (_GuildTime == value) return;
+                if (_GuildTime == value)
+                    return;
 
                 var oldValue = _GuildTime;
                 _GuildTime = value;
@@ -591,10 +797,14 @@ namespace Server.DBModels
 
         public bool Observer
         {
-            get { return _Observer; }
+            get
+            {
+                return _Observer;
+            }
             set
             {
-                if (_Observer == value) return;
+                if (_Observer == value)
+                    return;
 
                 var oldValue = _Observer;
                 _Observer = value;
@@ -603,61 +813,140 @@ namespace Server.DBModels
             }
         }
         private bool _Observer;
-        
+
+        public int FamePoints
+        {
+            get
+            {
+                return _FamePoints;
+            }
+            set
+            {
+                if (_FamePoints == value)
+                    return;
+
+                var oldValue = _FamePoints;
+                _FamePoints = value;
+
+                OnChanged(oldValue, value, "FamePoints");
+            }
+        }
+        private int _FamePoints;
+
+
         public bool TempAdmin;
 
-        [Association("Currencies")]
-        public DBBindingList<UserCurrency> Currencies { get; set; }
 
         [Association("Items")]
-        public DBBindingList<UserItem> Items { get; set; }
+        public DBBindingList<UserItem> Items
+        {
+            get; set;
+        }
 
         [Association("Referrals")]
-        public DBBindingList<AccountInfo> Referrals { get; set; }
+        public DBBindingList<AccountInfo> Referrals
+        {
+            get; set;
+        }
 
         [Association("Characters")]
-        public DBBindingList<CharacterInfo> Characters { get; set; }
+        public DBBindingList<CharacterInfo> Characters
+        {
+            get; set;
+        }
 
         [Association("Buffs")]
-        public DBBindingList<BuffInfo> Buffs { get; set; }
+        public DBBindingList<BuffInfo> Buffs
+        {
+            get; set;
+        }
 
         [Association("Auctions")]
-        public DBBindingList<AuctionInfo> Auctions { get; set; }
-        
+        public DBBindingList<AuctionInfo> Auctions
+        {
+            get; set;
+        }
+
         [Association("Mail")]
-        public DBBindingList<MailInfo> Mail { get; set; }
-        
+        public DBBindingList<MailInfo> Mail
+        {
+            get; set;
+        }
+
         [Association("UserDrops")]
-        public DBBindingList<UserDrop> UserDrops { get; set; }
+        public DBBindingList<UserDrop> UserDrops
+        {
+            get; set;
+        }
 
         [Association("Companions")]
-        public DBBindingList<UserCompanion> Companions { get; set; }
+        public DBBindingList<UserCompanion> Companions
+        {
+            get; set;
+        }
 
         [Association("CompanionUnlocks")]
-        public DBBindingList<UserCompanionUnlock> CompanionUnlocks { get; set; }
+        public DBBindingList<UserCompanionUnlock> CompanionUnlocks
+        {
+            get; set;
+        }
+        [Association("HorseUnlocks")]
+        public DBBindingList<UserHorseUnlock> HorseUnlocks
+        {
+            get; set;
+        }
 
+        [Association("Horses")]
+        public DBBindingList<UserHorse> Horses
+        {
+            get; set;
+        }
         [Association("BlockingList")]
-        public DBBindingList<BlockInfo> BlockingList { get; set; } //Who this account is Blocking.
+        public DBBindingList<BlockInfo> BlockingList
+        {
+            get; set;
+        } //Who this account is Blocking.
 
         [Association("BlockedByList")]
-        public DBBindingList<BlockInfo> BlockedByList { get; set; } //Who's blocked this account.
+        public DBBindingList<BlockInfo> BlockedByList
+        {
+            get; set;
+        } //Who's blocked this account.
 
         [Association("Payments")]
-        public DBBindingList<GameGoldPayment> Payments { get; set; }
+        public DBBindingList<GameGoldPayment> Payments
+        {
+            get; set;
+        }
 
         [Association("StoreSales")]
-        public DBBindingList<GameStoreSale> StoreSales { get; set; }
+        public DBBindingList<GameStoreSale> StoreSales
+        {
+            get; set;
+        }
 
         [Association("Fortunes")]
-        public DBBindingList<UserFortuneInfo> Fortunes { get; set; }
+        public DBBindingList<UserFortuneInfo> Fortunes
+        {
+            get; set;
+        }
 
+        [Association("Crafting")]
+        public DBBindingList<UserCrafting> Crafting
+        {
+            get; set;
+        }
 
         public CharacterInfo LastCharacter
         {
-            get { return _LastCharacter; }
+            get
+            {
+                return _LastCharacter;
+            }
             set
             {
-                if (_LastCharacter == value) return;
+                if (_LastCharacter == value)
+                    return;
 
                 var oldValue = _LastCharacter;
                 _LastCharacter = value;
@@ -666,7 +955,7 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _LastCharacter;
-        
+
 
         public int WrongPasswordCount;
         public SConnection Connection;
@@ -676,15 +965,48 @@ namespace Server.DBModels
         {
             base.OnCreated();
 
+            Activated = false;
+
             StorageSize = Globals.StorageSize;
 
             BuffInfo buff = SEnvir.BuffInfoList.CreateNewObject();
 
             buff.Account = this;
             buff.Type = BuffType.HuntGold;
-            buff.TickFrequency = TimeSpan.FromMinutes(1);
-            buff.Stats = new Stats { [Stat.AvailableHuntGoldCap] = 15 };
+            buff.TickFrequency = TimeSpan.FromMinutes(SEnvir.HGTick);
+            buff.Stats = new Stats { [Stat.AvailableHuntGoldCap] = SEnvir.HGCap };
             buff.RemainingTime = TimeSpan.MaxValue;
+
+            UserCrafting craftingClothing = SEnvir.UserCraftInfoList.CreateNewObject();
+            craftingClothing.Account = this;
+            craftingClothing.Type = CraftType.Clothing;
+            craftingClothing.Level = 1;
+            craftingClothing.Exp = 0;
+
+            UserCrafting craftingConsumables = SEnvir.UserCraftInfoList.CreateNewObject();
+            craftingConsumables.Account = this;
+            craftingConsumables.Type = CraftType.Consumables;
+            craftingConsumables.Level = 1;
+            craftingConsumables.Exp = 0;
+
+            UserCrafting craftingJewelry = SEnvir.UserCraftInfoList.CreateNewObject();
+            craftingJewelry.Account = this;
+            craftingJewelry.Type = CraftType.Jewelry;
+            craftingJewelry.Level = 1;
+            craftingJewelry.Exp = 0;
+
+            UserCrafting craftingSmithing = SEnvir.UserCraftInfoList.CreateNewObject();
+            craftingSmithing.Account = this;
+            craftingSmithing.Type = CraftType.Smithing;
+            craftingSmithing.Level = 1;
+            craftingSmithing.Exp = 0;
+
+            UserCrafting craftingRusted = SEnvir.UserCraftInfoList.CreateNewObject();
+            craftingRusted.Account = this;
+            craftingRusted.Type = CraftType.Rusted;
+            craftingRusted.Level = 1;
+            craftingRusted.Exp = 0;
+
         }
         protected override void OnLoaded()
         {
@@ -692,13 +1014,9 @@ namespace Server.DBModels
 
             if (StorageSize == 0)
                 StorageSize = Globals.StorageSize;
-
-            BuffInfo buff = Buffs.FirstOrDefault(x => x.Type == BuffType.HuntGold);
-            if (buff != null)
-                buff.Stats = new Stats { [Stat.AvailableHuntGoldCap] = 15 };
         }
 
-        public int HighestLevel()
+        public int HightestLevel()
         {
             int count = 0;
 
@@ -715,7 +1033,8 @@ namespace Server.DBModels
 
             foreach (CharacterInfo character in Characters)
             {
-                if (character.Deleted) continue;
+                if (character.Deleted)
+                    continue;
 
                 characters.Add(character.ToSelectInfo());
             }

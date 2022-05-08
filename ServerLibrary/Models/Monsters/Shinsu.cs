@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Library;
 using Library.Network;
 using Server.Envir;
@@ -58,7 +54,8 @@ namespace Server.Models.Monsters
         {
             if (!Dead && SEnvir.Now > ActionTime)
             {
-                if (Target != null) ModeTime = SEnvir.Now.AddSeconds(10);
+                if (Target != null)
+                    ModeTime = SEnvir.Now.AddSeconds(10);
 
                 if (!Mode && SEnvir.Now < ModeTime)
                 {
@@ -78,7 +75,7 @@ namespace Server.Models.Monsters
 
         public override Packet GetInfoPacket(PlayerObject ob)
         {
-            S.ObjectMonster packet = (S.ObjectMonster) base.GetInfoPacket(ob);
+            S.ObjectMonster packet = (S.ObjectMonster)base.GetInfoPacket(ob);
 
             packet.Extra = Mode;
 

@@ -9,10 +9,14 @@ namespace Server.DBModels
         [Association("BlockingList")]
         public AccountInfo Account
         {
-            get { return _Account; }
+            get
+            {
+                return _Account;
+            }
             set
             {
-                if (_Account == value) return;
+                if (_Account == value)
+                    return;
 
                 var oldValue = _Account;
                 _Account = value;
@@ -25,10 +29,14 @@ namespace Server.DBModels
         [Association("BlockedByList")]
         public AccountInfo BlockedAccount
         {
-            get { return _BlockedAccount; }
+            get
+            {
+                return _BlockedAccount;
+            }
             set
             {
-                if (_BlockedAccount == value) return;
+                if (_BlockedAccount == value)
+                    return;
 
                 var oldValue = _BlockedAccount;
                 _BlockedAccount = value;
@@ -40,10 +48,14 @@ namespace Server.DBModels
 
         public string BlockedName
         {
-            get { return _BlockedName; }
+            get
+            {
+                return _BlockedName;
+            }
             set
             {
-                if (_BlockedName == value) return;
+                if (_BlockedName == value)
+                    return;
 
                 var oldValue = _BlockedName;
                 _BlockedName = value;

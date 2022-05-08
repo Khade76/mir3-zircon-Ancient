@@ -1,4 +1,11 @@
-﻿using System;
+﻿using Library;
+using Library.Network;
+using Library.SystemModels;
+using MirDB;
+using Server.DBModels;
+using Server.Models;
+using Server.Util;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
@@ -12,22 +19,178 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using Library;
-using Library.Network;
-using Library.SystemModels;
-using MirDB;
-using Server.DBModels;
-using Server.Models;
+using C = Library.Network.ClientPackets;
 using G = Library.Network.GeneralPackets;
 using S = Library.Network.ServerPackets;
-using C = Library.Network.ClientPackets;
-using System.Reflection;
-using System.Globalization;
 
 namespace Server.Envir
 {
     public static class SEnvir
     {
+        public static Boolean LogOutGoingPackets = false;
+
+        #region Variables
+
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
+        // Timers
+        private static AccurateTimer mainTickTimer = null;
+        private static AccurateTimer newConnectionTimer = null;
+        private static AccurateTimer processNotAuthenticatedConnectionsTimer = null;
+        private static AccurateTimer mainProcessTimer = null;
+        private static AccurateTimer userCountTimer = null;
+        private static AccurateTimer mailTimer = null;
+
+        // Concurrent dictionaries
+        private static ConcurrentDictionary<int, SConnection> notAuthenticatedConnections = new ConcurrentDictionary<int, SConnection>();
+        private static ConcurrentDictionary<int, SConnection> authenticatedConnections = new ConcurrentDictionary<int, SConnection>();
+        private static ConcurrentDictionary<int, DateTime> internalNowDictionary = new ConcurrentDictionary<int, DateTime>();
+        private static ConcurrentDictionary<uint, MapObject> activeObjectDictionary = new ConcurrentDictionary<uint, MapObject>();
+        private static ConcurrentDictionary<int, Random> internalRandomDictionary = new ConcurrentDictionary<int, Random>();
+        private static ConcurrentDictionary<string, int> ipCountDictionary = new ConcurrentDictionary<string, int>();
+        private static ConcurrentDictionary<string, int> ipFastCountDictionary = new ConcurrentDictionary<string, int>();
+
+        // TODO : Enclose with methods to acces this.
+        public static ConcurrentDictionary<string, DateTime> ipBlockDictionary = new ConcurrentDictionary<string, DateTime>();
+
+        private static ConcurrentQueue<Tuple<MailMessage, int>> mailMessageQueue = new ConcurrentQueue<Tuple<MailMessage, int>>();
+        private static ConcurrentQueue<SConnection> newConnectionQueue = new ConcurrentQueue<SConnection>();
+
+        private static TcpListener _listener;
+        private static TcpListener _userCountListener;
+
+        private static Boolean refreshTickTimer = false;
+        private static int count = 0;
+        private static int loopCount = 0;
+        private static int lastindex = 0;
+        private static long previousTotalSent = 0;
+        private static long previousTotalReceived = 0;
+        private static long conDelay = 0;
+        private static DateTime nextCount;
+        private static DateTime UserCountTime;
+        private static DateTime saveTime;
+        private static DateTime DBTime;
+        private static DateTime LastWarTime;
+        public static int ProcessObjectCount, LoopCount;
+
+        public static long DBytesSent, DBytesReceived;
+        public static long TotalBytesSent, TotalBytesReceived;
+        public static long DownloadSpeed, UploadSpeed;
+        public static int EMailsSent;
+        public static int HGTick = 2;
+        public static int HGCap = 5;
+        public static bool ServerBuffChanged;
+#if DEBUG
+        private static DateTime lastSpawn = DateTime.Now;
+        private static MapObject previousObject = null;
+#endif
+
+        #endregion Variables
+
+        #region Properties
+
+        public static int TotalConnectionCount
+        {
+            get
+            {
+                return NotAuthenthicatedConnections.Count + AuthenticatedConnections.Count;
+            }
+        }
+
+        public static int AuthenthicatedConnectionCount
+        {
+            get
+            {
+                return AuthenticatedConnections.Count;
+            }
+        }
+
+        public static DateTime Now
+        {
+            get
+            {
+                DateTime value = DateTime.MinValue;
+                internalNowDictionary.TryGetValue(Thread.CurrentThread.ManagedThreadId, out value);
+                return value;
+            }
+            set
+            {
+                if (!internalNowDictionary.TryAdd(Thread.CurrentThread.ManagedThreadId, value))
+                    internalNowDictionary[Thread.CurrentThread.ManagedThreadId] = value;
+            }
+        }
+
+        public static Random Random
+        {
+            get
+            {
+                Random random = null;
+                if (!internalRandomDictionary.TryGetValue(Thread.CurrentThread.ManagedThreadId, out random))
+                {
+                    random = new Random(Thread.CurrentThread.ManagedThreadId);
+                    internalRandomDictionary.TryAdd(Thread.CurrentThread.ManagedThreadId, random);
+                }
+
+                return random;
+            }
+        }
+
+        public static bool Started
+        {
+            get;
+            private set;
+        }
+
+        public static bool Starting
+        {
+            get;
+            private set;
+        }
+
+        public static bool Stopping
+        {
+            get; set;
+        }
+
+        public static bool NetworkStarted
+        {
+            get; set;
+        }
+
+        public static bool WebServerStarted
+        {
+            get; set;
+        }
+
+        public static bool Saving
+        {
+            get; private set;
+        }
+
+        private static Thread EnvironmentThread
+        {
+            get;
+            set;
+        }
+
+        public static List<SConnection> AuthenticatedConnections
+        {
+            get
+            {
+                return authenticatedConnections.Values.ToList();
+            }
+        }
+
+        public static List<SConnection> NotAuthenthicatedConnections
+        {
+            get
+            {
+                return notAuthenticatedConnections.Values.ToList();
+            }
+        }
+
+        #endregion Properties
+
         #region Synchronization
 
         private static readonly SynchronizationContext Context = SynchronizationContext.Current;
@@ -45,74 +208,105 @@ namespace Server.Envir
         #region Logging
 
         public static ConcurrentQueue<string> DisplayLogs = new ConcurrentQueue<string>();
-        public static ConcurrentQueue<string> Logs = new ConcurrentQueue<string>();
-        public static bool UseLogConsole = false;
+        public static ConcurrentQueue<string> DisplayGMLogs = new ConcurrentQueue<string>();
+        private static ConcurrentQueue<string> DisplayChatLogs = new ConcurrentQueue<string>();
 
         public static void Log(string log, bool hardLog = true)
         {
-            log = string.Format("[{0:F}]: {1}", Time.Now, log);
+            if (DisplayLogs.Count < 100)
+                DisplayLogs.Enqueue(string.Format("[{0:F}]: {1}", Time.Now, log));
 
-            if (UseLogConsole)
-            {
-                Console.WriteLine(log);
-            }
-            else
-            {
-                if (DisplayLogs.Count < 100)
-                    DisplayLogs.Enqueue(log);
-
-                if (hardLog && Logs.Count < 1000)
-                    Logs.Enqueue(log);
-            }
+            logger.Info(log);
         }
 
-        public static ConcurrentQueue<string> DisplayChatLogs = new ConcurrentQueue<string>();
-        public static ConcurrentQueue<string> ChatLogs = new ConcurrentQueue<string>();
+        public static void LogError(String message, Exception ex, bool hardLog = true)
+        {
+            string log = string.Format("[{0:F}]: {1}\r\n{2}", Time.Now, ex.Message, ex.StackTrace);
+
+            if (DisplayLogs.Count < 100)
+                DisplayLogs.Enqueue(message + Environment.NewLine + log);
+
+            logger.Error(ex, message);
+        }
+
+        public static void LogError(Exception ex, bool hardLog = true)
+        {
+            if (ex == null)
+            {
+                LogError(new Exception("Exception was empty!"));
+                return;
+            }
+
+            string log = string.Format("[{0:F}]: {1}\r\n{2}", Time.Now, ex.Message, ex.StackTrace);
+
+            if (DisplayLogs.Count < 100)
+                DisplayLogs.Enqueue(log);
+
+            logger.Error(ex);
+        }
+        public static void LogError(string log, bool hardLog = true)
+        {
+            if (DisplayLogs.Count < 100)
+                DisplayLogs.Enqueue(string.Format("[{0:F}]: {1}", Time.Now, log));
+
+            logger.Error(log);
+        }
+
+
+        public static void LogGM(string log, bool hardLog = true)
+        {
+            if (DisplayGMLogs.Count < 100)
+                DisplayGMLogs.Enqueue(string.Format("[{0:F}]: {1}", Time.Now, log));
+
+            logger.Debug(log);
+        }
+
         public static void LogChat(string log)
         {
-            log = string.Format("[{0:F}]: {1}", Time.Now, log);
-
             if (DisplayChatLogs.Count < 500)
-                DisplayChatLogs.Enqueue(log);
+                DisplayChatLogs.Enqueue(string.Format("[{0:F}]: {1}", Time.Now, log));
 
-            if (ChatLogs.Count < 1000)
-                ChatLogs.Enqueue(log);
+            logger.Warn(log);
         }
         #endregion
 
         #region Network
 
-        public static Dictionary<string, DateTime> IPBlocks = new Dictionary<string, DateTime>();
-        public static Dictionary<string, int> IPCount = new Dictionary<string, int>();
-
-        public static List<SConnection> Connections = new List<SConnection>();
-        public static ConcurrentQueue<SConnection> NewConnections;
-
-        private static TcpListener _listener, _userCountListener;
-
         private static void StartNetwork(bool log = true)
         {
             try
             {
-                NewConnections = new ConcurrentQueue<SConnection>();
+                newConnectionQueue = new ConcurrentQueue<SConnection>();
 
                 _listener = new TcpListener(IPAddress.Parse(Config.IPAddress), Config.Port);
                 _listener.Start();
                 _listener.BeginAcceptTcpClient(Connection, null);
 
-                _userCountListener = new TcpListener(IPAddress.Parse(Config.IPAddress), Config.UserCountPort);
-                _userCountListener.Start();
-                _userCountListener.BeginAcceptTcpClient(CountConnection, null);
+                try
+                {
+
+                    _userCountListener = new TcpListener(IPAddress.Parse(Config.IPAddress), Config.UserCountPort);
+                    _userCountListener.Start();
+                    _userCountListener.BeginAcceptTcpClient(CountConnection, null);
+                }
+                catch (Exception ex)
+                {
+                    Log("User count port could not be opened.");
+                    LogError(ex);
+                }
 
                 NetworkStarted = true;
-                if (log) Log($"Network Started. Listen: {Config.IPAddress}:{Config.Port}");
+                if (log)
+                    Log("Network Started.");
             }
             catch (Exception ex)
             {
-                Started = false;
-                Log(ex.ToString());
+                // Stop the init
+                Stopping = true;
+                LogError(ex);
             }
         }
+
         private static void StopNetwork(bool log = true)
         {
             TcpListener expiredListener = _listener;
@@ -126,49 +320,92 @@ namespace Server.Envir
             expiredListener?.Stop();
             expiredUserListener?.Stop();
 
-            NewConnections = null;
+            newConnectionQueue = null;
 
             try
             {
                 Packet p = new G.Disconnect { Reason = DisconnectReason.ServerClosing };
-                for (int i = Connections.Count - 1; i >= 0; i--)
-                    Connections[i].SendDisconnect(p);
+
+                for (int i = AuthenticatedConnections.Count - 1; i >= 0; i--)
+                    AuthenticatedConnections[i].SendDisconnect(p);
 
                 Thread.Sleep(2000);
             }
             catch (Exception ex)
             {
-                Log(ex.ToString());
+                LogError(ex);
             }
 
-            if (log) Log("Network Stopped.");
+            if (log)
+                Log("Network Stopped.");
         }
 
         private static void Connection(IAsyncResult result)
         {
             try
             {
-                if (_listener == null || !_listener.Server.IsBound) return;
+                DateTime now = DateTime.Now;
+                if (_listener == null || !_listener.Server.IsBound || newConnectionQueue == null)
+                    return;
 
+                bool queueConnection = true;
                 TcpClient client = _listener.EndAcceptTcpClient(result);
-
                 string ipAddress = client.Client.RemoteEndPoint.ToString().Split(':')[0];
 
-                if (!IPBlocks.TryGetValue(ipAddress, out DateTime banDate) || banDate < Now)
+                // Check if the user has a ban
+                if (!ipBlockDictionary.TryGetValue(ipAddress, out DateTime banDate) || banDate < now)
                 {
-                    SConnection Connection = new SConnection(client);
+                    SConnection newConnection = new SConnection(client);
 
-                    if (Connection.Connected)
-                        NewConnections?.Enqueue(Connection);
+                    if (newConnection.Connected)
+                    {
+                        DateTime lastConnection = newConnection.LastConnectionTime;
+                        newConnection.LastConnectionTime = DateTime.Now;
+
+                        // Remove 5s for the trigger time.
+                        DateTime triggerTime = now.AddSeconds(-5);
+
+                        int connectionCount = 1;
+
+                        if (ipFastCountDictionary.TryGetValue(ipAddress, out connectionCount) && lastConnection >= triggerTime)
+                            connectionCount++;
+                        else // Reset the counter
+                            connectionCount = 1;
+
+                        // Check if add works, otherwise try to update the count
+                        if (!ipFastCountDictionary.TryAdd(ipAddress, connectionCount))
+                            ipFastCountDictionary[ipAddress] = connectionCount;
+
+                        // If we had more or equal to trigger amount 
+                        if (connectionCount >= Config.MaxFastConnection)
+                        {
+                            try
+                            {
+                                if (!ipBlockDictionary.TryAdd(ipAddress, Now.Add(Config.PacketBanTime)))
+                                    ipBlockDictionary[ipAddress] = Now.Add(Config.PacketBanTime);
+
+                                RemoveConnectionsForIP(ipAddress, true);
+                            }
+                            finally
+                            {
+                                queueConnection = false;
+                                SEnvir.Log($"{ipAddress} Disconnected, Large amount of Connections");
+                                newConnection.TryDisconnect();
+                            }
+                        }
+
+                        if (queueConnection)
+                            newConnectionQueue.Enqueue(newConnection);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log(ex.ToString());
+                LogError(ex);
             }
             finally
             {
-                while (NewConnections?.Count >= 15)
+                while (newConnectionQueue.Count >= 15)
                     Thread.Sleep(1);
 
                 if (_listener != null && _listener.Server.IsBound)
@@ -180,11 +417,12 @@ namespace Server.Envir
         {
             try
             {
-                if (_userCountListener == null || !_userCountListener.Server.IsBound) return;
+                if (_userCountListener == null || !_userCountListener.Server.IsBound)
+                    return;
 
                 TcpClient client = _userCountListener.EndAcceptTcpClient(result);
 
-                byte[] data = Encoding.ASCII.GetBytes(string.Format("c;/Zircon/{0}/;", Connections.Count));
+                byte[] data = Encoding.ASCII.GetBytes(string.Format("c;/Zircon/{0}/;", AuthenticatedConnections.Count));
 
                 client.Client.BeginSend(data, 0, data.Length, SocketFlags.None, CountConnectionEnd, client);
             }
@@ -195,13 +433,15 @@ namespace Server.Envir
                     _userCountListener.BeginAcceptTcpClient(CountConnection, null);
             }
         }
+
         private static void CountConnectionEnd(IAsyncResult result)
         {
             try
             {
                 TcpClient client = result.AsyncState as TcpClient;
 
-                if (client == null) return;
+                if (client == null)
+                    return;
 
                 client.Client.EndSend(result);
 
@@ -210,45 +450,446 @@ namespace Server.Envir
             catch { }
         }
 
+        public static void RemoveConnectionsForIP(String ip, bool disconnect = false)
+        {
+            List<SConnection> connections = AuthenticatedConnections.Where(x => x.IPAddress.Equals(ip, StringComparison.OrdinalIgnoreCase)).ToList();
+            connections.ForEach(x => RemoveConnection(x.SessionID));
+
+            if (disconnect)
+                connections.ForEach(x => x.TryDisconnect());
+        }
+
         #endregion
 
-    
+        #region WebServer
+        private static HttpListener WebListener;
+        private const string ActivationCommand = "Activation", ResetCommand = "Reset", DeleteCommand = "Delete";
+        private const string ActivationKey = "ActivationKey", ResetKey = "ResetKey", DeleteKey = "DeleteKey";
 
-        public static bool Started { get; set; }
-        public static bool NetworkStarted { get; set; }
-        public static bool Saving { get; private set; }
-        public static Thread EnvirThread { get; private set; }
+        private const string Completed = "Completed";
+        private const string Currency = "GBP";
 
-        public static DateTime Now, StartTime, LastWarTime;
+        private static Dictionary<decimal, int> GoldTable = new Dictionary<decimal, int>
+        {
+            [5M] = 500,
+            [10M] = 1100,
+            [15M] = 1750,
+            [25M] = 3000,
+            [35M] = 4375,
+            [50M] = 6500,
+            [100M] = 14000,
+        };
 
-        public static int ProcessObjectCount, LoopCount;
+        public const string VerifiedPath = @".\Database\Store\Verified\",
+            InvalidPath = @".\Database\Store\Invalid\",
+            CompletePath = @".\Database\Store\Complete\";
 
-        public static long DBytesSent, DBytesReceived;
-        public static long TotalBytesSent, TotalBytesReceived;
-        public static long DownloadSpeed, UploadSpeed;
-        
+        private static HttpListener BuyListener, IPNListener;
+        public static ConcurrentQueue<IPNMessage> Messages = new ConcurrentQueue<IPNMessage>();
+        public static List<IPNMessage> PaymentList = new List<IPNMessage>(), HandledPayments = new List<IPNMessage>();
 
-        public static bool ServerBuffChanged;
+        public static void StartWebServer(bool log = true)
+        {
+            try
+            {
+                WebCommandQueue = new ConcurrentQueue<WebCommand>();
+
+                WebListener = new HttpListener();
+                WebListener.Prefixes.Add(Config.WebPrefix);
+
+                WebListener.Start();
+                WebListener.BeginGetContext(WebConnection, null);
+
+                BuyListener = new HttpListener();
+                BuyListener.Prefixes.Add(Config.BuyPrefix);
+
+                IPNListener = new HttpListener();
+                IPNListener.Prefixes.Add(Config.IPNPrefix);
+
+                BuyListener.Start();
+                BuyListener.BeginGetContext(BuyConnection, null);
+
+                IPNListener.Start();
+                IPNListener.BeginGetContext(IPNConnection, null);
+
+
+
+                WebServerStarted = true;
+
+                if (log)
+                    Log("Web Server Started.");
+            }
+            catch (Exception ex)
+            {
+                WebServerStarted = false;
+                LogError(ex);
+
+                if (WebListener != null && WebListener.IsListening)
+                    WebListener?.Stop();
+                WebListener = null;
+
+                if (BuyListener != null && BuyListener.IsListening)
+                    BuyListener?.Stop();
+                BuyListener = null;
+
+                if (IPNListener != null && IPNListener.IsListening)
+                    IPNListener?.Stop();
+                IPNListener = null;
+            }
+        }
+
+        public static void StopWebServer(bool log = true)
+        {
+            HttpListener expiredWebListener = WebListener;
+            WebListener = null;
+
+            HttpListener expiredBuyListener = BuyListener;
+            BuyListener = null;
+            HttpListener expiredIPNListener = IPNListener;
+            IPNListener = null;
+
+
+            WebServerStarted = false;
+            expiredWebListener?.Stop();
+            expiredBuyListener?.Stop();
+            expiredIPNListener?.Stop();
+
+            if (log)
+                Log("Web Server Stopped.");
+        }
+
+        public static void PreLoadMaps()
+        {
+            // Set the timestamp to ensure it stays the same although it's in a different thread
+            DateTime localNow = Now;
+            DateTime start = DateTime.Now;
+
+            Log("Pre process maps");
+            Parallel.ForEach(Maps.Values, map =>
+            {
+                try
+                {
+                    Now = localNow;
+                    map.Process();
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex);
+                }
+            });
+
+            Parallel.ForEach(MapInstance, map =>
+            {
+                try
+                {
+                    Now = localNow;
+                    map.Process();
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex);
+                }
+            });
+
+#if DEBUG
+            Log("Pre process spawns");
+            Parallel.ForEach(Spawns, spawn =>
+            {
+                try
+                {
+                    Now = localNow;
+                    spawn.DoSpawn(false);
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex);
+                }
+            });
+#else
+            Log("Pre process spawns");
+            Parallel.ForEach(Spawns, spawn =>
+            {
+                try
+                {
+                    Now = localNow;
+                    spawn.DoSpawn(false);
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex);
+                }
+            });
+#endif
+
+            Log("Pre process conquestwars");
+            Parallel.ForEach(ConquestWars, war =>
+            {
+                try
+                {
+                    Now = localNow;
+                    war.Process();
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex);
+                }
+            });
+
+            Log("Pre process minigames");
+            Parallel.ForEach(MiniGames, miniGame =>
+            {
+                try
+                {
+                    Now = localNow;
+                    miniGame.Process();
+                }
+                catch (Exception ex)
+                {
+                    LogError(ex);
+                }
+            });
+
+            TimeSpan elapsed = DateTime.Now - start;
+            Log(String.Format(
+                "Maps preloaded loaded in: {0}:{1}.{2}",
+
+                elapsed.Minutes.ToString().PadLeft(2, '0'),
+                elapsed.Seconds.ToString().PadLeft(2, '0'),
+                elapsed.Milliseconds.ToString().PadLeft(4, '0')
+            ));
+        }
+
+        private static void WebConnection(IAsyncResult result)
+        {
+            try
+            {
+                HttpListenerContext context = WebListener.EndGetContext(result);
+
+                string command = context.Request.QueryString["Type"];
+
+                switch (command)
+                {
+                    case ActivationCommand:
+                        Activation(context);
+                        break;
+                    case ResetCommand:
+                        ResetPassword(context);
+                        break;
+                    case DeleteCommand:
+                        DeleteAccount(context);
+                        break;
+                }
+            }
+            catch { }
+            finally
+            {
+                if (WebListener != null && WebListener.IsListening)
+                    WebListener.BeginGetContext(WebConnection, null);
+            }
+        }
+
+        private static void Activation(HttpListenerContext context)
+        {
+            string key = context.Request.QueryString[ActivationKey];
+
+            if (string.IsNullOrEmpty(key))
+                return;
+
+            AccountInfo account = null;
+            for (int i = 0; i < AccountInfoList.Count; i++)
+            {
+                AccountInfo temp = AccountInfoList[i]; //Different Threads, Caution must be taken to prevent errors
+                if (string.Compare(temp.ActivationKey, key, StringComparison.Ordinal) != 0)
+                    continue;
+
+                account = temp;
+                break;
+            }
+
+            if (Config.AllowWebActivation && account != null)
+            {
+                WebCommandQueue.Enqueue(new WebCommand(CommandType.Activation, account));
+                context.Response.Redirect(Config.ActivationSuccessLink);
+            }
+            else
+                context.Response.Redirect(Config.ActivationFailLink);
+
+            context.Response.Close();
+        }
+
+        private static void ResetPassword(HttpListenerContext context)
+        {
+            string key = context.Request.QueryString[ResetKey];
+
+            if (string.IsNullOrEmpty(key))
+                return;
+
+            AccountInfo account = null;
+            for (int i = 0; i < AccountInfoList.Count; i++)
+            {
+                AccountInfo temp = AccountInfoList[i]; //Different Threads, Caution must be taken to prevent errors
+                if (string.Compare(temp.ResetKey, key, StringComparison.Ordinal) != 0)
+                    continue;
+
+                account = temp;
+                break;
+            }
+
+            if (Config.AllowWebResetPassword && account != null && account.ResetTime.AddMinutes(25) > Now)
+            {
+                WebCommandQueue.Enqueue(new WebCommand(CommandType.PasswordReset, account));
+                context.Response.Redirect(Config.ResetSuccessLink);
+            }
+            else
+                context.Response.Redirect(Config.ResetFailLink);
+
+            context.Response.Close();
+        }
+
+        private static void DeleteAccount(HttpListenerContext context)
+        {
+            string key = context.Request.QueryString[DeleteKey];
+
+            AccountInfo account = null;
+            for (int i = 0; i < AccountInfoList.Count; i++)
+            {
+                AccountInfo temp = AccountInfoList[i]; //Different Threads, Caution must be taken to prevent errors
+                if (string.Compare(temp.ActivationKey, key, StringComparison.Ordinal) != 0)
+                    continue;
+
+                account = temp;
+                break;
+            }
+
+            if (Config.AllowDeleteAccount && account != null)
+            {
+                WebCommandQueue.Enqueue(new WebCommand(CommandType.AccountDelete, account));
+                context.Response.Redirect(Config.DeleteSuccessLink);
+            }
+            else
+                context.Response.Redirect(Config.DeleteFailLink);
+
+            context.Response.Close();
+        }
+
+        private static void BuyConnection(IAsyncResult result)
+        {
+            try
+            {
+                HttpListenerContext context = BuyListener.EndGetContext(result);
+
+                string characterName = context.Request.QueryString["Character"];
+
+                CharacterInfo character = null;
+                for (int i = 0; i < CharacterInfoList.Count; i++)
+                {
+                    if (string.Compare(CharacterInfoList[i].CharacterName, characterName, StringComparison.OrdinalIgnoreCase) != 0)
+                        continue;
+
+                    character = CharacterInfoList[i];
+                    break;
+                }
+
+                if (character?.Account.Key != context.Request.QueryString["Key"])
+                    character = null;
+
+                string response = character == null ? Properties.Resources.CharacterNotFound : Properties.Resources.BuyGameGold.Replace("$CHARACTERNAME$", character.CharacterName);
+
+                using (StreamWriter writer = new StreamWriter(context.Response.OutputStream, context.Request.ContentEncoding))
+                    writer.Write(response);
+            }
+            catch { }
+            finally
+            {
+                if (BuyListener != null && BuyListener.IsListening) //IsBound ?
+                    BuyListener.BeginGetContext(BuyConnection, null);
+            }
+
+        }
+        private static void IPNConnection(IAsyncResult result)
+        {
+            const string LiveURL = @"https://ipnpb.paypal.com/cgi-bin/webscr";
+
+            const string verified = "VERIFIED";
+
+            try
+            {
+                if (IPNListener == null || !IPNListener.IsListening)
+                    return;
+
+                HttpListenerContext context = IPNListener.EndGetContext(result);
+
+                string rawMessage;
+                using (StreamReader readStream = new StreamReader(context.Request.InputStream, Encoding.UTF8))
+                    rawMessage = readStream.ReadToEnd();
+
+
+                Task.Run(() =>
+                {
+                    string data = "cmd=_notify-validate&" + rawMessage;
+
+                    HttpWebRequest wRequest = (HttpWebRequest)WebRequest.Create(LiveURL);
+
+                    wRequest.Method = "POST";
+                    wRequest.ContentType = "application/x-www-form-urlencoded";
+                    wRequest.ContentLength = data.Length;
+
+                    using (StreamWriter writer = new StreamWriter(wRequest.GetRequestStream(), Encoding.ASCII))
+                        writer.Write(data);
+
+                    using (StreamReader reader = new StreamReader(wRequest.GetResponse().GetResponseStream()))
+                    {
+                        IPNMessage message = new IPNMessage { Message = rawMessage, Verified = reader.ReadToEnd() == verified };
+
+
+                        if (!Directory.Exists(VerifiedPath))
+                            Directory.CreateDirectory(VerifiedPath);
+
+                        if (!Directory.Exists(InvalidPath))
+                            Directory.CreateDirectory(InvalidPath);
+
+                        string path = (message.Verified ? VerifiedPath : InvalidPath) + Path.GetRandomFileName();
+
+                        File.WriteAllText(path, message.Message);
+
+                        message.FileName = path;
+
+
+                        Messages.Enqueue(message);
+                    }
+                });
+
+                context.Response.StatusCode = (int)HttpStatusCode.OK;
+                context.Response.Close();
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+            finally
+            {
+                if (IPNListener != null && IPNListener.IsListening) //IsBound ?
+                    IPNListener.BeginGetContext(IPNConnection, null);
+            }
+        }
+        #endregion
 
         #region Database
 
-        public static Session Session;
+        private static Session Session;
 
         public static DBCollection<MapInfo> MapInfoList;
-        public static DBCollection<InstanceInfo> InstanceInfoList;
-        public static DBCollection<InstanceMapInfo> InstanceMapInfoList;
         public static DBCollection<SafeZoneInfo> SafeZoneInfoList;
         public static DBCollection<ItemInfo> ItemInfoList;
         public static DBCollection<RespawnInfo> RespawnInfoList;
         public static DBCollection<MagicInfo> MagicInfoList;
-        public static DBCollection<CurrencyInfo> CurrencyInfoList;
+        public static DBCollection<QuestInfo> QuestInfoList;
 
         public static DBCollection<AccountInfo> AccountInfoList;
         public static DBCollection<CharacterInfo> CharacterInfoList;
         public static DBCollection<CharacterBeltLink> BeltLinkList;
         public static DBCollection<AutoPotionLink> AutoPotionLinkList;
         public static DBCollection<UserItem> UserItemList;
-        public static DBCollection<UserCurrency> UserCurrencyList;
         public static DBCollection<RefineInfo> RefineInfoList;
         public static DBCollection<UserItemStat> UserItemStatsList;
         public static DBCollection<UserMagic> UserMagicList;
@@ -260,6 +901,7 @@ namespace Server.Envir
         public static DBCollection<AuctionHistoryInfo> AuctionHistoryInfoList;
         public static DBCollection<UserDrop> UserDropList;
         public static DBCollection<StoreInfo> StoreInfoList;
+        public static DBCollection<FamePointInfo> FamePointInfoList;
         public static DBCollection<BaseStat> BaseStatList;
         public static DBCollection<MovementInfo> MovementInfoList;
         public static DBCollection<NPCInfo> NPCInfoList;
@@ -271,7 +913,6 @@ namespace Server.Envir
         public static DBCollection<CompanionInfo> CompanionInfoList;
         public static DBCollection<CompanionLevelInfo> CompanionLevelInfoList;
         public static DBCollection<UserCompanion> UserCompanionList;
-        public static DBCollection<CompanionFilters> CompanionFiltersList;
         public static DBCollection<UserCompanionUnlock> UserCompanionUnlockList;
         public static DBCollection<CompanionSkillInfo> CompanionSkillInfoList;
         public static DBCollection<BlockInfo> BlockInfoList;
@@ -283,42 +924,55 @@ namespace Server.Envir
         public static DBCollection<UserConquestStats> UserConquestStatsList;
         public static DBCollection<UserFortuneInfo> UserFortuneInfoList;
         public static DBCollection<WeaponCraftStatInfo> WeaponCraftStatInfoList;
+        public static DBCollection<UserCrafting> UserCraftInfoList;
+        public static DBCollection<CraftLevelInfo> CraftingLevelsInfoList;
+        public static DBCollection<CraftItemInfo> CraftingItemInfoList;
+        public static DBCollection<MiniGameInfo> MiniGameInfoList;
+        public static DBCollection<UserArenaPvPStats> UserArenaPvPStatsList;
+        public static DBCollection<DropListInfo> DropListInfoList;
+        public static DBCollection<HorseInfo> HorseInfoList;
+        public static DBCollection<UserHorse> UserHorseList;
+        public static DBCollection<UserHorseUnlock> UserHorseUnlockList;
 
         public static ItemInfo GoldInfo, RefinementStoneInfo, FragmentInfo, Fragment2Info, Fragment3Info, FortuneCheckerInfo, ItemPartInfo;
 
         public static GuildInfo StarterGuild;
 
-        public static MapRegion MysteryShipMapRegion, LairMapRegion;
+        public static MapRegion MysteryShipMapRegion, LairMapRegion, SeaCaveMapRegion, FlowerMapRegion;
 
         public static List<MonsterInfo> BossList = new List<MonsterInfo>();
+        public static List<Map> MapInstance = new List<Map>();
 
         #endregion
 
         #region Game Variables
 
-        public static Random Random;
+        public static ConcurrentQueue<WebCommand> WebCommandQueue;
 
         public static Dictionary<MapInfo, Map> Maps = new Dictionary<MapInfo, Map>();
-        public static Dictionary<InstanceInfo, Dictionary<MapInfo, Map>[]> Instances = new Dictionary<InstanceInfo, Dictionary<MapInfo, Map>[]>();
 
         private static long _ObjectID;
         public static uint ObjectID => (uint)Interlocked.Increment(ref _ObjectID);
 
-        public static LinkedList<MapObject> Objects = new LinkedList<MapObject>();
-        public static List<MapObject> ActiveObjects = new List<MapObject>();
+        private static ConcurrentDictionary<uint, MapObject> objectDictionary = new ConcurrentDictionary<uint, MapObject>();
 
         public static List<PlayerObject> Players = new List<PlayerObject>();
         public static List<ConquestWar> ConquestWars = new List<ConquestWar>();
+        public static List<MiniGame> MiniGames = new List<MiniGame>();
 
         public static List<SpawnInfo> Spawns = new List<SpawnInfo>();
 
         private static float _DayTime;
         public static float DayTime
         {
-            get { return _DayTime; }
+            get
+            {
+                return _DayTime;
+            }
             set
             {
-                if (_DayTime == value) return;
+                if (_DayTime == value)
+                    return;
 
                 _DayTime = value;
 
@@ -334,79 +988,33 @@ namespace Server.Envir
 
         public static void StartServer()
         {
-            if (Started || EnvirThread != null) return;
+            if (Started)
+                return;
 
-            EnvirThread = new Thread(() => EnvirLoop()) { IsBackground = true };
-            EnvirThread.Start();
-        }
-
-        public static void LoadExperienceList()
-        {
-            string path = @".\Config\ExperienceList.txt";
-            if (!File.Exists(path))
-            {
-                if (!Directory.Exists(@".\Config")) Directory.CreateDirectory(@".\Config");
-                using (StreamWriter file = new StreamWriter(path))
-                {
-                    for (int i = 0; i < Globals.ExperienceList.Count; i++)
-                    {
-                        file.WriteLine(i == 0 ? "//needed for lvl0" : (Globals.ExperienceList[i].ToString(CultureInfo.InvariantCulture) + " // level " + i));
-                    }
-                }
-            }
-            else
-            {
-                var lines = File.ReadAllLines(path);
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    if (lines[i] == string.Empty) continue; //ignore empty line
-                    if (lines[i].TrimStart().StartsWith("//")) continue; //ignore comment
-                    try
-                    {
-                        decimal exp = decimal.Parse(lines[i].Split('/')[0].Trim()); //remove comment
-                        if (Globals.ExperienceList.Count > i)
-                            Globals.ExperienceList.Add(exp);
-                        else
-                            Globals.ExperienceList[i] = exp;
-                    }
-                    catch (Exception e)
-                    {
-                        Log(string.Format("ExperienceList: Error parsing line {0} - {1}", i, lines[i]));
-                    }
-                }
-            }
-            Log("Experience List Loaded.");
+            Starting = true;
+            InitializeServer();
         }
 
         private static void LoadDatabase()
         {
-            Random = new Random();
-
             Session = new Session(SessionMode.Users)
             {
                 BackUpDelay = 60,
             };
 
-            Session.Initialize(
-                Assembly.GetAssembly(typeof(ItemInfo)), // returns assembly LibraryCore
-                Assembly.GetAssembly(typeof(AccountInfo)) // returns assembly ServerLibrary
-            );
-
             MapInfoList = Session.GetCollection<MapInfo>();
-            InstanceInfoList = Session.GetCollection<InstanceInfo>();
             SafeZoneInfoList = Session.GetCollection<SafeZoneInfo>();
             ItemInfoList = Session.GetCollection<ItemInfo>();
             MonsterInfoList = Session.GetCollection<MonsterInfo>();
             RespawnInfoList = Session.GetCollection<RespawnInfo>();
             MagicInfoList = Session.GetCollection<MagicInfo>();
-            CurrencyInfoList = Session.GetCollection<CurrencyInfo>();
+            QuestInfoList = Session.GetCollection<QuestInfo>();
 
             AccountInfoList = Session.GetCollection<AccountInfo>();
             CharacterInfoList = Session.GetCollection<CharacterInfo>();
             BeltLinkList = Session.GetCollection<CharacterBeltLink>();
             AutoPotionLinkList = Session.GetCollection<AutoPotionLink>();
             UserItemList = Session.GetCollection<UserItem>();
-            UserCurrencyList = Session.GetCollection<UserCurrency>();
             UserItemStatsList = Session.GetCollection<UserItemStat>();
             RefineInfoList = Session.GetCollection<RefineInfo>();
             UserMagicList = Session.GetCollection<UserMagic>();
@@ -417,6 +1025,7 @@ namespace Server.Envir
             AuctionHistoryInfoList = Session.GetCollection<AuctionHistoryInfo>();
             UserDropList = Session.GetCollection<UserDrop>();
             StoreInfoList = Session.GetCollection<StoreInfo>();
+            FamePointInfoList = Session.GetCollection<FamePointInfo>();
             BaseStatList = Session.GetCollection<BaseStat>();
             MovementInfoList = Session.GetCollection<MovementInfo>();
             NPCInfoList = Session.GetCollection<NPCInfo>();
@@ -430,7 +1039,6 @@ namespace Server.Envir
             CompanionInfoList = Session.GetCollection<CompanionInfo>();
             CompanionLevelInfoList = Session.GetCollection<CompanionLevelInfo>();
             UserCompanionList = Session.GetCollection<UserCompanion>();
-            CompanionFiltersList = Session.GetCollection<CompanionFilters>();
             UserCompanionUnlockList = Session.GetCollection<UserCompanionUnlock>();
             BlockInfoList = Session.GetCollection<BlockInfo>();
             CastleInfoList = Session.GetCollection<CastleInfo>();
@@ -441,9 +1049,17 @@ namespace Server.Envir
             UserConquestStatsList = Session.GetCollection<UserConquestStats>();
             UserFortuneInfoList = Session.GetCollection<UserFortuneInfo>();
             WeaponCraftStatInfoList = Session.GetCollection<WeaponCraftStatInfo>();
+            UserCraftInfoList = Session.GetCollection<UserCrafting>();
+            CraftingLevelsInfoList = Session.GetCollection<CraftLevelInfo>();
+            CraftingItemInfoList = Session.GetCollection<CraftItemInfo>();
+            MiniGameInfoList = Session.GetCollection<MiniGameInfo>();
+            UserArenaPvPStatsList = Session.GetCollection<UserArenaPvPStats>();
+            DropListInfoList = Session.GetCollection<DropListInfo>();
+            HorseInfoList = Session.GetCollection<HorseInfo>();
+            UserHorseList = Session.GetCollection<UserHorse>();
+            UserHorseUnlockList = Session.GetCollection<UserHorseUnlock>();
 
-            GoldInfo = CurrencyInfoList.Binding.First(x => x.Type == CurrencyType.Gold).DropItem;
-
+            GoldInfo = ItemInfoList.Binding.First(x => x.Effect == ItemEffect.Gold);
             RefinementStoneInfo = ItemInfoList.Binding.First(x => x.Effect == ItemEffect.RefinementStone);
             FragmentInfo = ItemInfoList.Binding.First(x => x.Effect == ItemEffect.Fragment1);
             Fragment2Info = ItemInfoList.Binding.First(x => x.Effect == ItemEffect.Fragment2);
@@ -452,9 +1068,13 @@ namespace Server.Envir
             ItemPartInfo = ItemInfoList.Binding.First(x => x.Effect == ItemEffect.ItemPart);
             FortuneCheckerInfo = ItemInfoList.Binding.First(x => x.Effect == ItemEffect.FortuneChecker);
 
+
             MysteryShipMapRegion = MapRegionList.Binding.FirstOrDefault(x => x.Index == Config.MysteryShipRegionIndex);
             LairMapRegion = MapRegionList.Binding.FirstOrDefault(x => x.Index == Config.LairRegionIndex);
             StarterGuild = GuildInfoList.Binding.FirstOrDefault(x => x.StarterGuild);
+            SeaCaveMapRegion = MapRegionList.Binding.FirstOrDefault(x => x.Index == Config.SeaCaveRegionIndex);
+            FlowerMapRegion = MapRegionList.Binding.FirstOrDefault(x => x.Index == Config.FlowerMapRegionIndex);
+
 
             if (StarterGuild == null)
             {
@@ -469,6 +1089,7 @@ namespace Server.Envir
             TopRankings = new HashSet<CharacterInfo>();
             foreach (CharacterInfo info in CharacterInfoList.Binding)
             {
+                if (info.Account.Admin || info.Account.Admin1 || info.Account.Admin2 || info.Account.Developer) continue;
                 info.RankingNode = Rankings.AddLast(info);
                 RankingSort(info, false);
             }
@@ -485,23 +1106,39 @@ namespace Server.Envir
 
             foreach (MonsterInfo monster in MonsterInfoList.Binding)
             {
-                if (!monster.IsBoss) continue;
-                if (monster.Drops.Count == 0) continue;
+                if (!monster.IsBoss)
+                    continue;
 
                 BossList.Add(monster);
-            }
-        }
 
+            }
+
+            Messages = new ConcurrentQueue<IPNMessage>();
+
+            PaymentList.Clear();
+
+            if (Directory.Exists(VerifiedPath))
+            {
+                string[] files = Directory.GetFiles(VerifiedPath);
+
+                foreach (string file in files)
+                    Messages.Enqueue(new IPNMessage { FileName = file, Message = File.ReadAllText(file), Verified = true });
+            }
+
+        }
         //Only works on Increasing EXP, still need to do Rebirth or loss of exp ranking update.
         public static void RankingSort(CharacterInfo character, bool updateLead = true)
         {
+            if (character.Account.Admin || character.Account.Admin1 || character.Account.Admin2 || character.Account.Developer) return;
             bool changed = false;
 
             LinkedListNode<CharacterInfo> node;
             while ((node = character.RankingNode.Previous) != null)
             {
-                if (node.Value.Level > character.Level) break;
-                if (node.Value.Level == character.Level && node.Value.Experience >= character.Experience) break;
+                if (node.Value.Level > character.Level)
+                    break;
+                if (node.Value.Level == character.Level && node.Value.Experience >= character.Experience)
+                    break;
 
                 changed = true;
 
@@ -509,7 +1146,8 @@ namespace Server.Envir
                 Rankings.AddBefore(node, character.RankingNode);
             }
 
-            if (!updateLead || (TopRankings.Count >= 20 && !changed)) return; //5 * 4
+            if (!updateLead || (TopRankings.Count >= 20 && !changed))
+                return; //5 * 4
 
             UpdateLead();
         }
@@ -523,45 +1161,53 @@ namespace Server.Envir
 
             foreach (CharacterInfo cInfo in Rankings)
             {
-                if (cInfo.Account.Admin) continue;
+                if (cInfo.Account.Admin)
+                    continue;
 
                 switch (cInfo.Class)
                 {
                     case MirClass.Warrior:
-                        if (war == 0) continue;
+                        if (war == 0)
+                            continue;
                         war--;
                         newTopRankings.Add(cInfo);
                         break;
                     case MirClass.Wizard:
-                        if (wiz == 0) continue;
+                        if (wiz == 0)
+                            continue;
                         wiz--;
                         newTopRankings.Add(cInfo);
                         break;
                     case MirClass.Taoist:
-                        if (tao == 0) continue;
+                        if (tao == 0)
+                            continue;
                         tao--;
                         newTopRankings.Add(cInfo);
                         break;
                     case MirClass.Assassin:
-                        if (ass == 0) continue;
+                        if (ass == 0)
+                            continue;
                         ass--;
                         newTopRankings.Add(cInfo);
                         break;
                 }
 
-                if (war == 0 && wiz == 0 && tao == 0 && ass == 0) break;
+                if (war == 0 && wiz == 0 && tao == 0 && ass == 0)
+                    break;
             }
 
             foreach (CharacterInfo info in TopRankings)
             {
-                if (newTopRankings.Contains(info)) continue;
+                if (newTopRankings.Contains(info))
+                    continue;
 
                 info.Player?.BuffRemove(BuffType.Ranking);
             }
 
             foreach (CharacterInfo info in newTopRankings)
             {
-                if (TopRankings.Contains(info)) continue;
+                if (TopRankings.Contains(info))
+                    continue;
 
                 info.Player?.BuffAdd(BuffType.Ranking, TimeSpan.MaxValue, null, true, false, TimeSpan.Zero);
             }
@@ -569,25 +1215,27 @@ namespace Server.Envir
             TopRankings = newTopRankings;
         }
 
-        private static void StartEnvir()
+        private static void LoadEnvironment()
         {
+            if (EnvironmentThread == null || !EnvironmentThread.IsAlive)
+            {
+                EnvironmentThread = new Thread(InternalLoadEnvironment) { IsBackground = true };
+                EnvironmentThread.Start();
+            }
+        }
+
+        private static void InternalLoadEnvironment()
+        {
+            DateTime start = DateTime.Now;
+            Log("Loading Environment");
             LoadDatabase();
-            LoadExperienceList();
 
             #region Load Files
             for (int i = 0; i < MapInfoList.Count; i++)
-            {
                 Maps[MapInfoList[i]] = new Map(MapInfoList[i]);
-            }
-
-            for (int i = 0; i < InstanceInfoList.Count; i++)
-            {
-                int count = InstanceInfoList[i].MaxInstances > 0 ? InstanceInfoList[i].MaxInstances : byte.MaxValue;
-
-                Instances[InstanceInfoList[i]] = new Dictionary<MapInfo, Map>[count];
-            }
 
 
+            Log("Loading maps");
             Parallel.ForEach(Maps, x => x.Value.Load());
 
             #endregion
@@ -599,35 +1247,46 @@ namespace Server.Envir
             {
                 Map map = GetMap(x.Map);
 
-                if (map == null) return;
+                if (map == null)
+                    return;
 
                 x.CreatePoints(map.Width);
             });
-
+            Log("Creating safe zones");
             CreateSafeZones();
 
+            Log("Creating Movements");
             CreateMovements();
 
+            Log("Creating NPCS");
             CreateNPCs();
 
+            Log("Creating spawns");
             CreateSpawns();
+
+            TimeSpan elapsed = DateTime.Now - start;
+            Log(String.Format(
+                "Environment loaded in: {0}:{1}.{2}",
+
+                elapsed.Minutes.ToString().PadLeft(2, '0'),
+                elapsed.Seconds.ToString().PadLeft(2, '0'),
+                elapsed.Milliseconds.ToString().PadLeft(4, '0')
+            ));
+
+            InitMainTickLoop();
         }
 
-        private static void CreateMovements(InstanceInfo instance = null, byte index = 0)
+        private static void CreateMovements()
         {
             foreach (MovementInfo movement in MovementInfoList.Binding)
             {
-                if (movement.SourceRegion == null) continue;
+                if (movement.SourceRegion == null)
+                    continue;
 
-                Map sourceMap = GetMap(movement.SourceRegion.Map, instance, index);
-
+                Map sourceMap = GetMap(movement.SourceRegion.Map);
                 if (sourceMap == null)
                 {
-                    if (instance == null)
-                    {
-                        Log($"[Movement] Bad Source Map, Source: {movement.SourceRegion.ServerDescription}");
-                    }
-
+                    Log($"[Movement] Bad Source Map, Source: {movement.SourceRegion.ServerDescription}");
                     continue;
                 }
 
@@ -637,14 +1296,10 @@ namespace Server.Envir
                     continue;
                 }
 
-                Map destMap = GetMap(movement.DestinationRegion.Map, instance, index);
+                Map destMap = GetMap(movement.DestinationRegion.Map);
                 if (destMap == null)
                 {
-                    if (instance == null)
-                    {
-                        Log($"[Movement] Bad Destination Map, Destination: {movement.DestinationRegion.ServerDescription}");
-                    }
-
+                    Log($"[Movement] Bad Destinatoin Map, Destination: {movement.DestinationRegion.ServerDescription}");
                     continue;
                 }
 
@@ -667,21 +1322,18 @@ namespace Server.Envir
             }
         }
 
-        private static void CreateNPCs(InstanceInfo instance = null, byte index = 0)
+        private static void CreateNPCs()
         {
             foreach (NPCInfo info in NPCInfoList.Binding)
             {
-                if (info.Region == null) continue;
+                if (info.Region == null)
+                    continue;
 
-                Map map = GetMap(info.Region.Map, instance, index);
+                Map map = GetMap(info.Region.Map);
 
                 if (map == null)
                 {
-                    if (instance == null)
-                    {
-                        Log(string.Format("[NPC] Bad Map, NPC: {0}, Map: {1}", info.NPCName, info.Region.ServerDescription));
-                    }
-
+                    Log(string.Format("[NPC] Bad Map, NPC: {0}, Map: {1}", info.NPCName, info.Region.ServerDescription));
                     continue;
                 }
 
@@ -690,26 +1342,23 @@ namespace Server.Envir
                     NPCInfo = info,
                 };
 
-                if (!ob.Spawn(info.Region, instance, index))
+                if (!ob.Spawn(info.Region))
                     Log($"[NPC] Failed to spawn NPC, Region: {info.Region.ServerDescription}, NPC: {info.NPCName}");
             }
         }
 
-        private static void CreateSafeZones(InstanceInfo instance = null, byte index = 0)
+        private static void CreateSafeZones()
         {
             foreach (SafeZoneInfo info in SafeZoneInfoList.Binding)
             {
-                if (info.Region == null) continue;
+                if (info.Region == null)
+                    continue;
 
-                Map map = GetMap(info.Region.Map, instance, index);
+                Map map = GetMap(info.Region.Map);
 
                 if (map == null)
                 {
-                    if (instance == null)
-                    {
-                        Log($"[Safe Zone] Bad Map, Map: {info.Region.ServerDescription}");
-                    }
-
+                    Log($"[Safe Zone] Bad Map, Map: {info.Region.ServerDescription}");
                     continue;
                 }
 
@@ -732,9 +1381,11 @@ namespace Server.Envir
                     {
                         Point test = Functions.Move(point, (MirDirection)i);
 
-                        if (info.Region.PointList.Contains(test)) continue;
+                        if (info.Region.PointList.Contains(test))
+                            continue;
 
-                        if (map.GetCell(test) == null) continue;
+                        if (map.GetCell(test) == null)
+                            continue;
 
                         edges.Add(test);
                     }
@@ -753,17 +1404,17 @@ namespace Server.Envir
                         Effect = SpellEffect.SafeZone
                     };
 
-                    ob.Spawn(map, point);
+                    ob.Spawn(map.Info, point);
                 }
 
-                if (info.BindRegion == null || instance != null) continue;
+                if (info.BindRegion == null)
+                    continue;
 
                 map = GetMap(info.BindRegion.Map);
 
                 if (map == null)
                 {
                     Log($"[Safe Zone] Bad Bind Map, Map: {info.Region.ServerDescription}");
-
                     continue;
                 }
 
@@ -783,42 +1434,38 @@ namespace Server.Envir
             }
         }
 
-        private static void CreateSpawns(InstanceInfo instance = null, byte index = 0)
+        private static void CreateSpawns()
         {
             foreach (RespawnInfo info in RespawnInfoList.Binding)
             {
-                if (info.Monster == null) continue;
-                if (info.Region == null) continue;
+                if (info.Monster == null)
+                    continue;
+                if (info.Region == null)
+                    continue;
 
-                Map map = GetMap(info.Region.Map, instance, index);
+                Map map = GetMap(info.Region.Map);
 
                 if (map == null)
                 {
-                    if (instance == null)
-                    {
-                        Log(string.Format("[Respawn] Bad Map, Map: {0}", info.Region.ServerDescription));
-                    }
-
+                    Log(string.Format("[Respawn] Bad Map, Map: {0}", info.Region.ServerDescription));
                     continue;
                 }
 
-                Spawns.Add(new SpawnInfo(info, instance, index));
+                Spawns.Add(new SpawnInfo(info));
+
             }
         }
 
         private static void StopEnvir()
         {
-            Now = DateTime.MinValue;
-
             Session = null;
 
 
             MapInfoList = null;
-            InstanceInfoList = null;
             SafeZoneInfoList = null;
             AccountInfoList = null;
             CharacterInfoList = null;
-            CurrencyInfoList = null;
+
 
             MapInfoList = null;
             SafeZoneInfoList = null;
@@ -827,295 +1474,669 @@ namespace Server.Envir
             RespawnInfoList = null;
             MagicInfoList = null;
 
+            AccountInfoList = null;
+            CharacterInfoList = null;
             BeltLinkList = null;
             UserItemList = null;
-            UserCurrencyList = null;
             UserItemStatsList = null;
             UserMagicList = null;
             BuffInfoList = null;
             SetInfoList = null;
 
             Rankings = null;
-            Random = null;
-
 
             Maps.Clear();
-            Instances.Clear();
-            Objects.Clear();
-            ActiveObjects.Clear();
+            objectDictionary.Clear();
+            activeObjectDictionary.Clear();
             Players.Clear();
 
             Spawns.Clear();
 
+            authenticatedConnections.Clear();
+            notAuthenticatedConnections.Clear();
+
+            newConnectionQueue = new ConcurrentQueue<SConnection>();
+
             _ObjectID = 0;
-
-
-            EnvirThread = null;
         }
 
-
-        public static void EnvirLoop()
+        public static void InitializeServer()
         {
-            Now = Time.Now;
-            DateTime DBTime = Now + Config.DBSaveDelay;
+            DBTime = Now + Config.DBSaveDelay;
 
-            StartEnvir();
-            StartNetwork();
+            NetworkStarted = false;
+            WebServerStarted = false;
 
-            WebServer.StartWebServer();
+            // Reset values
+            count = 0;
+            loopCount = 0;
+            lastindex = 0;
+            previousTotalSent = 0;
+            previousTotalReceived = 0;
+            conDelay = 0;
 
-            Started = NetworkStarted;
-
-            int count = 0, loopCount = 0;
-            DateTime nextCount = Now.AddSeconds(1), UserCountTime = Now.AddMinutes(5), saveTime;
-            long previousTotalSent = 0, previousTotalReceived = 0;
-            int lastindex = 0;
-            long conDelay = 0;
-            Thread logThread = new Thread(WriteLogsLoop) { IsBackground = true };
-            logThread.Start();
+            nextCount = Now.AddSeconds(1);
+            UserCountTime = Now.AddMinutes(5);
+            saveTime = DateTime.MinValue;
 
             LastWarTime = Now;
 
-            Log($"Loading Time: {Functions.ToString(Time.Now - Now, true)}");
+            TimeSpan elapsed = DateTime.Now - Now;
+            Log(String.Format(
+                "Initialization Time: {0}:{1}.{2}",
 
-            while (Started)
+                elapsed.Minutes.ToString().PadLeft(2, '0'),
+                elapsed.Seconds.ToString().PadLeft(2, '0'),
+                elapsed.Milliseconds.ToString().PadLeft(4, '0')
+            ));
+
+            LoadEnvironment();
+        }
+
+        private static void ClearTimers()
+        {
+            if (mainTickTimer != null)
             {
-                Now = Time.Now;
-                loopCount++;
+                mainTickTimer.Stop();
+                mainTickTimer = null;
+            }
 
-                try
+            if (newConnectionTimer != null)
+            {
+                newConnectionTimer.Stop();
+                newConnectionTimer = null;
+            }
+
+            if (mainProcessTimer != null)
+            {
+                mainProcessTimer.Stop();
+                mainProcessTimer = null;
+            }
+
+            if (processNotAuthenticatedConnectionsTimer != null)
+            {
+                processNotAuthenticatedConnectionsTimer.Stop();
+                processNotAuthenticatedConnectionsTimer = null;
+            }
+
+            if (userCountTimer != null)
+            {
+                userCountTimer.Stop();
+                userCountTimer = null;
+            }
+        }
+
+        private static void InitMainTickLoop()
+        {
+            StartWebServer();
+            PreLoadMaps();
+
+            Log("Main tick loop started");
+            // Calculate interval based on ticketcount
+            int tickInterval = 1000 / Config.EnvironmentTickCount;
+            mainTickTimer = new AccurateTimer(MainTickLoop, tickInterval);
+            processNotAuthenticatedConnectionsTimer = new AccurateTimer(ProcessNotAuthenticatedConnections, tickInterval);
+
+            newConnectionTimer = new AccurateTimer(NewConnectionLoop, 10);
+            mainProcessTimer = new AccurateTimer(MainProcessLoop, 1000);
+            userCountTimer = new AccurateTimer(UserCountLoop, new TimeSpan(0, 5, 0));
+
+            if (mailTimer == null)
+                mailTimer = new AccurateTimer(ProcessMail, new TimeSpan(0, 0, 10));
+
+            StartNetwork();
+
+            TimeSpan elapsed = DateTime.Now - Now;
+            Log(String.Format(
+                "Startup done: {0}:{1}.{2}",
+
+                elapsed.Minutes.ToString().PadLeft(2, '0'),
+                elapsed.Seconds.ToString().PadLeft(2, '0'),
+                elapsed.Milliseconds.ToString().PadLeft(4, '0')
+            ));
+
+            Started = true;
+            Starting = false;
+        }
+
+        #region Processing loops
+
+        private static void MainTickLoop()
+        {
+            loopCount++;
+            DateTime currentTime = Now;
+
+            try
+            {
+                // Use linq to create a duplicate of the playerlist
+                List<PlayerObject> playersToProcess = Players.ToList();
+
+                foreach (PlayerObject player in playersToProcess)
                 {
-                    SConnection connection;
-                    while (!NewConnections.IsEmpty)
-                    {
-                        if (!NewConnections.TryDequeue(out connection)) break;
-
-                        IPCount.TryGetValue(connection.IPAddress, out var ipCount);
-                        IPCount[connection.IPAddress] = ipCount + 1;
-
-                        Connections.Add(connection);
-                    }
-
-                    long bytesSent = 0;
-                    long bytesReceived = 0;
-
-                    for (int i = Connections.Count - 1; i >= 0; i--)
-                    {
-                        if (i >= Connections.Count) break;
-
-                        connection = Connections[i];
-
-                        connection.Process();
-                        bytesSent += connection.TotalBytesSent;
-                        bytesReceived += connection.TotalBytesReceived;
-                    }
-
-                    long delay = (Time.Now - Now).Ticks / TimeSpan.TicksPerMillisecond;
-                    if (delay > conDelay)
-                        conDelay = delay;
-
-                    for (int i = Players.Count - 1; i >= 0; i--)
-                        Players[i].StartProcess();
-
-                    TotalBytesSent = DBytesSent + bytesSent;
-                    TotalBytesReceived = DBytesReceived + bytesReceived;
+                    player.StartProcess();
 
                     if (ServerBuffChanged)
-                    {
-                        for (int i = Players.Count - 1; i >= 0; i--)
-                            Players[i].ApplyServerBuff();
+                        player.ApplyServerBuff();
+                }
 
-                        ServerBuffChanged = false;
+                List<MapObject> objectsToProcess = activeObjectDictionary
+                    .Values
+                    .Where(x => x.Race != ObjectType.Player)
+                    .ToList();
+
+                foreach (MapObject currentObject in objectsToProcess)
+                {
+                    try
+                    {
+                        currentObject.StartProcess();
+                        count++;
                     }
-
-                    DateTime loopTime = Time.Now.AddMilliseconds(1);
-
-                    if (lastindex < 0) lastindex = ActiveObjects.Count;
-
-                    while (Time.Now <= loopTime)
+                    catch (Exception ex)
                     {
-                        lastindex--;
+                        RemoveActiveObject(currentObject.ObjectID);
+                        currentObject.Activated = false;
 
-                        if (lastindex >= ActiveObjects.Count) continue;
-
-                        if (lastindex < 0) break;
-
-                        MapObject ob = ActiveObjects[lastindex];
-
-                        if (ob.Race == ObjectType.Player) continue;
-
-                        try
-                        {
-                            ob.StartProcess();
-                            count++;
-                        }
-                        catch (Exception ex)
-                        {
-                            ActiveObjects.Remove(ob);
-                            ob.Activated = false;
-
-                            Log(ex.Message);
-                            Log(ex.StackTrace);
-                            File.AppendAllText(@".\Errors.txt", ex.StackTrace + Environment.NewLine);
-                        }
+                        LogError(ex);
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                Session = null;
+                LogError(ex);
 
-                    if (Now >= nextCount)
+                Packet p = new G.Disconnect { Reason = DisconnectReason.Crashed };
+
+                foreach (SConnection connection in AuthenticatedConnections)
+                    connection.SendDisconnect(p);
+
+                Stopping = true;
+            }
+
+            if (Stopping)
+            {
+                Packet p = new G.Disconnect { Reason = DisconnectReason.Crashed };
+
+                foreach (SConnection connection in AuthenticatedConnections)
+                    connection.SendDisconnect(p);
+
+                StopNetwork();
+                StopWebServer();
+
+                ClearTimers();
+
+                while (Saving)
+                    Thread.Sleep(1);
+
+                ClearBadAccounts();
+
+                if (Session != null)
+                    Session.BackUpDelay = 0;
+                Save();
+
+                while (Saving)
+                    Thread.Sleep(1);
+
+                StopEnvir();
+
+                // Keep sending the mail that were waiting.
+                while (!mailMessageQueue.IsEmpty)
+                    ProcessMail();
+
+                // Clear the mail timer
+                mailTimer.Stop();
+                mailTimer = null;
+
+                Stopping = false;
+                Started = false;
+            }
+            else if (refreshTickTimer)
+            {
+                refreshTickTimer = false;
+
+                // Calculate interval based on ticketcount
+                int interval = 1000 / Config.EnvironmentTickCount;
+
+                mainTickTimer.Stop();
+                processNotAuthenticatedConnectionsTimer.Stop();
+
+                mainTickTimer = null;
+                processNotAuthenticatedConnectionsTimer = null;
+
+                mainTickTimer = new AccurateTimer(MainTickLoop, interval);
+                processNotAuthenticatedConnectionsTimer = new AccurateTimer(ProcessNotAuthenticatedConnections, interval);
+            }
+            else
+            {
+                // Proccess the authenthicated connections at the end of the main tick loop
+                ProcessAuthenticatedConnections();
+            }
+        }
+        private static void ClearBadAccounts()
+        {
+            for (int i = 0; i < AccountInfoList.Count; i++)
+            {
+                if (AccountInfoList[i].Activated) continue;
+
+                if (ipBlockDictionary.ContainsKey(SEnvir.AccountInfoList[i].CreationIP) || AccountInfoList[i].CreationDate.AddDays(7) < Now)
+                    AccountInfoList[i].IsTemporary = true;
+            }
+        }
+        private static void MainProcessLoop()
+        {
+            DateTime startTime = Now;
+
+            if (Now >= DBTime && !Saving)
+            {
+                DBTime = Time.Now + Config.DBSaveDelay;
+                saveTime = Time.Now;
+
+                Save();
+
+                SaveDelay = (Time.Now - saveTime).Ticks / TimeSpan.TicksPerMillisecond;
+            }
+
+            ProcessObjectCount = count;
+            LoopCount = loopCount;
+            ConDelay = conDelay;
+
+            count = 0;
+            loopCount = 0;
+            conDelay = 0;
+
+            DownloadSpeed = TotalBytesReceived - previousTotalReceived;
+            UploadSpeed = TotalBytesSent - previousTotalSent;
+
+            previousTotalReceived = TotalBytesReceived;
+            previousTotalSent = TotalBytesSent;
+
+            CalculateLights();
+
+            CheckGuildWars();
+
+            foreach (KeyValuePair<MapInfo, Map> pair in Maps)
+                pair.Value.Process();
+
+            foreach (Map maps in MapInstance)
+            {
+                maps.Process();
+                if (Now > maps.ExpireTime)
+                {
+
+                }
+            }
+
+            foreach (SpawnInfo spawn in Spawns)
+                spawn.DoSpawn(false);
+
+            for (int i = ConquestWars.Count - 1; i >= 0; i--)
+                ConquestWars[i].Process();
+
+            for (int i = MiniGames.Count - 1; i >= 0; i--)
+                MiniGames[i].Process();
+
+            while (!WebCommandQueue.IsEmpty)
+            {
+                if (!WebCommandQueue.TryDequeue(out WebCommand webCommand))
+                    continue;
+
+                switch (webCommand.Command)
+                {
+                    case CommandType.None:
+                        break;
+                    case CommandType.Activation:
+                        webCommand.Account.Activated = true;
+                        webCommand.Account.ActivationKey = string.Empty;
+                        break;
+                    case CommandType.PasswordReset:
+                        string password = Functions.RandomString(Random, 10);
+
+                        webCommand.Account.Password = CreateHash(password);
+                        webCommand.Account.ResetKey = string.Empty;
+                        webCommand.Account.WrongPasswordCount = 0;
+                        SendResetPasswordEmail(webCommand.Account, password);
+                        break;
+                    case CommandType.AccountDelete:
+                        if (webCommand.Account.Activated)
+                            continue;
+
+                        webCommand.Account.Delete();
+                        break;
+                }
+            }
+
+            if (Config.ProcessGameGold)
+                ProcessGameGold();
+
+            nextCount = Now.AddSeconds(1);
+
+            if (nextCount.Day != Now.Day)
+            {
+                foreach (GuildInfo guild in GuildInfoList.Binding)
+                {
+                    guild.DailyContribution = 0;
+                    guild.DailyGrowth = 0;
+
+                    foreach (GuildMemberInfo member in guild.Members)
                     {
-                        if (Now >= DBTime && !Saving)
-                        {
-                            DBTime = Time.Now + Config.DBSaveDelay;
-                            saveTime = Time.Now;
+                        member.DailyContribution = 0;
+                        if (member.Account.Connection?.Player == null)
+                            continue;
 
-                            Save();
+                        member.Account.Connection.Enqueue(new S.GuildDayReset { ObserverPacket = false });
+                    }
+                }
 
-                            SaveDelay = (Time.Now - saveTime).Ticks / TimeSpan.TicksPerMillisecond;
-                        }
+                GC.Collect(2, GCCollectionMode.Forced);
+            }
 
-                        ProcessObjectCount = count;
-                        LoopCount = loopCount;
-                        ConDelay = conDelay;
+            foreach (CastleInfo info in CastleInfoList.Binding)
+            {
+                if (nextCount.TimeOfDay < info.StartTime)
+                    continue;
+                if (Now.TimeOfDay > info.StartTime)
+                    continue;
 
-                        count = 0;
-                        loopCount = 0;
-                        conDelay = 0;
+                StartConquest(info, false);
+            }
+        }
 
-                        DownloadSpeed = TotalBytesReceived - previousTotalReceived;
-                        UploadSpeed = TotalBytesSent - previousTotalSent;
+        private static void UserCountLoop()
+        {
+            int observerCount = AuthenticatedConnections.Count(x => x.Stage == GameStage.Observer);
 
-                        previousTotalReceived = TotalBytesReceived;
-                        previousTotalSent = TotalBytesSent;
+            Parallel.ForEach(AuthenticatedConnections, currentConnection =>
+            {
+                try
+                {
+                    currentConnection.ReceiveChat(string.Format(
+                        currentConnection.Language.OnlineCount,
+                        Players.Count,
+                        observerCount
+                        ), MessageType.Hint
+                    );
 
-                        if (Now >= UserCountTime)
-                        {
-                            UserCountTime = Now.AddMinutes(5);
-
-                            foreach (SConnection conn in Connections)
-                            {
-                                conn.ReceiveChat(string.Format(conn.Language.OnlineCount, Players.Count, Connections.Count(x => x.Stage == GameStage.Observer)), MessageType.Hint);
-
-                                switch (conn.Stage)
-                                {
-                                    case GameStage.Game:
-                                        if (conn.Player.Character.Observable)
-                                            conn.ReceiveChat(string.Format(conn.Language.ObserverCount, conn.Observers.Count), MessageType.Hint);
-                                        break;
-                                    case GameStage.Observer:
-                                        conn.ReceiveChat(string.Format(conn.Language.ObserverCount, conn.Observed.Observers.Count), MessageType.Hint);
-                                        break;
-                                }
-                            }
-                        }
-
-                        CalculateLights();
-
-                        CheckGuildWars();
-
-                        foreach (KeyValuePair<MapInfo, Map> pair in Maps)
-                            pair.Value.Process();
-
-                        foreach (var instance in Instances)
-                        {
-                            for (byte i = 0; i < instance.Value.Length; i++)
-                            {
-                                if (instance.Value[i] == null) continue;
-
-                                foreach (KeyValuePair<MapInfo, Map> pair in instance.Value[i])
-                                    pair.Value.Process();
-
-                                if (instance.Value[i].Values.All(x => x.LastPlayer.AddMinutes(10) < DateTime.Now))
-                                {
-                                    UnloadInstance(instance.Key, i);
-                                }
-                            }
-                        }
-
-                        foreach (SpawnInfo spawn in Spawns)
-                            spawn.DoSpawn(false);
-
-                        for (int i = ConquestWars.Count - 1; i >= 0; i--)
-                            ConquestWars[i].Process();
-
-                        if (Config.EnableWebServer)
-                        {
-                            WebServer.Process();
-                        }
-
-                        if (Config.ProcessGameGold)
-                            ProcessGameGold();
-
-                        nextCount = Now.AddSeconds(1);
-
-                        if (nextCount.Day != Now.Day)
-                        {
-                            foreach (GuildInfo guild in GuildInfoList.Binding)
-                            {
-                                guild.DailyContribution = 0;
-                                guild.DailyGrowth = 0;
-
-                                foreach (GuildMemberInfo member in guild.Members)
-                                {
-                                    member.DailyContribution = 0;
-                                    if (member.Account.Connection?.Player == null) continue;
-
-                                    member.Account.Connection.Enqueue(new S.GuildDayReset { ObserverPacket = false });
-                                }
-                            }
-
-                            GC.Collect(2, GCCollectionMode.Forced);
-                        }
-
-                        foreach (CastleInfo info in CastleInfoList.Binding)
-                        {
-                            if (nextCount.TimeOfDay < info.StartTime) continue;
-                            if (Now.TimeOfDay > info.StartTime) continue;
-
-                            StartConquest(info, false);
-                        }
+                    switch (currentConnection.Stage)
+                    {
+                        case GameStage.Game:
+                            if (currentConnection.Player.Character.Observable)
+                                currentConnection.ReceiveChat(string.Format(
+                                    currentConnection.Language.ObserverCount,
+                                    currentConnection.Observers.Count
+                                ), MessageType.Hint
+                            );
+                            break;
+                        case GameStage.Observer:
+                            currentConnection.ReceiveChat(string.Format(
+                                currentConnection.Language.ObserverCount,
+                                currentConnection.Observed.Observers.Count
+                                ), MessageType.Hint
+                            );
+                            break;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Session = null;
-
-                    Log(ex.Message);
-                    Log(ex.StackTrace);
-                    File.AppendAllText(@".\Errors.txt", ex.StackTrace + Environment.NewLine);
-
-                    Packet p = new G.Disconnect { Reason = DisconnectReason.Crashed };
-                    for (int i = Connections.Count - 1; i >= 0; i--)
-                        Connections[i].SendDisconnect(p);
-
-                    Thread.Sleep(3000);
-                    break;
+                    LogError(ex);
                 }
-            }
-
-            WebServer.StopWebServer();
-            StopNetwork();
-
-            while (Saving) Thread.Sleep(1);
-            if (Session != null)
-                Session.BackUpDelay = 0;
-            Save();
-            while (Saving) Thread.Sleep(1);
-
-            StopEnvir();
+            });
         }
 
-        public static void ProcessGameGold()
+        private static void NewConnectionLoop()
         {
-            while (!WebServer.Messages.IsEmpty)
+            if (!NetworkStarted || newConnectionQueue == null)
+                return;
+
+            try
+            {
+                SConnection connection;
+                while (newConnectionQueue.TryDequeue(out connection))
+                {
+                    try
+                    {
+                        ipCountDictionary.TryGetValue(connection.IPAddress, out var ipCount);
+
+                        if (!ipCountDictionary.TryAdd(connection.IPAddress, ++ipCount))
+                            ipCountDictionary[connection.IPAddress] = ipCount;
+
+                        notAuthenticatedConnections.TryAdd(connection.SessionID, connection);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError("Error trying to process connection: " + connection.IPAddress, ex);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError("Error while reading new connections", ex);
+            }
+        }
+
+        private static void ProcessNotAuthenticatedConnections()
+        {
+            if (!NetworkStarted || notAuthenticatedConnections == null)
+                return;
+
+            try
+            {
+                long bytesSent = 0;
+                long bytesReceived = 0;
+
+                foreach (SConnection currentConnection in NotAuthenthicatedConnections)
+                {
+                    try
+                    {
+                        currentConnection.Process();
+                        bytesSent += currentConnection.TotalBytesSent;
+                        bytesReceived += currentConnection.TotalBytesReceived;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(ex);
+                    }
+                }
+
+                long delay = (Time.Now - Now).Ticks / TimeSpan.TicksPerMillisecond;
+                if (delay > conDelay)
+                    conDelay = delay;
+
+                TotalBytesSent = DBytesSent + bytesSent;
+                TotalBytesReceived = DBytesReceived + bytesReceived;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        private static void ProcessAuthenticatedConnections()
+        {
+            if (!NetworkStarted || authenticatedConnections == null)
+                return;
+
+            try
+            {
+                long bytesSent = 0;
+                long bytesReceived = 0;
+
+                foreach (SConnection currentConnection in AuthenticatedConnections)
+                {
+                    try
+                    {
+                        currentConnection.Process();
+                        bytesSent += currentConnection.TotalBytesSent;
+                        bytesReceived += currentConnection.TotalBytesReceived;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(ex);
+                    }
+                }
+
+                long delay = (Time.Now - Now).Ticks / TimeSpan.TicksPerMillisecond;
+                if (delay > conDelay)
+                    conDelay = delay;
+
+                TotalBytesSent = DBytesSent + bytesSent;
+                TotalBytesReceived = DBytesReceived + bytesReceived;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        private static void ProcessMail()
+        {
+            // to limit the processing amount, we only check a max of 10m
+            int amountProcessed = 0;
+
+            if (!mailMessageQueue.IsEmpty)
+            {
+                using (SmtpClient mailClient = new SmtpClient(Config.MailServer, Config.MailPort))
+                {
+                    mailClient.EnableSsl = true;
+                    mailClient.UseDefaultCredentials = false;
+                    mailClient.Credentials = new NetworkCredential(Config.MailAccount, Config.MailPassword);
+
+                    try
+                    {
+                        Tuple<MailMessage, int> messageWrapper = null;
+                        while (++amountProcessed < 10 && mailMessageQueue.TryDequeue(out messageWrapper))
+                        {
+                            try
+                            {
+                                MailMessage message = messageWrapper.Item1;
+                                mailClient.Send(message);
+
+                                EMailsSent++;
+                                message.Dispose();
+                            }
+                            catch (Exception ex)
+                            {
+                                LogError(ex);
+
+                                // put message back in the qeueu
+                                if (messageWrapper.Item2 >= 2)
+                                    LogError("Sending mail failed, stopped after 3 attempts for: " + messageWrapper.Item1.To + " with subject: " + messageWrapper.Item1.Subject);
+                                else
+                                    mailMessageQueue.Enqueue(new Tuple<MailMessage, int>(messageWrapper.Item1, (messageWrapper.Item2 + 1)));
+                            }
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError(ex);
+                    }
+                }
+            }
+        }
+
+        private static void AddMailToQueue(MailMessage message)
+        {
+            mailMessageQueue.Enqueue(new Tuple<MailMessage, int>(message, 0));
+        }
+
+        #endregion Processing loops
+
+        public static void RemoveConnection(int sessionID)
+        {
+            SConnection oldConnection;
+
+            authenticatedConnections.TryRemove(sessionID, out oldConnection);
+            notAuthenticatedConnections.TryRemove(sessionID, out oldConnection);
+        }
+
+        public static void AddObject(MapObject mapObject)
+        {
+            if (!objectDictionary.TryAdd(mapObject.ObjectID, mapObject))
+                LogError("Object allready added: " + mapObject.ObjectID);
+        }
+
+        public static Boolean HasObject(uint objectID)
+        {
+            return objectDictionary.ContainsKey(objectID);
+        }
+
+        public static void RemoveObject(uint objectID)
+        {
+            MapObject mapObject = null;
+            objectDictionary.TryRemove(objectID, out mapObject);
+        }
+
+        public static void ReloadTickRate()
+        {
+            refreshTickTimer = true;
+            mainTickTimer.Stop();
+        }
+
+        private static void Save()
+        {
+            if (Session == null)
+                return;
+
+            try
+            {
+                Saving = true;
+                Session.Save(false);
+
+                HandledPayments.AddRange(PaymentList);
+                            
+                Thread saveThread = new Thread(CommitChanges) { IsBackground = true };
+                saveThread.Start(Session);
+            }
+            catch (Exception ex)
+            {
+                LogError("Save failed", ex);
+                Saving = false;
+            }
+        }
+        private static void CommitChanges(object data)
+        {
+            try
+            {
+                Session session = (Session)data;
+                session?.Commit();
+
+                foreach (IPNMessage message in HandledPayments)
+                {
+                    if (message.Duplicate)
+                    {
+                        File.Delete(message.FileName);
+                        continue;
+                    }
+
+                    if (!Directory.Exists(CompletePath))
+                        Directory.CreateDirectory(CompletePath);
+
+                    File.Move(message.FileName, CompletePath + Path.GetFileName(message.FileName) + ".txt");
+                    PaymentList.Remove(message);
+                }
+                HandledPayments.Clear();
+            }
+            catch (Exception ex)
+            {
+                LogError("Commiting changes failed", ex);
+            }
+            Saving = false;
+        }
+
+        private static void ProcessGameGold()
+        {
+            while (!Messages.IsEmpty)
             {
                 IPNMessage message;
 
-                if (!WebServer.Messages.TryDequeue(out message) || message == null) return;
+                if (!Messages.TryDequeue(out message) || message == null)
+                    return;
 
-                WebServer.PaymentList.Add(message);
+                PaymentList.Add(message);
 
                 if (!message.Verified)
                 {
-                    SEnvir.Log("INVALID PAYPAL TRANSACTION " + message.Message);
+                    Log("INVALID PAYPAL TRANSACTION " + message.Message);
                     continue;
                 }
 
@@ -1135,7 +2156,7 @@ namespace Server.Envir
                 bool error = false;
                 string tempString, paymentStatus, transactionID;
                 decimal tempDecimal;
-                long tempInt;
+                int tempInt;
 
                 if (!values.TryGetValue("payment_status", out paymentStatus))
                     error = true;
@@ -1145,18 +2166,20 @@ namespace Server.Envir
 
 
                 //Check that Txn_id has not been used
-                for (int i = 0; i < SEnvir.GameGoldPaymentList.Count; i++)
+                for (int i = 0; i < GameGoldPaymentList.Count; i++)
                 {
-                    if (SEnvir.GameGoldPaymentList[i].TransactionID != transactionID) continue;
-                    if (SEnvir.GameGoldPaymentList[i].Status != paymentStatus) continue;
+                    if (GameGoldPaymentList[i].TransactionID != transactionID)
+                        continue;
+                    if (GameGoldPaymentList[i].Status != paymentStatus)
+                        continue;
 
 
-                    SEnvir.Log(string.Format("[Duplicated Transaction] ID:{0} Status:{1}.", transactionID, paymentStatus));
+                    Log(string.Format("[Duplicated Transaction] ID:{0} Status:{1}.", transactionID, paymentStatus));
                     message.Duplicate = true;
                     return;
                 }
 
-                GameGoldPayment payment = SEnvir.GameGoldPaymentList.CreateNewObject();
+                GameGoldPayment payment = GameGoldPaymentList.CreateNewObject();
                 payment.RawMessage = message.Message;
                 payment.Error = error;
 
@@ -1207,125 +2230,54 @@ namespace Server.Envir
                     case "Completed":
                         break;
                 }
-                if (payment.Status != WebServer.Completed) continue;
+                if (payment.Status != Completed)
+                    continue;
 
                 //check that receiver_email is my primary paypal email
                 if (string.Compare(payment.Receiver_EMail, Config.ReceiverEMail, StringComparison.OrdinalIgnoreCase) != 0)
                     payment.Error = true;
 
                 //check that paymentamount/current are correct
-                if (payment.Currency != WebServer.Currency)
+                if (payment.Currency != Currency)
                     payment.Error = true;
 
-                if (WebServer.GoldTable.TryGetValue(payment.Price, out tempInt))
+                if (GoldTable.TryGetValue(payment.Price, out tempInt))
                     payment.GameGoldAmount = tempInt;
                 else
                     payment.Error = true;
 
-                CharacterInfo character = SEnvir.GetCharacter(payment.CharacterName);
+                CharacterInfo character = GetCharacter(payment.CharacterName);
 
                 if (character == null || payment.Error)
                 {
-                    SEnvir.Log($"[Transaction Error] ID:{transactionID} Status:{paymentStatus}, Amount{payment.Price}.");
+                    Log($"[Transaction Error] ID:{transactionID} Status:{paymentStatus}, Amount{payment.Price}.");
                     continue;
                 }
 
                 payment.Account = character.Account;
-                character.Account.GameGold2.Amount += payment.GameGoldAmount;
+                payment.Account.GameGold += payment.GameGoldAmount;
                 character.Account.Connection?.ReceiveChat(string.Format(character.Account.Connection.Language.PaymentComplete, payment.GameGoldAmount), MessageType.System);
-                character.Player?.GameGoldChanged();
+                character.Player?.Enqueue(new S.GameGoldChanged { GameGold = payment.Account.GameGold });
 
                 AccountInfo referral = payment.Account.Referral;
 
                 if (referral != null)
                 {
-                    referral.HuntGold2.Amount += payment.GameGoldAmount / 10;
+                    referral.HuntGold += payment.GameGoldAmount / 10;
 
                     if (referral.Connection != null)
                     {
                         referral.Connection.ReceiveChat(string.Format(referral.Connection.Language.ReferralPaymentComplete, payment.GameGoldAmount / 10), MessageType.System);
-                        referral.Connection.Player?.HuntGoldChanged();
+
+                        if (referral.Connection.Stage == GameStage.Game)
+                            referral.Connection.Player.Enqueue(new S.HuntGoldChanged { HuntGold = referral.GameGold });
                     }
                 }
 
-                SEnvir.Log($"[Game Gold Purchase] Character: {character.CharacterName}, Amount: {payment.GameGoldAmount}.");
+                Log($"[Game Gold Purchase] Character: {character.CharacterName}, Amount: {payment.GameGoldAmount}.");
             }
         }
 
-        private static void Save()
-        {
-            if (Session == null) return;
-
-            Saving = true;
-            Session.Save(false);
-
-            WebServer.Save();
-            
-            Thread saveThread = new Thread(CommitChanges) { IsBackground = true };
-            saveThread.Start(Session);
-        }
-        private static void CommitChanges(object data)
-        {
-            Session session = (Session)data;
-            session?.Commit();
-
-            WebServer.CommitChanges(data);
-
-            Saving = false;
-        }
-        private static void WriteLogsLoop()
-        {
-            DateTime NextLogTime = Now.AddSeconds(10);
-
-            while (Started)
-            {
-                if (Now < NextLogTime)
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
-
-                WriteLogs();
-
-                NextLogTime = Now.AddSeconds(10);
-            }
-        }
-        private static void WriteLogs()
-        {
-            List<string> lines = new List<string>();
-            while (!Logs.IsEmpty)
-            {
-                if (!Logs.TryDequeue(out string line)) continue;
-                lines.Add(line);
-            }
-
-            File.AppendAllLines(@".\Logs.txt", lines);
-
-            lines.Clear();
-
-            while (!ChatLogs.IsEmpty)
-            {
-                if (!ChatLogs.TryDequeue(out string line)) continue;
-                lines.Add(line);
-            }
-
-            File.AppendAllLines(@".\Chat Logs.txt", lines);
-
-            lines.Clear();
-
-            /*
-            while (!GamePlayLogs.IsEmpty)
-            {
-                if (!GamePlayLogs.TryDequeue(out string line)) continue;
-                lines.Add(line);
-            }
-
-            File.AppendAllLines(@".\Game Play.txt", lines);
-            */
-
-            lines.Clear();
-        }
-       
         public static void CheckGuildWars()
         {
             TimeSpan change = Now - LastWarTime;
@@ -1337,7 +2289,8 @@ namespace Server.Envir
 
                 warInfo.Duration -= change;
 
-                if (warInfo.Duration > TimeSpan.Zero) continue;
+                if (warInfo.Duration > TimeSpan.Zero)
+                    continue;
 
                 foreach (GuildMemberInfo member in warInfo.Guild1.Members)
                     member.Account.Connection?.Player?.Enqueue(new S.GuildWarFinished { GuildName = warInfo.Guild2.GuildName });
@@ -1364,17 +2317,21 @@ namespace Server.Envir
             {
                 foreach (UserConquest conquest in UserConquestList.Binding)
                 {
-                    if (conquest.Castle != info) continue;
-                    if (conquest.WarDate > Now.Date) continue;
+                    if (conquest.Castle != info)
+                        continue;
+                    if (conquest.WarDate > Now.Date)
+                        continue;
 
                     participants.Add(conquest.Guild);
                 }
 
-                if (participants.Count == 0) return;
+                if (participants.Count == 0)
+                    return;
 
                 foreach (GuildInfo guild in GuildInfoList.Binding)
                 {
-                    if (guild.Castle != info) continue;
+                    if (guild.Castle != info)
+                        continue;
 
                     participants.Add(guild);
                 }
@@ -1405,6 +2362,38 @@ namespace Server.Envir
             War.StartWar();
         }
 
+        #region Active object handling
+
+        public static void AddActiveObject(MapObject currentObject)
+        {
+            if (!activeObjectDictionary.TryAdd(currentObject.ObjectID, currentObject))
+                activeObjectDictionary[currentObject.ObjectID] = currentObject;
+        }
+
+        public static void RemoveActiveObject(uint objectID)
+        {
+            MapObject removedObject = null;
+            activeObjectDictionary.TryRemove(objectID, out removedObject);
+        }
+
+        public static int ActiveObjectCount
+        {
+            get
+            {
+                return activeObjectDictionary.Count;
+            }
+        }
+
+        public static int ObjectCount
+        {
+            get
+            {
+                return objectDictionary.Count;
+            }
+        }
+
+
+        #endregion Active object handling
 
         public static UserItem CreateFreshItem(UserItem item)
         {
@@ -1433,7 +2422,7 @@ namespace Server.Envir
             item.Flags = check.Flags;
             item.ExpireTime = check.ExpireTime;
 
-            if (IsCurrencyItem(item.Info) || item.Info.Effect == ItemEffect.Experience)
+            if (item.Info.Effect == ItemEffect.Gold || item.Info.Effect == ItemEffect.Experience)
                 item.Count = check.Count;
             else
                 item.Count = Math.Min(check.Info.StackSize, check.Count);
@@ -1451,17 +2440,19 @@ namespace Server.Envir
             item.Info = info;
             item.CurrentDurability = info.Durability;
             item.MaxDurability = info.Durability;
+            item.Rarity = info.Rarity;
 
             return item;
         }
-        public static UserItem CreateDropItem(ItemCheck check, int chance = 15)
+        public static UserItem CreateDropItem(ItemCheck check, int chance = 1000)
         {
             UserItem item = CreateDropItem(check.Info, chance);
 
             item.Flags = check.Flags;
             item.ExpireTime = check.ExpireTime;
+            item.Rarity = check.Info.Rarity;
 
-            if (IsCurrencyItem(item.Info) || item.Info.Effect == ItemEffect.Experience)
+            if (item.Info.Effect == ItemEffect.Gold || item.Info.Effect == ItemEffect.Experience)
                 item.Count = check.Count;
             else
                 item.Count = Math.Min(check.Info.StackSize, check.Count);
@@ -1470,45 +2461,132 @@ namespace Server.Envir
 
             return item;
         }
-        public static UserItem CreateDropItem(ItemInfo info, int chance = 15)
+        public static UserItem CreateDropItem(ItemInfo info, int chance = 1000, int RarityInc = 1000)
         {
             UserItem item = UserItemList.CreateNewObject();
-
+            chance = Math.Min(chance, Config.DropAddedChance);
+            RarityInc = Math.Min(RarityInc, Config.DropRarityInc);
+            int MaxRareAdded = Math.Min(RarityInc, 5);
             item.Info = info;
             item.MaxDurability = info.Durability;
+            item.CraftInfoOnly = false;
+            item.Rarity = info.Rarity;
+            int minadded = 0;
 
             item.Colour = Color.FromArgb(Random.Next(256), Random.Next(256), Random.Next(256));
 
-            if (item.Info.Rarity != Rarity.Common)
-                chance *= 2;
-
-            if (Random.Next(chance) == 0)
+            if (Random.Next(RarityInc) == 0)
             {
                 switch (info.ItemType)
                 {
                     case ItemType.Weapon:
-                        UpgradeWeapon(item);
+                    case ItemType.Shield:
+                    case ItemType.Armour:
+                    case ItemType.Helmet:
+                    case ItemType.Necklace:
+                    case ItemType.Bracelet:
+                    case ItemType.Ring:
+                    case ItemType.Shoes:
+
+
+                        if (info.Rarity == Rarity.Common)
+                        {
+                            item.Rarity = Rarity.Superior;
+                            minadded += Globals.MinAdded;
+                            if (Random.Next(MaxRareAdded) == 0)
+                            {
+                                item.Rarity = Rarity.Rare;
+                                minadded += Globals.MinAdded;
+                                if (Random.Next(MaxRareAdded) == 0)
+                                {
+                                    item.Rarity = Rarity.Elite;
+                                    minadded += Globals.MinAdded;
+                                    if (Random.Next(MaxRareAdded) == 0)
+                                    {
+                                        item.Rarity = Rarity.Legendary;
+                                        minadded += Globals.MinAdded;
+                                    }
+                                }
+                            }
+                        }
+                        if (info.Rarity == Rarity.Superior)
+                        {
+                            item.Rarity = Rarity.Rare;
+                            minadded += Globals.MinAdded;
+                            if (Random.Next(MaxRareAdded) == 0)
+                            {
+                                item.Rarity = Rarity.Elite;
+                                minadded += Globals.MinAdded;
+                                if (Random.Next(MaxRareAdded) == 0)
+                                {
+                                    item.Rarity = Rarity.Legendary;
+                                    minadded += Globals.MinAdded;
+                                }
+                            }
+                        }
+                        if (info.Rarity == Rarity.Rare)
+                        {
+                            item.Rarity = Rarity.Elite;
+                            minadded += Globals.MinAdded;
+                            if (Random.Next(MaxRareAdded) == 0)
+                            {
+                                item.Rarity = Rarity.Legendary;
+                                minadded += Globals.MinAdded;
+                            }
+                        }
+                        if (info.Rarity == Rarity.Elite)
+                        {
+                            item.Rarity = Rarity.Legendary;
+                            minadded += Globals.MinAdded;
+                            if (Random.Next(MaxRareAdded) == 0)
+                            {
+                                minadded += Globals.MinAdded;
+                            }
+                        }
+                        if (info.Rarity == Rarity.Legendary)
+                        {
+                            minadded += Globals.MinAdded;
+                            if (Random.Next(MaxRareAdded) == 0)
+                            {
+                                minadded += Globals.MinAdded;
+                            }
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (Random.Next(chance) == 0 || minadded > 0)
+            {
+                if (minadded == 0)
+                    minadded = 1;
+                switch (info.ItemType)
+                {
+                    case ItemType.Weapon:
+                        UpgradeWeapon(item, minadded);
                         break;
                     case ItemType.Shield:
-                        UpgradeShield(item);
+                        UpgradeShield(item, minadded);
                         break;
                     case ItemType.Armour:
-                        UpgradeArmour(item);
+                        UpgradeArmour(item, minadded);
                         break;
                     case ItemType.Helmet:
-                        UpgradeHelmet(item);
+                        UpgradeHelmet(item, minadded);
                         break;
                     case ItemType.Necklace:
-                        UpgradeNecklace(item);
+                        UpgradeNecklace(item, minadded);
                         break;
                     case ItemType.Bracelet:
-                        UpgradeBracelet(item);
+                        UpgradeBracelet(item, minadded);
                         break;
                     case ItemType.Ring:
-                        UpgradeRing(item);
+                        UpgradeRing(item, minadded);
                         break;
                     case ItemType.Shoes:
-                        UpgradeShoes(item);
+                        UpgradeShoes(item, minadded);
                         break;
                 }
                 item.StatsChanged();
@@ -1533,7 +2611,8 @@ namespace Server.Envir
                     item.CurrentDurability = Random.Next(info.Durability * 3) + 3000;
                     break;
                 case ItemType.Book:
-                    item.CurrentDurability = Random.Next(96) + 5; //0~95 + 5
+                    item.CurrentDurability = Random.Next(9) + 2; //0~95 + 5
+                    item.CurrentDurability = Random.Next(81) + 20;
                     break;
                 default:
                     item.CurrentDurability = info.Durability;
@@ -1573,7 +2652,8 @@ namespace Server.Envir
             {
                 value -= pair.Value;
 
-                if (value >= 0) continue;
+                if (value >= 0)
+                    continue;
 
                 return pair.Key;
             }
@@ -1581,206 +2661,330 @@ namespace Server.Envir
 
             return null;
         }
-
-        public static bool IsCurrencyItem(ItemInfo info)
+        public static bool addMC()
         {
-            return CurrencyInfoList.Binding.FirstOrDefault(x => x.DropItem == info) != null;
+            bool MC;
+            if (Random.Next(2) == 0)
+                MC = true;
+            else
+                MC = false;
+            return MC;
+        }
+        public static int AddedValue(int chance = 10, int Max = 2)
+        {
+            int AddedValue = 1;
+            int loop = 1;
+            Max = Math.Max(1, Max);
+
+            while (loop < Max)
+            {
+                if (Random.Next(chance) == 0)
+                    AddedValue += 1;
+                loop++;
+            }
+
+            return Math.Min(Max, AddedValue);
         }
 
-        public static void UpgradeWeapon(UserItem item)
+        public static void UpgradeWeapon(UserItem item, int MinAdded = 1)
         {
-            if (Random.Next(5) == 0)
+            bool EleAttack = true;
+            bool MC = addMC();
+            bool AddSpeed = true;
+            while (item.TotalStats() < MinAdded)
             {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxDC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                //No perticular Magic Power
-                if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                if (Random.Next(10) == 0)
                 {
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
+
+                    item.AddStat(Stat.MaxDC, AddedValue(), StatSource.Added);
                 }
 
-
-                if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-
-                if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
-
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                if (Random.Next(1250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.Accuracy, value, StatSource.Added);
-            }
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
-                Stat.HolyAttack, Stat.DarkAttack,
-                Stat.PhantomAttack,
-            };
-
-
-            if (Random.Next(3) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(5) == 0)
-                    value += 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                item.AddStat(Elements[Random.Next(Elements.Count)], value, StatSource.Added);
-            }
-        }
-        public static void UpgradeShield(UserItem item)
-        {
-            if (Random.Next(10) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.DCPercent, value, StatSource.Added);
-            }
-
-            if (Random.Next(10) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MCPercent, value, StatSource.Added);
-                item.AddStat(Stat.SCPercent, value, StatSource.Added);
-
-            }
-
-            if (Random.Next(10) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.BlockChance, value, StatSource.Added);
-            }
-
-            if (Random.Next(10) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.EvasionChance, value, StatSource.Added);
-            }
-
-            if (Random.Next(10) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(50) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.PoisonResistance, value, StatSource.Added);
-            }
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
-                Stat.HolyResistance, Stat.DarkResistance,
-                Stat.PhantomResistance, Stat.PhysicalResistance,
-            };
-
-            if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, 2, StatSource.Added);
-
-                if (Random.Next(2) == 0)
+                if (Random.Next(10) == 0)
                 {
-                    element = Elements[Random.Next(Elements.Count)];
 
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -2, StatSource.Added);
-                }
-
-                if (Random.Next(45) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, 2, StatSource.Added);
-
-                    if (Random.Next(2) == 0)
+                    //No particular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(), StatSource.Added);
+                    }
+
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(), StatSource.Added);
+
+                }
+
+
+                if (Random.Next(50) == 0 && AddSpeed)
+                {
+                    item.AddStat(Stat.AttackSpeed, AddedValue(30, 2), StatSource.Added);
+                    AddSpeed = false;
+                }
+
+                if (EleAttack)
+                {
+                    List<Stat> AttackElements = new List<Stat>
+                    {
+                        Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
+                        Stat.HolyAttack, Stat.DarkAttack,
+                        Stat.PhantomAttack,
+                    };
+
+
+                    if (Random.Next(20) == 0)
+                    {
+
+                        item.AddStat(AttackElements[Random.Next(AttackElements.Count)], AddedValue(20, 3), StatSource.Added);
+                        EleAttack = false;
+                    }
+                }
+            }
+        }
+        public static void UpgradeShield(UserItem item, int MinAdded = 1)
+        {
+            bool EleResist = true;
+            bool MaxEleResist = true;
+            bool EleAttack = true;
+            bool MC = addMC();
+            List<Stat> MxElements = new List<Stat>
+                    {
+                        Stat.MaxFireResistance, Stat.MaxIceResistance, Stat.MaxLightningResistance, Stat.MaxWindResistance,
+                        Stat.MaxHolyResistance, Stat.MaxDarkResistance,
+                        Stat.MaxPhantomResistance, Stat.MaxPhysicalResistance,
+                    };
+            while (item.TotalStats() < MinAdded)
+            {
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.MaxAC, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.MaxMR, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(20) == 0)
+                {
+
+                    item.AddStat(Stat.MaxDC, AddedValue(20, 1), StatSource.Added);
+                }
+
+                if (Random.Next(20) == 0)
+                {
+
+                    //No perticular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                    {
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(20, 1), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(20, 1), StatSource.Added);
+                    }
+
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(20, 1), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(20, 1), StatSource.Added);
+
+                }
+
+                if (EleResist)
+                {
+                    List<Stat> Elements = new List<Stat>
+                    {
+                        Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
+                        Stat.HolyResistance, Stat.DarkResistance,
+                        Stat.PhantomResistance, Stat.PhysicalResistance,
+                    };
+
+                    if (Random.Next(25) == 0)
+                    {
+                        int rint = Random.Next(Elements.Count);
+                        Stat element = Elements[rint];
 
                         Elements.Remove(element);
 
-                        item.AddStat(element, -2, StatSource.Added);
+                        item.AddStat(element, 1, StatSource.Added);
+
+                        EleResist = false;
+
+                        if (Random.Next(80) == 0 && MaxEleResist)
+                        {
+                            element = MxElements[rint];
+
+                            MxElements.Remove(element);
+
+                            item.AddStat(element, 1, StatSource.Added);
+
+                            MaxEleResist = false;
+                        }
+
+                        if (Random.Next(5) == 0)
+                        {
+                            element = Elements[Random.Next(Elements.Count)];
+
+                            Elements.Remove(element);
+
+                            item.AddStat(element, -1, StatSource.Added);
+                        }
+
+                    }
+                    else if (Random.Next(10) == 0)
+                    {
+                        Stat element = Elements[Random.Next(Elements.Count)];
+
+                        Elements.Remove(element);
+
+                        item.AddStat(element, -1, StatSource.Added);
+                        EleResist = false;
+                    }
+                }
+                if (MaxEleResist)
+                {
+
+
+                    if (Random.Next(100) == 0)
+                    {
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
+
+                        MxElements.Remove(element);
+
+                        item.AddStat(element, 1, StatSource.Added);
+
+                        MaxEleResist = false;
+
+                        if (Random.Next(5) == 0)
+                        {
+                            element = MxElements[Random.Next(MxElements.Count)];
+
+                            MxElements.Remove(element);
+
+                            item.AddStat(element, -1, StatSource.Added);
+                        }
+
+                    }
+                    else if (Random.Next(100) == 0)
+                    {
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
+
+                        MxElements.Remove(element);
+
+                        item.AddStat(element, -1, StatSource.Added);
+                        MaxEleResist = false;
+                    }
+                }
+                if (EleAttack)
+                {
+                    List<Stat> AttackElements = new List<Stat>
+                    {
+                        Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
+                        Stat.HolyAttack, Stat.DarkAttack,
+                        Stat.PhantomAttack,
+                    };
+
+
+                    if (Random.Next(25) == 0)
+                    {
+
+                        item.AddStat(AttackElements[Random.Next(AttackElements.Count)], AddedValue(25, 2), StatSource.Added);
+                        EleAttack = false;
+                    }
+                }
+            }
+        }
+        public static void UpgradeArmour(UserItem item, int MinAdded = 1)
+        {
+            bool EleResist = true;
+            bool MaxEleResist = true;
+            bool MC = addMC();
+            List<Stat> MxElements = new List<Stat>
+                    {
+                        Stat.MaxFireResistance, Stat.MaxIceResistance, Stat.MaxLightningResistance, Stat.MaxWindResistance,
+                        Stat.MaxHolyResistance, Stat.MaxDarkResistance,
+                        Stat.MaxPhantomResistance, Stat.MaxPhysicalResistance,
+                    };
+            while (item.TotalStats() < MinAdded)
+            {
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.MaxAC, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.MaxMR, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(20) == 0)
+                {
+
+                    item.AddStat(Stat.MaxDC, AddedValue(20, 1), StatSource.Added);
+                }
+
+                if (Random.Next(20) == 0)
+                {
+
+                    //No perticular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                    {
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(20, 1), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(20, 1), StatSource.Added);
                     }
 
-                    if (Random.Next(60) == 0)
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(20, 1), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(20, 1), StatSource.Added);
+
+                }
+
+                if (EleResist)
+                {
+                    List<Stat> Elements = new List<Stat>
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
+                        Stat.HolyResistance, Stat.DarkResistance,
+                        Stat.PhantomResistance, Stat.PhysicalResistance,
+                    };
+
+                    if (Random.Next(25) == 0)
+                    {
+                        int rint = Random.Next(Elements.Count);
+                        Stat element = Elements[rint];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, 2, StatSource.Added);
 
-                        if (Random.Next(2) == 0)
+                        EleResist = false;
+
+                        if (Random.Next(80) == 0 && MaxEleResist)
+                        {
+                            element = MxElements[rint];
+
+                            MxElements.Remove(element);
+
+                            item.AddStat(element, 1, StatSource.Added);
+
+                            MaxEleResist = false;
+                        }
+
+                        if (Random.Next(5) == 0)
                         {
                             element = Elements[Random.Next(Elements.Count)];
 
@@ -1788,227 +2992,168 @@ namespace Server.Envir
 
                             item.AddStat(element, -2, StatSource.Added);
                         }
-
-                    }
-                    else if (Random.Next(60) == 0)
-                    {
-                        element = Elements[Random.Next(Elements.Count)];
-
-                        Elements.Remove(element);
-
-                        item.AddStat(element, -2, StatSource.Added);
-                    }
-                }
-                else if (Random.Next(45) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -2, StatSource.Added);
-                }
-            }
-            else if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, -2, StatSource.Added);
-            }
-        }
-        public static void UpgradeArmour(UserItem item)
-        {
-            if (Random.Next(2) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxAC, value, StatSource.Added);
-            }
-
-            if (Random.Next(2) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxMR, value, StatSource.Added);
-            }
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
-                Stat.HolyResistance, Stat.DarkResistance,
-                Stat.PhantomResistance, Stat.PhysicalResistance,
-            };
-
-            if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, 2, StatSource.Added);
-
-                if (Random.Next(2) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -2, StatSource.Added);
-                }
-
-                if (Random.Next(45) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, 2, StatSource.Added);
-
-                    if (Random.Next(2) == 0)
-                    {
-                        element = Elements[Random.Next(Elements.Count)];
-
-                        Elements.Remove(element);
-
-                        item.AddStat(element, -2, StatSource.Added);
-                    }
-
-                    if (Random.Next(60) == 0)
-                    {
-                        element = Elements[Random.Next(Elements.Count)];
-
-                        Elements.Remove(element);
-
-                        item.AddStat(element, 2, StatSource.Added);
-
-                        if (Random.Next(2) == 0)
+                        if (Random.Next(25) == 0)
                         {
                             element = Elements[Random.Next(Elements.Count)];
 
                             Elements.Remove(element);
 
-                            item.AddStat(element, -2, StatSource.Added);
+                            item.AddStat(element, 2, StatSource.Added);
+
+                            EleResist = false;
+
+                            if (Random.Next(5) == 0)
+                            {
+                                element = Elements[Random.Next(Elements.Count)];
+
+                                Elements.Remove(element);
+
+                                item.AddStat(element, -2, StatSource.Added);
+                            }
+                            if (Random.Next(25) == 0)
+                            {
+                                element = Elements[Random.Next(Elements.Count)];
+
+                                Elements.Remove(element);
+
+                                item.AddStat(element, 2, StatSource.Added);
+
+                                EleResist = false;
+
+                                if (Random.Next(5) == 0)
+                                {
+                                    element = Elements[Random.Next(Elements.Count)];
+
+                                    Elements.Remove(element);
+
+                                    item.AddStat(element, -2, StatSource.Added);
+                                }
+
+                            }
+
                         }
 
                     }
-                    else if (Random.Next(60) == 0)
+                    else if (Random.Next(25) == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat element = Elements[Random.Next(Elements.Count)];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, -2, StatSource.Added);
+                        EleResist = false;
                     }
                 }
-                else if (Random.Next(45) == 0)
+                if (MaxEleResist)
                 {
-                    element = Elements[Random.Next(Elements.Count)];
 
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -2, StatSource.Added);
-                }
-            }
-            else if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, -2, StatSource.Added);
-            }
-        }
-        public static void UpgradeHelmet(UserItem item)
-        {
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxAC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxMR, value, StatSource.Added);
-            }
-
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
-                Stat.HolyResistance, Stat.DarkResistance,
-                Stat.PhantomResistance, Stat.PhysicalResistance,
-            };
-            if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, 1, StatSource.Added);
-
-                if (Random.Next(2) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -1, StatSource.Added);
-                }
-
-                if (Random.Next(45) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, 1, StatSource.Added);
-
-                    if (Random.Next(2) == 0)
+                    if (Random.Next(100) == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
 
-                        Elements.Remove(element);
+                        MxElements.Remove(element);
+
+                        item.AddStat(element, 1, StatSource.Added);
+
+                        MaxEleResist = false;
+
+                    }
+                    else if (Random.Next(100) == 0)
+                    {
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
+
+                        MxElements.Remove(element);
 
                         item.AddStat(element, -1, StatSource.Added);
+                        MaxEleResist = false;
+                    }
+                }
+            }
+        }
+        public static void UpgradeHelmet(UserItem item, int MinAdded = 1)
+        {
+            bool EleResist = true;
+            bool MaxEleResist = true;
+            bool EleAttack = true;
+            bool MC = addMC();
+            List<Stat> MxElements = new List<Stat>
+                    {
+                        Stat.MaxFireResistance, Stat.MaxIceResistance, Stat.MaxLightningResistance, Stat.MaxWindResistance,
+                        Stat.MaxHolyResistance, Stat.MaxDarkResistance,
+                        Stat.MaxPhantomResistance, Stat.MaxPhysicalResistance,
+                    };
+            while (item.TotalStats() < MinAdded)
+            {
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.MaxAC, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.MaxMR, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(20) == 0)
+                {
+
+                    item.AddStat(Stat.MaxDC, AddedValue(20, 1), StatSource.Added);
+                }
+
+                if (Random.Next(20) == 0)
+                {
+
+                    //No perticular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                    {
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(20, 1), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(20, 1), StatSource.Added);
                     }
 
-                    if (Random.Next(60) == 0)
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(20, 1), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(20, 1), StatSource.Added);
+
+                }
+
+                if (EleResist)
+                {
+                    List<Stat> Elements = new List<Stat>
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
+                        Stat.HolyResistance, Stat.DarkResistance,
+                        Stat.PhantomResistance, Stat.PhysicalResistance,
+                    };
+
+                    if (Random.Next(25) == 0)
+                    {
+                        int rint = Random.Next(Elements.Count);
+                        Stat element = Elements[rint];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, 1, StatSource.Added);
 
-                        if (Random.Next(2) == 0)
+                        EleResist = false;
+
+                        if (Random.Next(80) == 0 && MaxEleResist)
+                        {
+                            element = MxElements[rint];
+
+                            MxElements.Remove(element);
+
+                            item.AddStat(element, 1, StatSource.Added);
+
+                            MaxEleResist = false;
+                        }
+
+                        if (Random.Next(5) == 0)
                         {
                             element = Elements[Random.Next(Elements.Count)];
 
@@ -2018,266 +3163,173 @@ namespace Server.Envir
                         }
 
                     }
-                    else if (Random.Next(60) == 0)
+                    else if (Random.Next(25) == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat element = Elements[Random.Next(Elements.Count)];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, -1, StatSource.Added);
+                        EleResist = false;
                     }
                 }
-                else if (Random.Next(45) == 0)
+                if (MaxEleResist)
                 {
-                    element = Elements[Random.Next(Elements.Count)];
 
-                    Elements.Remove(element);
 
-                    item.AddStat(element, -1, StatSource.Added);
-                }
-            }
-            else if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, -1, StatSource.Added);
-            }
-        }
-        public static void UpgradeNecklace(UserItem item)
-        {
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxDC, value, StatSource.Added);
-            }
-
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                //No perticular Magic Power
-                if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
-                {
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
-                }
-
-
-                if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-
-                if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
-            }
-
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-
-                item.AddStat(Stat.Accuracy, value, StatSource.Added);
-            }
-
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.Agility, value, StatSource.Added);
-            }
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
-                Stat.HolyAttack, Stat.DarkAttack,
-                Stat.PhantomAttack,
-            };
-
-
-            if (Random.Next(3) == 0)
-            {
-                item.AddStat(Elements[Random.Next(Elements.Count)], 1, StatSource.Added);
-
-                if (Random.Next(5) == 0)
-                    item.AddStat(Elements[Random.Next(Elements.Count)], 1, StatSource.Added);
-
-                if (Random.Next(25) == 0)
-                    item.AddStat(Elements[Random.Next(Elements.Count)], 1, StatSource.Added);
-            }
-        }
-        public static void UpgradeBracelet(UserItem item)
-        {
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxAC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxMR, value, StatSource.Added);
-            }
-
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxDC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                //No perticular Magic Power
-                if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
-                {
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
-                }
-
-
-                if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-
-                if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.Accuracy, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.Agility, value, StatSource.Added);
-            }
-
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
-                Stat.HolyResistance, Stat.DarkResistance,
-                Stat.PhantomResistance, Stat.PhysicalResistance,
-            };
-
-            if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, 1, StatSource.Added);
-
-                if (Random.Next(2) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -1, StatSource.Added);
-                }
-
-                if (Random.Next(30) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, 1, StatSource.Added);
-
-                    if (Random.Next(2) == 0)
+                    if (Random.Next(100) == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
 
-                        Elements.Remove(element);
+                        MxElements.Remove(element);
+
+                        item.AddStat(element, 1, StatSource.Added);
+
+                        MaxEleResist = false;
+
+                    }
+                    else if (Random.Next(100) == 0)
+                    {
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
+
+                        MxElements.Remove(element);
 
                         item.AddStat(element, -1, StatSource.Added);
+                        MaxEleResist = false;
+                    }
+                }
+                if (EleAttack)
+                {
+                    List<Stat> AttackElements = new List<Stat>
+                    {
+                        Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
+                        Stat.HolyAttack, Stat.DarkAttack,
+                        Stat.PhantomAttack,
+                    };
+
+
+                    if (Random.Next(25) == 0)
+                    {
+
+                        item.AddStat(AttackElements[Random.Next(AttackElements.Count)], AddedValue(25, 2), StatSource.Added);
+                        EleAttack = false;
+                    }
+                }
+            }
+        }
+        public static void UpgradeNecklace(UserItem item, int MinAdded = 1)
+        {
+            bool EleAttack = true;
+            bool MC = addMC();
+            while (item.TotalStats() < MinAdded)
+            {
+                if (Random.Next(10) == 0)
+                {
+
+                    item.AddStat(Stat.MaxDC, AddedValue(), StatSource.Added);
+                }
+
+
+                if (Random.Next(10) == 0)
+                {
+                    //No perticular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                    {
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(), StatSource.Added);
                     }
 
-                    if (Random.Next(40) == 0)
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(), StatSource.Added);
+                }
+
+                if (EleAttack)
+                {
+                    List<Stat> AttackElements = new List<Stat>
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
+                        Stat.HolyAttack, Stat.DarkAttack,
+                        Stat.PhantomAttack,
+                    };
+
+
+                    if (Random.Next(20) == 0)
+                    {
+
+                        item.AddStat(AttackElements[Random.Next(AttackElements.Count)], AddedValue(20, 2), StatSource.Added);
+                        EleAttack = false;
+                    }
+                }
+            }
+        }
+        public static void UpgradeBracelet(UserItem item, int MinAdded = 1)
+        {
+            bool EleResist = true;
+            bool MC = addMC();
+            while (item.TotalStats() < MinAdded)
+            {
+                if (Random.Next(10) == 0)
+                {
+
+                    item.AddStat(Stat.MaxAC, AddedValue(), StatSource.Added);
+                }
+                if (Random.Next(10) == 0)
+                {
+
+                    item.AddStat(Stat.MaxMR, AddedValue(), StatSource.Added);
+                }
+                if (Random.Next(15) == 0)
+                {
+
+                    item.AddStat(Stat.MaxDC, AddedValue(15, 2), StatSource.Added);
+                }
+
+
+                if (Random.Next(15) == 0)
+                {
+                    //No perticular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                    {
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(15, 2), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(15, 2), StatSource.Added);
+                    }
+
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(15, 2), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(15, 2), StatSource.Added);
+                }
+
+                if (EleResist)
+                {
+                    List<Stat> Elements = new List<Stat>
+                    {
+                        Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
+                        Stat.HolyResistance, Stat.DarkResistance,
+                        Stat.PhantomResistance, Stat.PhysicalResistance,
+                    };
+
+                    if (Random.Next(25) == 0)
+                    {
+                        Stat element = Elements[Random.Next(Elements.Count)];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, 1, StatSource.Added);
 
-                        if (Random.Next(2) == 0)
+                        EleResist = false;
+
+                        if (Random.Next(5) == 0)
                         {
                             element = Elements[Random.Next(Elements.Count)];
 
@@ -2287,198 +3339,139 @@ namespace Server.Envir
                         }
 
                     }
-                    else if (Random.Next(40) == 0)
+                    else if (Random.Next(25) == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat element = Elements[Random.Next(Elements.Count)];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, -1, StatSource.Added);
+                        EleResist = false;
                     }
                 }
-                else if (Random.Next(30) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -1, StatSource.Added);
-                }
-            }
-            else if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, -1, StatSource.Added);
             }
         }
-        public static void UpgradeRing(UserItem item)
+        public static void UpgradeRing(UserItem item, int MinAdded = 1)
         {
-
-
-            if (Random.Next(5) == 0)
+            bool EleAttack = true;
+            bool MC = addMC();
+            while (item.TotalStats() < MinAdded)
             {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxDC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                //No perticular Magic Power
-                if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
+                if (Random.Next(10) == 0)
                 {
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
+
+                    item.AddStat(Stat.MaxDC, AddedValue(), StatSource.Added);
                 }
 
 
-                if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
-                    item.AddStat(Stat.MaxMC, value, StatSource.Added);
-
-                if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
-                    item.AddStat(Stat.MaxSC, value, StatSource.Added);
-            }
-
-            if (Random.Next(3) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.PickUpRadius, value, StatSource.Added);
-            }
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
-                Stat.HolyAttack, Stat.DarkAttack,
-                Stat.PhantomAttack,
-            };
-
-
-            if (Random.Next(3) == 0)
-            {
-                item.AddStat(Elements[Random.Next(Elements.Count)], 1, StatSource.Added);
-
-                if (Random.Next(5) == 0)
-                    item.AddStat(Elements[Random.Next(Elements.Count)], 1, StatSource.Added);
-
-                if (Random.Next(25) == 0)
-                    item.AddStat(Elements[Random.Next(Elements.Count)], 1, StatSource.Added);
-            }
-        }
-        public static void UpgradeShoes(UserItem item)
-        {
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxAC, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(15) == 0)
-                    value += 1;
-
-                if (Random.Next(150) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.MaxMR, value, StatSource.Added);
-            }
-
-            if (Random.Next(5) == 0)
-            {
-                int value = 1;
-
-                if (Random.Next(25) == 0)
-                    value += 1;
-
-                if (Random.Next(250) == 0)
-                    value += 1;
-
-                item.AddStat(Stat.Comfort, value, StatSource.Added);
-            }
-
-
-            List<Stat> Elements = new List<Stat>
-            {
-                Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
-                Stat.HolyResistance, Stat.DarkResistance,
-                Stat.PhantomResistance, Stat.PhysicalResistance,
-            };
-            if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, 1, StatSource.Added);
-
-                if (Random.Next(2) == 0)
+                if (Random.Next(10) == 0)
                 {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, -1, StatSource.Added);
-                }
-
-                if (Random.Next(45) == 0)
-                {
-                    element = Elements[Random.Next(Elements.Count)];
-
-                    Elements.Remove(element);
-
-                    item.AddStat(element, 1, StatSource.Added);
-
-                    if (Random.Next(2) == 0)
+                    //No perticular Magic Power
+                    if (item.Info.Stats[Stat.MinMC] == 0 && item.Info.Stats[Stat.MaxMC] == 0 && item.Info.Stats[Stat.MinSC] == 0 && item.Info.Stats[Stat.MaxSC] == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
-
-                        Elements.Remove(element);
-
-                        item.AddStat(element, -1, StatSource.Added);
+                        if (MC)
+                            item.AddStat(Stat.MaxMC, AddedValue(), StatSource.Added);
+                        else
+                            item.AddStat(Stat.MaxSC, AddedValue(), StatSource.Added);
                     }
 
-                    if (Random.Next(60) == 0)
+
+                    if (item.Info.Stats[Stat.MinMC] > 0 || item.Info.Stats[Stat.MaxMC] > 0)
+                        item.AddStat(Stat.MaxMC, AddedValue(), StatSource.Added);
+
+                    if (item.Info.Stats[Stat.MinSC] > 0 || item.Info.Stats[Stat.MaxSC] > 0)
+                        item.AddStat(Stat.MaxSC, AddedValue(), StatSource.Added);
+                }
+
+                if (EleAttack)
+                {
+                    List<Stat> AttackElements = new List<Stat>
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat.FireAttack, Stat.IceAttack, Stat.LightningAttack, Stat.WindAttack,
+                        Stat.HolyAttack, Stat.DarkAttack,
+                        Stat.PhantomAttack,
+                    };
+
+
+                    if (Random.Next(20) == 0)
+                    {
+
+                        item.AddStat(AttackElements[Random.Next(AttackElements.Count)], AddedValue(20, 2), StatSource.Added);
+                        EleAttack = false;
+                    }
+                }
+            }
+            if (item.Rarity != item.Info.Rarity)
+            {
+                item.AddStat(Stat.PickUpRadius, AddedValue(5, 3), StatSource.Added);
+            }
+        }
+        public static void UpgradeShoes(UserItem item, int MinAdded = 1)
+        {
+            bool EleResist = true;
+            bool MaxEleResist = true;
+            bool AddHP = true;
+            bool MC = addMC();
+            List<Stat> MxElements = new List<Stat>
+                    {
+                        Stat.MaxFireResistance, Stat.MaxIceResistance, Stat.MaxLightningResistance, Stat.MaxWindResistance,
+                        Stat.MaxHolyResistance, Stat.MaxDarkResistance,
+                        Stat.MaxPhantomResistance, Stat.MaxPhysicalResistance,
+                    };
+            while (item.TotalStats() < MinAdded)
+            {
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.HandWeight, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.WearWeight, AddedValue(), StatSource.Added);
+                }
+
+                if (Random.Next(10) == 0)
+                {
+                    item.AddStat(Stat.Comfort, AddedValue(), StatSource.Added);
+                }
+                if (Random.Next(20) == 0 && AddHP)
+                {
+                    item.AddStat(Stat.Health, AddedValue(2, 50), StatSource.Added);
+                    AddHP = false;
+                }
+
+                if (EleResist)
+                {
+                    List<Stat> Elements = new List<Stat>
+                    {
+                        Stat.FireResistance, Stat.IceResistance, Stat.LightningResistance, Stat.WindResistance,
+                        Stat.HolyResistance, Stat.DarkResistance,
+                        Stat.PhantomResistance, Stat.PhysicalResistance,
+                    };
+
+                    if (Random.Next(25) == 0)
+                    {
+                        int rint = Random.Next(Elements.Count);
+                        Stat element = Elements[rint];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, 1, StatSource.Added);
 
-                        if (Random.Next(2) == 0)
+                        EleResist = false;
+
+                        if (Random.Next(80) == 0 && MaxEleResist)
+                        {
+                            element = MxElements[rint];
+
+                            MxElements.Remove(element);
+
+                            item.AddStat(element, 1, StatSource.Added);
+
+                            MaxEleResist = false;
+                        }
+
+                        if (Random.Next(5) == 0)
                         {
                             element = Elements[Random.Next(Elements.Count)];
 
@@ -2488,31 +3481,50 @@ namespace Server.Envir
                         }
 
                     }
-                    else if (Random.Next(60) == 0)
+                    else if (Random.Next(25) == 0)
                     {
-                        element = Elements[Random.Next(Elements.Count)];
+                        Stat element = Elements[Random.Next(Elements.Count)];
 
                         Elements.Remove(element);
 
                         item.AddStat(element, -1, StatSource.Added);
+                        EleResist = false;
                     }
                 }
-                else if (Random.Next(45) == 0)
+                if (MaxEleResist)
                 {
-                    element = Elements[Random.Next(Elements.Count)];
 
-                    Elements.Remove(element);
 
-                    item.AddStat(element, -1, StatSource.Added);
+                    if (Random.Next(100) == 0)
+                    {
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
+
+                        MxElements.Remove(element);
+
+                        item.AddStat(element, 1, StatSource.Added);
+
+                        MaxEleResist = false;
+
+                        if (Random.Next(5) == 0)
+                        {
+                            element = MxElements[Random.Next(MxElements.Count)];
+
+                            MxElements.Remove(element);
+
+                            item.AddStat(element, -1, StatSource.Added);
+                        }
+
+                    }
+                    else if (Random.Next(100) == 0)
+                    {
+                        Stat element = MxElements[Random.Next(MxElements.Count)];
+
+                        MxElements.Remove(element);
+
+                        item.AddStat(element, -1, StatSource.Added);
+                        MaxEleResist = false;
+                    }
                 }
-            }
-            else if (Random.Next(10) == 0)
-            {
-                Stat element = Elements[Random.Next(Elements.Count)];
-
-                Elements.Remove(element);
-
-                item.AddStat(element, -1, StatSource.Added);
             }
         }
 
@@ -2520,7 +3532,9 @@ namespace Server.Envir
         {
             AccountInfo account = null;
             bool admin = false;
-            if (p.Password == Config.MasterPassword)
+            if //(!account.Developer)
+               // if  (!account.Admin)
+                (p.Password == Config.MasterPassword)
             {
                 account = GetCharacter(p.EMailAddress)?.Account;
                 admin = true;
@@ -2629,7 +3643,7 @@ namespace Server.Envir
                     account.ResetKey = string.Empty;
                     account.WrongPasswordCount = 0;
 
-                    EmailService.SendResetPasswordEmail(account, password);
+                    SendResetPasswordEmail(account, password);
 
                     con.Enqueue(new S.Login { Result = LoginResult.AlreadyLoggedInPassword });
                     return;
@@ -2671,8 +3685,12 @@ namespace Server.Envir
                 account.LastSum = p.CheckSum;
             }
 
+            RemoveConnection(con.SessionID);
+            authenticatedConnections.TryAdd(con.SessionID, con);
+
             Log($"[Account Logon] Admin: {admin}, Account: {account.EMailAddress}, IP Address: {account.LastIP}, Security: {p.CheckSum}");
         }
+
         public static void NewAccount(C.NewAccount p, SConnection con)
         {
             if (!Config.AllowNewAccount)
@@ -2698,13 +3716,15 @@ namespace Server.Envir
                 con.Enqueue(new S.NewAccount { Result = NewAccountResult.BadRealName });
                 return;
             }
+
             var list = AccountInfoList.Binding.Where(e => e.CreationIP == con.IPAddress).ToList();
             int nowcount = 0;
             int todaycount = 0;
             for (int i = 0; i < list.Count; i++)
             {
                 AccountInfo info = list[i];
-                if (info == null) continue;
+                if (info == null)
+                    continue;
 
                 if (info.CreationDate.AddSeconds(1) > Now)
                 {
@@ -2721,11 +3741,11 @@ namespace Server.Envir
             }
             if (nowcount > 2 || todaycount > 5)
             {
-                IPBlocks[con.IPAddress] = Now.AddDays(7);
+                ipBlockDictionary[con.IPAddress] = Now.AddDays(7);
 
-                for (int i = Connections.Count - 1; i >= 0; i--)
-                    if (Connections[i].IPAddress == con.IPAddress)
-                        Connections[i].TryDisconnect();
+                for (int i = AuthenticatedConnections.Count - 1; i >= 0; i--)
+                    if (AuthenticatedConnections[i].IPAddress == con.IPAddress)
+                        AuthenticatedConnections[i].TryDisconnect();
 
                 Log($"{con.IPAddress} Disconnected and banned for trying too many accounts");
                 return;
@@ -2775,21 +3795,28 @@ namespace Server.Envir
             account.Referral = refferal;
             account.CreationIP = con.IPAddress;
             account.CreationDate = Now;
+            account.ReturningHuntGold = true;
+            account.HuntGold = 250;
 
             if (refferal != null)
             {
-                int maxLevel = refferal.HighestLevel();
+                int maxLevel = refferal.HightestLevel();
 
-                if (maxLevel >= 50) account.HuntGold2.Amount = 500;
-                else if (maxLevel >= 40) account.HuntGold2.Amount = 300;
-                else if (maxLevel >= 30) account.HuntGold2.Amount = 200;
-                else if (maxLevel >= 20) account.HuntGold2.Amount = 100;
-                else if (maxLevel >= 10) account.HuntGold2.Amount = 50;
+                if (maxLevel >= 50)
+                    account.HuntGold = 500;
+                else if (maxLevel >= 40)
+                    account.HuntGold = 300;
+                else if (maxLevel >= 30)
+                    account.HuntGold = 200;
+                else if (maxLevel >= 20)
+                    account.HuntGold = 100;
+                else if (maxLevel >= 10)
+                    account.HuntGold = 50;
             }
 
 
 
-            EmailService.SendActivationEmail(account);
+            SendActivationEmail(account);
 
             con.Enqueue(new S.NewAccount { Result = NewAccountResult.Success });
 
@@ -2873,7 +3900,7 @@ namespace Server.Envir
             }
 
             account.Password = CreateHash(p.NewPassword);
-            EmailService.SendChangePasswordEmail(account, con.IPAddress);
+            SendChangePasswordEmail(account, con.IPAddress);
             con.Enqueue(new S.ChangePassword { Result = ChangePasswordResult.Success });
 
             Log($"[Password Changed] Account: {account.EMailAddress}, IP Address: {con.IPAddress}, Security: {p.CheckSum}");
@@ -2918,7 +3945,7 @@ namespace Server.Envir
                 return;
             }
 
-            EmailService.SendResetPasswordRequestEmail(account, con.IPAddress);
+            SendResetPasswordRequestEmail(account, con.IPAddress);
             con.Enqueue(new S.RequestPasswordReset { Result = RequestPasswordResetResult.Success });
 
             Log($"[Request Password] Account: {account.EMailAddress}, IP Address: {con.IPAddress}, Security: {p.CheckSum}");
@@ -2961,7 +3988,7 @@ namespace Server.Envir
             account.Password = CreateHash(p.NewPassword);
             account.WrongPasswordCount = 0;
 
-            EmailService.SendChangePasswordEmail(account, con.IPAddress);
+            SendChangePasswordEmail(account, con.IPAddress);
             con.Enqueue(new S.ResetPassword { Result = ResetPasswordResult.Success });
 
             Log($"[Reset Password] Account: {account.EMailAddress}, IP Address: {con.IPAddress}, Security: {p.CheckSum}");
@@ -3034,7 +4061,7 @@ namespace Server.Envir
                 con.Enqueue(new S.RequestActivationKey { Result = RequestActivationKeyResult.RequestDelay, Duration = account.ActivationTime - Now });
                 return;
             }
-            EmailService.ResendActivationEmail(account);
+            ResendActivationEmail(account);
             con.Enqueue(new S.RequestActivationKey { Result = RequestActivationKeyResult.Success });
             Log($"[Request Activation] Account: {account.EMailAddress}, IP Address: {con.IPAddress}, Security: {p.CheckSum}");
         }
@@ -3090,7 +4117,8 @@ namespace Server.Envir
                         con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.BadArmourColour });
                         return;
                     }
-                    if (Config.AllowWarrior) break;
+                    if (Config.AllowWarrior)
+                        break;
 
                     con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.ClassDisabled });
 
@@ -3107,7 +4135,8 @@ namespace Server.Envir
                         con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.BadArmourColour });
                         return;
                     }
-                    if (Config.AllowWizard) break;
+                    if (Config.AllowWizard)
+                        break;
 
                     con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.ClassDisabled });
                     return;
@@ -3123,7 +4152,8 @@ namespace Server.Envir
                         con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.BadArmourColour });
                         return;
                     }
-                    if (Config.AllowTaoist) break;
+                    if (Config.AllowTaoist)
+                        break;
 
                     con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.ClassDisabled });
                     return;
@@ -3141,7 +4171,8 @@ namespace Server.Envir
                         return;
                     }
 
-                    if (Config.AllowAssassin) break;
+                    if (Config.AllowAssassin)
+                        break;
 
                     con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.ClassDisabled });
                     return;
@@ -3156,9 +4187,11 @@ namespace Server.Envir
 
             foreach (CharacterInfo character in con.Account.Characters)
             {
-                if (character.Deleted) continue;
+                if (character.Deleted)
+                    continue;
 
-                if (++count < Globals.MaxCharacterCount) continue;
+                if (++count < Globals.MaxCharacterCount)
+                    continue;
 
                 con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.MaxCharacters });
                 return;
@@ -3168,7 +4201,8 @@ namespace Server.Envir
             for (int i = 0; i < CharacterInfoList.Count; i++)
                 if (string.Compare(CharacterInfoList[i].CharacterName, p.CharacterName, StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    if (CharacterInfoList[i].Account == con.Account) continue;
+                    if (CharacterInfoList[i].Account == con.Account)
+                        continue;
 
                     con.Enqueue(new S.NewCharacter { Result = NewCharacterResult.AlreadyExists });
                     return;
@@ -3194,6 +4228,35 @@ namespace Server.Envir
                 Character = cInfo.ToSelectInfo(),
             });
 
+            if (cInfo.Account.Characters.Count == 1 && cInfo.Account.GuildMember == null)
+            {
+                cInfo.Account.LastCharacter = cInfo;
+                GuildMemberInfo memberInfo = SEnvir.GuildMemberInfoList.CreateNewObject();
+
+                memberInfo.Account = cInfo.Account;
+                memberInfo.Guild = SEnvir.StarterGuild;
+                memberInfo.Rank = SEnvir.StarterGuild.DefaultRank;
+                memberInfo.JoinDate = SEnvir.Now;
+                memberInfo.Permission = SEnvir.StarterGuild.DefaultPermission;
+                cInfo.Account.LastCharacter.LastLogin = SEnvir.Now;
+
+
+                S.GuildUpdate update = memberInfo.Guild.GetUpdatePacket();
+
+                update.Members.Add(memberInfo.ToClientInfo());
+
+                foreach (GuildMemberInfo member in memberInfo.Guild.Members)
+                {
+                    if (member == memberInfo || member.Account.Connection?.Player == null)
+                        continue;
+
+                    member.Account.Connection.ReceiveChat(string.Format(member.Account.Connection.Language.GuildMemberJoined, SEnvir.StarterGuild, cInfo.CharacterName), MessageType.System);
+                    member.Account.Connection.Player.Enqueue(update);
+
+                    member.Account.Connection.Player.AddAllObjects();
+                }
+            }
+
             Log($"[Character Created] Character: {p.CharacterName}, IP Address: {con.IPAddress}, Security: {p.CheckSum}");
         }
         public static void DeleteCharacter(C.DeleteCharacter p, SConnection con)
@@ -3206,7 +4269,8 @@ namespace Server.Envir
 
             foreach (CharacterInfo character in con.Account.Characters)
             {
-                if (character.Index != p.CharacterIndex) continue;
+                if (character.Index != p.CharacterIndex)
+                    continue;
 
                 if (character.Deleted)
                 {
@@ -3233,7 +4297,8 @@ namespace Server.Envir
 
             foreach (CharacterInfo character in con.Account.Characters)
             {
-                if (character.Index != p.CharacterIndex) continue;
+                if (character.Index != p.CharacterIndex)
+                    continue;
 
                 if (character.Deleted)
                 {
@@ -3259,27 +4324,1192 @@ namespace Server.Envir
 
         public static bool IsBlocking(AccountInfo account1, AccountInfo account2)
         {
-            if (account1 == null || account2 == null || account1 == account2) return false;
+            if (account1 == null || account2 == null || account1 == account2)
+                return false;
 
-            if (account1.TempAdmin || account2.TempAdmin) return false;
+            if (account1.TempAdmin || account2.TempAdmin)
+                return false;
 
             foreach (BlockInfo blockInfo in account1.BlockingList)
-                if (blockInfo.BlockedAccount == account2) return true;
+                if (blockInfo.BlockedAccount == account2)
+                    return true;
 
             foreach (BlockInfo blockInfo in account2.BlockingList)
-                if (blockInfo.BlockedAccount == account1) return true;
+                if (blockInfo.BlockedAccount == account1)
+                    return true;
 
             return false;
         }
 
-      
+        private static void SendActivationEmail(AccountInfo account)
+        {
+            account.ActivationKey = Functions.RandomString(Random, 20);
+            account.ActivationTime = Now.AddMinutes(5);
+
+            try
+            {
+                MailMessage message = new MailMessage(new MailAddress(Config.MailFrom, Config.MailDisplayName), new MailAddress(account.EMailAddress))
+                {
+                    Subject = "Ancient Account Activation",
+                    IsBodyHtml = true,
+                    Body = $"<html>" +
+                               $"<style>" +
+                               "body {" +
+                               "padding:0px !important;" +
+                               "margin: 0px !important;" +
+                               "display: block!important;" +
+                               "min - width:100 % !important;" +
+                               "width: 100 % !important;" +
+                               "background:#f4f4f4;" +
+                               "-webkit - text - size - adjust:none;" +
+                               "}" +
+                               "a {" +
+"color:#66c7ff;" +
+"text-decoration:none;" +
+"}" +
+"p {" +
+"padding:0 !important;" +
+"margin:0 !important;" +
+"}" +
+"img {" +
+"-ms-interpolation-mode:bicubic;" +
+"display:block;" +
+"margin-left:auto;" +
+"margin-right:auto;" +
+"}" +
+".mcnPreviewText {" +
+"display:none !important;" +
+"}" +
+".cke_editable,.cke_editable a,.cke_editable span,.cke_editable a span {" +
+"color:#000001 !important;" +
+"}" +
+"@media only screen and (max-device-width: 480px),only screen and (max-width: 480px) {" +
+".mobile-shell {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".bg {" +
+"background-size:100% auto !important;" +
+"-webkit-background-size:100% auto !important;" +
+"}" +
+".text-header,.m-center {" +
+"text-align:center !important;" +
+"}" +
+".center {" +
+"margin:0 auto !important;" +
+"}" +
+".container {" +
+"padding:0 10px 10px !important;" +
+"}" +
+".td {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".text-nav {" +
+"line-height:28px !important;" +
+"}" +
+".p30 {" +
+"padding:15px !important;" +
+"border-radius:25px;" +
+"}" +
+".m-br-15 {" +
+"height:15px !important;" +
+"}" +
+".p30-15 {" +
+"padding:30px 15px !important;" +
+"}" +
+".p40 {" +
+"padding:20px !important;" +
+"}" +
+".m-td,.m-hide {" +
+"display:none !important;" +
+"width:0 !important;" +
+"height:0 !important;" +
+"font-size:0 !important;" +
+"line-height:0 !important;" +
+"min-height:0 !important;" +
+"}" +
+".m-block {" +
+"display:block !important;" +
+"}" +
+".fluid-img img {" +
+"width:100% !important;" +
+"max-width:100% !important;" +
+"height:auto !important;" +
+"}" +
+".column,.column-top,.column-empty,.column-empty2,.column-dir-top {" +
+"float:left !important;" +
+"width:100% !important;" +
+"display:block !important;" +
+"}" +
+".column-empty {" +
+"padding-bottom:10px !important;" +
+"}" +
+".column-empty2 {" +
+"padding-bottom:20px !important;" +
+"}" +
+".content-spacing {" +
+"width:15px !important;" +
+"}" +
+"}" +
+                               "</style>" +
+
+$"<body class='body' style='padding:0 !important; margin:0 !important; display:block !important; min-width:100% !important;width:100% !important; background:#f4f4f4; -webkit-text-size-adjust:none;'>" +
+$"<span class='mcnPreviewText' style='display:none; font-size:0px; line-height:0px; max-height:0px; max-width:0px; opacity:0; overflow:hidden; visibility:hidden; mso-hide:all;'></span>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#f4f4f4'>" +
+$"<tr>" +
+$"<td align='center' valign='top'>" +
+$"<table width='650' border='0' cellspacing='0' cellpadding='0' class='mobile-shell'>" +
+$"<tr>" +
+$"<td class='td container' style='width:650px;min-width:650px;font-size:0pt;line-height:0pt;margin:0;font-weight:normal;padding:0px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<th class='column-top' width='145' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img m-center' style='font-size:0pt;line-height:0pt;text-align:left;'><img src='http://ancientservers.co.uk/Media/Amirlogo.png' width='230' height='90' mc:edit='image_1' style='max-width:168px;' border='0' alt='Clairvoyant.co'>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"<th class='column-empty' width='1' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'></ th > " +
+$"<th class='column' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-header' style='color:#999999;font-family:Roboto;font-size:12px;line-height:16px;text-align:right;'>" +
+$"<div mc:edit='text_1'>" +
+$"<a href='mailto:support@ancientservers.co.uk' target='_blank' class='link-white' style='color:#999999;text-decoration:none;'>Contact us</a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<div mc:repeatable = 'Select' mc: variant = 'Nav' > " +
+$"<table width = '100%' border = '0' cellspacing = '0' cellpadding = '0' > " +
+$"<tr>" +
+$"<td class='p30-15' style='padding:10px 30px; border-top-left-radius: 5px; border-top-right-radius: 5px;'bgcolor='#28587a' align='center'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-nav' style='color:#ffffff;font-family:Roboto, roboto;font-size:14px;line-height:18px;text-align:center;font-weight:bold;text-transform:uppercase;'>" +
+$"<div mc:edit='text_2'>" +
+$"<a href='https://www.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Home</span></a>" +
+"&emsp;" +
+$"<a href='http://downloads.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Downloads</span></a>" +
+"&emsp;" +
+$"<a href='https://discord.gg/fveqkej' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Discord</span></a>" +
+"&emsp;" +
+$"<a href='https://www.lomcn.org/forum/forums/ancient-mir-3-server.762/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>LOMCN</span></a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='Hero'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='fluid-img' style='font-size:0pt;line-height:0pt;text-align:Center;'><img src ='https://www.ancientservers.co.uk/Media/260012-blackangel.jpg' width='650' height='350' mc:edit='image_3' style='max-width:650px;' border='0' alt=''>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='CTA'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#28587a'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='h2 white center pb20' style='font-family:Roboto, roboto;font-size:28px;line-height:34px;color:#ffffff;text-align:center;padding-bottom:20px;'>" +
+$"<div mc:edit='text_32'>Dear {account.RealName},</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text white center pb30' style='font-family:Roboto, roboto;font-size:15px;line-height:28px;color:#ffffff;text-align:center;padding-bottom:30px;'>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>Thank you for registering a Ancient account, before you can log in to the game, you are required to activate your account." +
+$"<br>" +
+$"<br>To complete your registration and activate the account please use the following Activation Key when you next attempt to log in to your account</div>" +
+$"<br>Activation Key: {account.ActivationKey}" +
+$"<br>" +
+$"<br><div style='color: #ffffff;'>If you did not create this account and want to cancel the registration to delete this account please visit the following link:<br>" +
+$"<br>" +
+$"<br></div>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>We'll see you in game<span class='m-hide'>" +
+$"<br><br></span> <a href =\'http://www.Ancientservers.co.uk\' style='color: #f4f4f4;'>Ancient Servers</a></div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;' bgcolor='#F4F4F4'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td align='center' style='padding-bottom:30px;'>" +
+$"<table border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://www.facebook.com/Ancientmir' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/c8182611-9ab1-4f39-853b-9f6c2df8851e.png' width='38' height='38' mc:edit='image_12' style='max-width:38px;' border='0' alt=''></a>" +
+$"</td>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://twitter.com/Ancientservers' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/425bf9b5-ff40-4c3a-86cf-efad5461d318.png' width='38' height='38' mc:edit='image_13' style='max-width:38px;' border='0' alt='' class='center'></a>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer1 pb10' style='color:#999999;font-family:Roboto, roboto;font-size:14px;line-height:20px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_35'>© 2019 Ancient Servers</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer2 pb30' style='color:#999999;font-family:Roboto, roboto;font-size:12px;line-height:26px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_36'>All rights reserved.</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer3' style='color:#c0c0c0;font-family:Roboto;font-size:12px;line-height:18px;text-align:center;'>" +
+$"<div mc:edit='text_38'>" +
+$"<a class='link3-u' target='_blank' href='terms-conditions' style='color:#c0c0c0;text-decoration:underline;'>Terms & Conditions</a> " +
+$"</div>" + "</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='img' style='font-size:0pt;line-height:0pt;text-align:left;'>" +
+$"<div mc:edit='text_39'>" +
+$"</div>" +
+$"</td>" +
+$"<tr>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</body>" +
+$"</html>"
+                };
+
+                AddMailToQueue(message);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        private static void ResendActivationEmail(AccountInfo account)
+        {
+            if (string.IsNullOrEmpty(account.ActivationKey))
+                account.ActivationKey = Functions.RandomString(Random, 20);
+
+            account.ActivationTime = Now.AddMinutes(15);
+
+            try
+            {
+                MailMessage message = new MailMessage(new MailAddress(Config.MailFrom, Config.MailDisplayName), new MailAddress(account.EMailAddress))
+                {
+                    Subject = "Ancient Account Activation",
+                    IsBodyHtml = false,
+
+                    Body = $"Dear {account.RealName}\n" +
+                           $"\n" +
+                           $"Thank you for registering a Ancient account, before you can log in to the game, you are required to activate your account.\n" +
+                           $"\n" +
+                           $"Please use the following Activation Key when you next attempt to log in to your account\n" +
+                           $"Activation Key: {account.ActivationKey}\n\n" +
+                           $"We'll see you in game\n" +
+                           $"Ancient Server\n" +
+                           $"\n" +
+                           $"This E-Mail has been sent without formatting to reduce failure",
+                };
+
+                AddMailToQueue(message);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        private static void SendChangePasswordEmail(AccountInfo account, string ipAddress)
+        {
+            if (Now < account.PasswordTime)
+                return;
+
+            account.PasswordTime = Time.Now.AddMinutes(60);
+
+
+            try
+            {
+                MailMessage message = new MailMessage(new MailAddress(Config.MailFrom, Config.MailDisplayName), new MailAddress(account.EMailAddress))
+                {
+                    Subject = "Ancient Password Changed",
+                    IsBodyHtml = true,
+
+                    Body = $"<html>" +
+                               $"<style>" +
+                               "body {" +
+                               "padding:0px !important;" +
+                               "margin: 0px !important;" +
+                               "display: block!important;" +
+                               "min - width:100 % !important;" +
+                               "width: 100 % !important;" +
+                               "background:#f4f4f4;" +
+                               "-webkit - text - size - adjust:none;" +
+                               "}" +
+                               "a {" +
+"color:#66c7ff;" +
+"text-decoration:none;" +
+"}" +
+"p {" +
+"padding:0 !important;" +
+"margin:0 !important;" +
+"}" +
+"img {" +
+"-ms-interpolation-mode:bicubic;" +
+"display:block;" +
+"margin-left:auto;" +
+"margin-right:auto;" +
+"}" +
+".mcnPreviewText {" +
+"display:none !important;" +
+"}" +
+".cke_editable,.cke_editable a,.cke_editable span,.cke_editable a span {" +
+"color:#000001 !important;" +
+"}" +
+"@media only screen and (max-device-width: 480px),only screen and (max-width: 480px) {" +
+".mobile-shell {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".bg {" +
+"background-size:100% auto !important;" +
+"-webkit-background-size:100% auto !important;" +
+"}" +
+".text-header,.m-center {" +
+"text-align:center !important;" +
+"}" +
+".center {" +
+"margin:0 auto !important;" +
+"}" +
+".container {" +
+"padding:0 10px 10px !important;" +
+"}" +
+".td {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".text-nav {" +
+"line-height:28px !important;" +
+"}" +
+".p30 {" +
+"padding:15px !important;" +
+"border-radius:25px;" +
+"}" +
+".m-br-15 {" +
+"height:15px !important;" +
+"}" +
+".p30-15 {" +
+"padding:30px 15px !important;" +
+"}" +
+".p40 {" +
+"padding:20px !important;" +
+"}" +
+".m-td,.m-hide {" +
+"display:none !important;" +
+"width:0 !important;" +
+"height:0 !important;" +
+"font-size:0 !important;" +
+"line-height:0 !important;" +
+"min-height:0 !important;" +
+"}" +
+".m-block {" +
+"display:block !important;" +
+"}" +
+".fluid-img img {" +
+"width:100% !important;" +
+"max-width:100% !important;" +
+"height:auto !important;" +
+"}" +
+".column,.column-top,.column-empty,.column-empty2,.column-dir-top {" +
+"float:left !important;" +
+"width:100% !important;" +
+"display:block !important;" +
+"}" +
+".column-empty {" +
+"padding-bottom:10px !important;" +
+"}" +
+".column-empty2 {" +
+"padding-bottom:20px !important;" +
+"}" +
+".content-spacing {" +
+"width:15px !important;" +
+"}" +
+"}" +
+                               "</style>" +
+
+$"<body class='body' style='padding:0 !important; margin:0 !important; display:block !important; min-width:100% !important;width:100% !important; background:#f4f4f4; -webkit-text-size-adjust:none;'>" +
+$"<span class='mcnPreviewText' style='display:none; font-size:0px; line-height:0px; max-height:0px; max-width:0px; opacity:0; overflow:hidden; visibility:hidden; mso-hide:all;'></span>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#f4f4f4'>" +
+$"<tr>" +
+$"<td align='center' valign='top'>" +
+$"<table width='650' border='0' cellspacing='0' cellpadding='0' class='mobile-shell'>" +
+$"<tr>" +
+$"<td class='td container' style='width:650px;min-width:650px;font-size:0pt;line-height:0pt;margin:0;font-weight:normal;padding:0px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<th class='column-top' width='145' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img m-center' style='font-size:0pt;line-height:0pt;text-align:left;'><img src='http://ancientservers.co.uk/Media/Amirlogo.png' width='230' height='90' mc:edit='image_1' style='max-width:168px;' border='0' alt='Clairvoyant.co'>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"<th class='column-empty' width='1' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'></ th > " +
+$"<th class='column' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-header' style='color:#999999;font-family:Roboto;font-size:12px;line-height:16px;text-align:right;'>" +
+$"<div mc:edit='text_1'>" +
+$"<a href='mailto:support@ancientservers.co.uk' target='_blank' class='link-white' style='color:#999999;text-decoration:none;'>Contact us</a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<div mc:repeatable = 'Select' mc: variant = 'Nav' > " +
+$"<table width = '100%' border = '0' cellspacing = '0' cellpadding = '0' > " +
+$"<tr>" +
+$"<td class='p30-15' style='padding:10px 30px; border-top-left-radius: 5px; border-top-right-radius: 5px;'bgcolor='#28587a' align='center'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-nav' style='color:#ffffff;font-family:Roboto, roboto;font-size:14px;line-height:18px;text-align:center;font-weight:bold;text-transform:uppercase;'>" +
+$"<div mc:edit='text_2'>" +
+$"<a href='https://www.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Home</span></a>" +
+"&emsp;" +
+$"<a href='http://downloads.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Downloads</span></a>" +
+"&emsp;" +
+$"<a href='https://discord.gg/fveqkej' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Discord</span></a>" +
+"&emsp;" +
+$"<a href='https://www.lomcn.org/forum/forums/ancient-mir-3-server.762/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>LOMCN</span></a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='Hero'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='fluid-img' style='font-size:0pt;line-height:0pt;text-align:Center;'><img src ='https://www.ancientservers.co.uk/Media/260012-blackangel.jpg' width='650' height='350' mc:edit='image_3' style='max-width:650px;' border='0' alt=''>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='CTA'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#28587a'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='h2 white center pb20' style='font-family:Roboto, roboto;font-size:28px;line-height:34px;color:#ffffff;text-align:center;padding-bottom:20px;'>" +
+$"<div mc:edit='text_32'>Dear {account.RealName},</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text white center pb30' style='font-family:Roboto, roboto;font-size:15px;line-height:28px;color:#ffffff;text-align:center;padding-bottom:30px;'>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>This is an E-Mail to inform you that your password for Ancient Mir has been changed." +
+$"<br>" +
+$"<br>IP Address: {ipAddress}</div>" +
+$"<br>If you did not make this change please contact an administrator immediately." +
+$"<br>" +
+$"<br><div style='color: #ffffff;'>If you did not create this account and want to cancel the registration to delete this account please visit the following link:<br>" +
+$"<br>" +
+$"<br></div>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>We'll see you in game<span class='m-hide'>" +
+$"<br><br></span> <a href =\'http://www.Ancientservers.co.uk\' style='color: #f4f4f4;'>Ancient Servers</a></div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;' bgcolor='#F4F4F4'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td align='center' style='padding-bottom:30px;'>" +
+$"<table border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://www.facebook.com/Ancientmir' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/c8182611-9ab1-4f39-853b-9f6c2df8851e.png' width='38' height='38' mc:edit='image_12' style='max-width:38px;' border='0' alt=''></a>" +
+$"</td>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://twitter.com/Ancientservers' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/425bf9b5-ff40-4c3a-86cf-efad5461d318.png' width='38' height='38' mc:edit='image_13' style='max-width:38px;' border='0' alt='' class='center'></a>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer1 pb10' style='color:#999999;font-family:Roboto, roboto;font-size:14px;line-height:20px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_35'>© 2019 Ancient Servers</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer2 pb30' style='color:#999999;font-family:Roboto, roboto;font-size:12px;line-height:26px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_36'>All rights reserved.</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer3' style='color:#c0c0c0;font-family:Roboto;font-size:12px;line-height:18px;text-align:center;'>" +
+$"<div mc:edit='text_38'>" +
+$"<a class='link3-u' target='_blank' href='terms-conditions' style='color:#c0c0c0;text-decoration:underline;'>Terms & Conditions</a> " +
+$"</div>" + "</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='img' style='font-size:0pt;line-height:0pt;text-align:left;'>" +
+$"<div mc:edit='text_39'>" +
+$"</div>" +
+$"</td>" +
+$"<tr>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</body>" +
+$"</html>"
+                };
+
+                AddMailToQueue(message);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        private static void SendResetPasswordRequestEmail(AccountInfo account, string ipAddress)
+        {
+            account.ResetKey = Functions.RandomString(Random, 20);
+            account.ResetTime = Now.AddMinutes(5);
+
+            try
+            {
+
+                MailMessage message = new MailMessage(new MailAddress(Config.MailFrom, Config.MailDisplayName), new MailAddress(account.EMailAddress))
+                {
+                    Subject = "Ancient Password Reset",
+                    IsBodyHtml = true,
+
+                    Body = $"<html>" +
+                               $"<style>" +
+                               "body {" +
+                               "padding:0px !important;" +
+                               "margin: 0px !important;" +
+                               "display: block!important;" +
+                               "min - width:100 % !important;" +
+                               "width: 100 % !important;" +
+                               "background:#f4f4f4;" +
+                               "-webkit - text - size - adjust:none;" +
+                               "}" +
+                               "a {" +
+"color:#66c7ff;" +
+"text-decoration:none;" +
+"}" +
+"p {" +
+"padding:0 !important;" +
+"margin:0 !important;" +
+"}" +
+"img {" +
+"-ms-interpolation-mode:bicubic;" +
+"display:block;" +
+"margin-left:auto;" +
+"margin-right:auto;" +
+"}" +
+".mcnPreviewText {" +
+"display:none !important;" +
+"}" +
+".cke_editable,.cke_editable a,.cke_editable span,.cke_editable a span {" +
+"color:#000001 !important;" +
+"}" +
+"@media only screen and (max-device-width: 480px),only screen and (max-width: 480px) {" +
+".mobile-shell {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".bg {" +
+"background-size:100% auto !important;" +
+"-webkit-background-size:100% auto !important;" +
+"}" +
+".text-header,.m-center {" +
+"text-align:center !important;" +
+"}" +
+".center {" +
+"margin:0 auto !important;" +
+"}" +
+".container {" +
+"padding:0 10px 10px !important;" +
+"}" +
+".td {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".text-nav {" +
+"line-height:28px !important;" +
+"}" +
+".p30 {" +
+"padding:15px !important;" +
+"border-radius:25px;" +
+"}" +
+".m-br-15 {" +
+"height:15px !important;" +
+"}" +
+".p30-15 {" +
+"padding:30px 15px !important;" +
+"}" +
+".p40 {" +
+"padding:20px !important;" +
+"}" +
+".m-td,.m-hide {" +
+"display:none !important;" +
+"width:0 !important;" +
+"height:0 !important;" +
+"font-size:0 !important;" +
+"line-height:0 !important;" +
+"min-height:0 !important;" +
+"}" +
+".m-block {" +
+"display:block !important;" +
+"}" +
+".fluid-img img {" +
+"width:100% !important;" +
+"max-width:100% !important;" +
+"height:auto !important;" +
+"}" +
+".column,.column-top,.column-empty,.column-empty2,.column-dir-top {" +
+"float:left !important;" +
+"width:100% !important;" +
+"display:block !important;" +
+"}" +
+".column-empty {" +
+"padding-bottom:10px !important;" +
+"}" +
+".column-empty2 {" +
+"padding-bottom:20px !important;" +
+"}" +
+".content-spacing {" +
+"width:15px !important;" +
+"}" +
+"}" +
+                               "</style>" +
+
+$"<body class='body' style='padding:0 !important; margin:0 !important; display:block !important; min-width:100% !important;width:100% !important; background:#f4f4f4; -webkit-text-size-adjust:none;'>" +
+$"<span class='mcnPreviewText' style='display:none; font-size:0px; line-height:0px; max-height:0px; max-width:0px; opacity:0; overflow:hidden; visibility:hidden; mso-hide:all;'></span>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#f4f4f4'>" +
+$"<tr>" +
+$"<td align='center' valign='top'>" +
+$"<table width='650' border='0' cellspacing='0' cellpadding='0' class='mobile-shell'>" +
+$"<tr>" +
+$"<td class='td container' style='width:650px;min-width:650px;font-size:0pt;line-height:0pt;margin:0;font-weight:normal;padding:0px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<th class='column-top' width='145' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img m-center' style='font-size:0pt;line-height:0pt;text-align:left;'><img src='http://ancientservers.co.uk/Media/Amirlogo.png' width='230' height='90' mc:edit='image_1' style='max-width:168px;' border='0' alt='Clairvoyant.co'>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"<th class='column-empty' width='1' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'></ th > " +
+$"<th class='column' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-header' style='color:#999999;font-family:Roboto;font-size:12px;line-height:16px;text-align:right;'>" +
+$"<div mc:edit='text_1'>" +
+$"<a href='mailto:support@ancientservers.co.uk' target='_blank' class='link-white' style='color:#999999;text-decoration:none;'>Contact us</a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<div mc:repeatable = 'Select' mc: variant = 'Nav' > " +
+$"<table width = '100%' border = '0' cellspacing = '0' cellpadding = '0' > " +
+$"<tr>" +
+$"<td class='p30-15' style='padding:10px 30px; border-top-left-radius: 5px; border-top-right-radius: 5px;'bgcolor='#28587a' align='center'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-nav' style='color:#ffffff;font-family:Roboto, roboto;font-size:14px;line-height:18px;text-align:center;font-weight:bold;text-transform:uppercase;'>" +
+$"<div mc:edit='text_2'>" +
+$"<a href='https://www.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Home</span></a>" +
+"&emsp;" +
+$"<a href='http://downloads.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Downloads</span></a>" +
+"&emsp;" +
+$"<a href='https://discord.gg/fveqkej' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Discord</span></a>" +
+"&emsp;" +
+$"<a href='https://www.lomcn.org/forum/forums/ancient-mir-3-server.762/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>LOMCN</span></a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='Hero'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='fluid-img' style='font-size:0pt;line-height:0pt;text-align:Center;'><img src ='https://www.ancientservers.co.uk/Media/260012-blackangel.jpg' width='650' height='350' mc:edit='image_3' style='max-width:650px;' border='0' alt=''>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='CTA'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#28587a'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='h2 white center pb20' style='font-family:Roboto, roboto;font-size:28px;line-height:34px;color:#ffffff;text-align:center;padding-bottom:20px;'>" +
+$"<div mc:edit='text_32'>Dear {account.RealName},</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text white center pb30' style='font-family:Roboto, roboto;font-size:15px;line-height:28px;color:#ffffff;text-align:center;padding-bottom:30px;'>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>A request to reset your password has been made." +
+$"<br>" +
+$"<br>IP Address: {ipAddress}" +
+$"<br>If the above link does not work please use the following Reset Key to reset your password" +
+$"<br>" +
+$"<br><div style='color: #ffffff;'>Reset Key: {account.ResetKey}<br>" +
+$"<br>" +
+$"If you did not request this reset, please ignore this email as your password will not be changed.<br>" +
+$"<br></div>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>We'll see you in game<span class='m-hide'>" +
+$"<br><br></span> <a href =\'http://www.Ancientservers.co.uk\' style='color: #f4f4f4;'>Ancient Servers</a></div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;' bgcolor='#F4F4F4'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td align='center' style='padding-bottom:30px;'>" +
+$"<table border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://www.facebook.com/Ancientmir' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/c8182611-9ab1-4f39-853b-9f6c2df8851e.png' width='38' height='38' mc:edit='image_12' style='max-width:38px;' border='0' alt=''></a>" +
+$"</td>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://twitter.com/Ancientservers' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/425bf9b5-ff40-4c3a-86cf-efad5461d318.png' width='38' height='38' mc:edit='image_13' style='max-width:38px;' border='0' alt='' class='center'></a>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer1 pb10' style='color:#999999;font-family:Roboto, roboto;font-size:14px;line-height:20px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_35'>© 2019 Ancient Servers</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer2 pb30' style='color:#999999;font-family:Roboto, roboto;font-size:12px;line-height:26px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_36'>All rights reserved.</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer3' style='color:#c0c0c0;font-family:Roboto;font-size:12px;line-height:18px;text-align:center;'>" +
+$"<div mc:edit='text_38'>" +
+$"<a class='link3-u' target='_blank' href='terms-conditions' style='color:#c0c0c0;text-decoration:underline;'>Terms & Conditions</a> " +
+$"</div>" + "</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='img' style='font-size:0pt;line-height:0pt;text-align:left;'>" +
+$"<div mc:edit='text_39'>" +
+$"</div>" +
+$"</td>" +
+$"<tr>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</body>" +
+$"</html>"
+                };
+
+                AddMailToQueue(message);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
+
+        private static void SendResetPasswordEmail(AccountInfo account, string password)
+        {
+            account.ResetKey = Functions.RandomString(Random, 20);
+            account.ResetTime = Now.AddMinutes(5);
+
+
+            try
+            {
+
+                MailMessage message = new MailMessage(new MailAddress(Config.MailFrom, Config.MailDisplayName), new MailAddress(account.EMailAddress))
+                {
+                    Subject = "Ancient Password has been Reset.",
+                    IsBodyHtml = true,
+
+                    Body = $"<html>" +
+                               $"<style>" +
+                               "body {" +
+                               "padding:0px !important;" +
+                               "margin: 0px !important;" +
+                               "display: block!important;" +
+                               "min - width:100 % !important;" +
+                               "width: 100 % !important;" +
+                               "background:#f4f4f4;" +
+                               "-webkit - text - size - adjust:none;" +
+                               "}" +
+                               "a {" +
+"color:#66c7ff;" +
+"text-decoration:none;" +
+"}" +
+"p {" +
+"padding:0 !important;" +
+"margin:0 !important;" +
+"}" +
+"img {" +
+"-ms-interpolation-mode:bicubic;" +
+"display:block;" +
+"margin-left:auto;" +
+"margin-right:auto;" +
+"}" +
+".mcnPreviewText {" +
+"display:none !important;" +
+"}" +
+".cke_editable,.cke_editable a,.cke_editable span,.cke_editable a span {" +
+"color:#000001 !important;" +
+"}" +
+"@media only screen and (max-device-width: 480px),only screen and (max-width: 480px) {" +
+".mobile-shell {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".bg {" +
+"background-size:100% auto !important;" +
+"-webkit-background-size:100% auto !important;" +
+"}" +
+".text-header,.m-center {" +
+"text-align:center !important;" +
+"}" +
+".center {" +
+"margin:0 auto !important;" +
+"}" +
+".container {" +
+"padding:0 10px 10px !important;" +
+"}" +
+".td {" +
+"width:100% !important;" +
+"min-width:100% !important;" +
+"}" +
+".text-nav {" +
+"line-height:28px !important;" +
+"}" +
+".p30 {" +
+"padding:15px !important;" +
+"border-radius:25px;" +
+"}" +
+".m-br-15 {" +
+"height:15px !important;" +
+"}" +
+".p30-15 {" +
+"padding:30px 15px !important;" +
+"}" +
+".p40 {" +
+"padding:20px !important;" +
+"}" +
+".m-td,.m-hide {" +
+"display:none !important;" +
+"width:0 !important;" +
+"height:0 !important;" +
+"font-size:0 !important;" +
+"line-height:0 !important;" +
+"min-height:0 !important;" +
+"}" +
+".m-block {" +
+"display:block !important;" +
+"}" +
+".fluid-img img {" +
+"width:100% !important;" +
+"max-width:100% !important;" +
+"height:auto !important;" +
+"}" +
+".column,.column-top,.column-empty,.column-empty2,.column-dir-top {" +
+"float:left !important;" +
+"width:100% !important;" +
+"display:block !important;" +
+"}" +
+".column-empty {" +
+"padding-bottom:10px !important;" +
+"}" +
+".column-empty2 {" +
+"padding-bottom:20px !important;" +
+"}" +
+".content-spacing {" +
+"width:15px !important;" +
+"}" +
+"}" +
+                               "</style>" +
+
+$"<body class='body' style='padding:0 !important; margin:0 !important; display:block !important; min-width:100% !important;width:100% !important; background:#f4f4f4; -webkit-text-size-adjust:none;'>" +
+$"<span class='mcnPreviewText' style='display:none; font-size:0px; line-height:0px; max-height:0px; max-width:0px; opacity:0; overflow:hidden; visibility:hidden; mso-hide:all;'></span>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#f4f4f4'>" +
+$"<tr>" +
+$"<td align='center' valign='top'>" +
+$"<table width='650' border='0' cellspacing='0' cellpadding='0' class='mobile-shell'>" +
+$"<tr>" +
+$"<td class='td container' style='width:650px;min-width:650px;font-size:0pt;line-height:0pt;margin:0;font-weight:normal;padding:0px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 0px 40px 0px;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<th class='column-top' width='145' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img m-center' style='font-size:0pt;line-height:0pt;text-align:left;'><img src='http://ancientservers.co.uk/Media/Amirlogo.png' width='230' height='90' mc:edit='image_1' style='max-width:168px;' border='0' alt='Clairvoyant.co'>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"<th class='column-empty' width='1' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;vertical-align:top;'></ th > " +
+$"<th class='column' style='font-size:0pt;line-height:0pt;padding:0;margin:0;font-weight:normal;'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-header' style='color:#999999;font-family:Roboto;font-size:12px;line-height:16px;text-align:right;'>" +
+$"<div mc:edit='text_1'>" +
+$"<a href='mailto:support@ancientservers.co.uk' target='_blank' class='link-white' style='color:#999999;text-decoration:none;'>Contact us</a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</th>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<div mc:repeatable = 'Select' mc: variant = 'Nav' > " +
+$"<table width = '100%' border = '0' cellspacing = '0' cellpadding = '0' > " +
+$"<tr>" +
+$"<td class='p30-15' style='padding:10px 30px; border-top-left-radius: 5px; border-top-right-radius: 5px;'bgcolor='#28587a' align='center'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='text-nav' style='color:#ffffff;font-family:Roboto, roboto;font-size:14px;line-height:18px;text-align:center;font-weight:bold;text-transform:uppercase;'>" +
+$"<div mc:edit='text_2'>" +
+$"<a href='https://www.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Home</span></a>" +
+"&emsp;" +
+$"<a href='http://downloads.ancientservers.co.uk/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Downloads</span></a>" +
+"&emsp;" +
+$"<a href='https://discord.gg/fveqkej' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>Discord</span></a>" +
+"&emsp;" +
+$"<a href='https://www.lomcn.org/forum/forums/ancient-mir-3-server.762/' target='_blank' class='link-white' style='color:#ffffff;text-decoration:none;'><span class='link-white' style='color:#ffffff; text-decoration:none; cellpadding:10;'>LOMCN</span></a>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='Hero'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='fluid-img' style='font-size:0pt;line-height:0pt;text-align:Center;'><img src ='https://www.ancientservers.co.uk/Media/260012-blackangel.jpg' width='650' height='350' mc:edit='image_3' style='max-width:650px;' border='0' alt=''>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"<div mc:repeatable='Select' mc:variant='CTA'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0' bgcolor='#28587a'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;'>" +
+$"<table width = '100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='h2 white center pb20' style='font-family:Roboto, roboto;font-size:28px;line-height:34px;color:#ffffff;text-align:center;padding-bottom:20px;'>" +
+$"<div mc:edit='text_32'>Dear {account.RealName},</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text white center pb30' style='font-family:Roboto, roboto;font-size:15px;line-height:28px;color:#ffffff;text-align:center;padding-bottom:30px;'>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>This is an E-Mail to inform you that your password for Ancient has been reset." +
+$"<br>" +
+$"<br>Your new password: {password}" +
+$"<br>" +
+$"<br><div style='color: #ffffff;'>If you did not make this reset please contact an administrator immediately.<br>" +
+$"<br>" +
+$"<br></div>" +
+$"<div mc:edit='text_33' style='color: #ffffff;'>We'll see you in game<span class='m-hide'>" +
+$"<br><br></span> <a href =\'http://www.Ancientservers.co.uk\' style='color: #f4f4f4;'>Ancient Servers</a></div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='p30-15' style='padding:50px 30px;' bgcolor='#F4F4F4'>" +
+$"<table width='100%' border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td align='center' style='padding-bottom:30px;'>" +
+$"<table border='0' cellspacing='0' cellpadding='0'>" +
+$"<tr>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://www.facebook.com/Ancientmir' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/c8182611-9ab1-4f39-853b-9f6c2df8851e.png' width='38' height='38' mc:edit='image_12' style='max-width:38px;' border='0' alt=''></a>" +
+$"</td>" +
+$"<td class='img' width='50' style='font-size:0pt;line-height:0pt;text-align:center;'>" +
+$"<a href='https://twitter.com/Ancientservers' target='_blank'><img src='https://gallery.mailchimp.com/c942713c5fe10eccd1a6abfff/images/425bf9b5-ff40-4c3a-86cf-efad5461d318.png' width='38' height='38' mc:edit='image_13' style='max-width:38px;' border='0' alt='' class='center'></a>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer1 pb10' style='color:#999999;font-family:Roboto, roboto;font-size:14px;line-height:20px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_35'>© 2019 Ancient Servers</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer2 pb30' style='color:#999999;font-family:Roboto, roboto;font-size:12px;line-height:26px;text-align:center;padding-bottom:10px;'>" +
+$"<div mc:edit='text_36'>All rights reserved.</div>" +
+$"</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='text-footer3' style='color:#c0c0c0;font-family:Roboto;font-size:12px;line-height:18px;text-align:center;'>" +
+$"<div mc:edit='text_38'>" +
+$"<a class='link3-u' target='_blank' href='terms-conditions' style='color:#c0c0c0;text-decoration:underline;'>Terms & Conditions</a> " +
+$"</div>" + "</td>" +
+$"</tr>" +
+$"<tr>" +
+$"<td class='img' style='font-size:0pt;line-height:0pt;text-align:left;'>" +
+$"<div mc:edit='text_39'>" +
+$"</div>" +
+$"</td>" +
+$"<tr>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</div>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</td>" +
+$"</tr>" +
+$"</table>" +
+$"</body>" +
+$"</html>"
+                };
+
+                AddMailToQueue(message);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex);
+            }
+        }
 
         #region Password Encryption
         private const int Iterations = 1354;
         private const int SaltSize = 16;
         private const int hashSize = 20;
 
-        public static byte[] CreateHash(string password)
+        private static byte[] CreateHash(string password)
         {
             using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
             {
@@ -3313,14 +5543,14 @@ namespace Server.Envir
         }
         #endregion
 
-
         public static int ErrorCount;
         private static string LastError;
         public static void SaveError(string ex)
         {
             try
             {
-                if (++ErrorCount > 200 || String.Compare(ex, LastError, StringComparison.OrdinalIgnoreCase) == 0) return;
+                if (++ErrorCount > 200 || String.Compare(ex, LastError, StringComparison.OrdinalIgnoreCase) == 0)
+                    return;
 
                 const string LogPath = @".\Errors\";
 
@@ -3332,7 +5562,8 @@ namespace Server.Envir
                 File.AppendAllText($"{LogPath}{Now.Year}-{Now.Month}-{Now.Day}.txt", LastError + Environment.NewLine);
             }
             catch
-            { }
+            {
+            }
         }
         public static PlayerObject GetPlayerByCharacter(string name)
         {
@@ -3380,30 +5611,37 @@ namespace Server.Envir
             int rank = 0;
             foreach (CharacterInfo info in Rankings)
             {
-                if (info.Deleted) continue;
+                if (info.Deleted)
+                    continue;
 
                 switch (info.Class)
                 {
                     case MirClass.Warrior:
-                        if ((p.Class & RequiredClass.Warrior) != RequiredClass.Warrior) continue;
+                        if ((p.Class & RequiredClass.Warrior) != RequiredClass.Warrior)
+                            continue;
                         break;
                     case MirClass.Wizard:
-                        if ((p.Class & RequiredClass.Wizard) != RequiredClass.Wizard) continue;
+                        if ((p.Class & RequiredClass.Wizard) != RequiredClass.Wizard)
+                            continue;
                         break;
                     case MirClass.Taoist:
-                        if ((p.Class & RequiredClass.Taoist) != RequiredClass.Taoist) continue;
+                        if ((p.Class & RequiredClass.Taoist) != RequiredClass.Taoist)
+                            continue;
                         break;
                     case MirClass.Assassin:
-                        if ((p.Class & RequiredClass.Assassin) != RequiredClass.Assassin) continue;
+                        if ((p.Class & RequiredClass.Assassin) != RequiredClass.Assassin)
+                            continue;
                         break;
                 }
 
                 rank++;
 
-                if (p.OnlineOnly && info.Player == null) continue;
+                if (p.OnlineOnly && info.Player == null)
+                    continue;
 
 
-                if (total++ < p.StartIndex || result.Ranks.Count > 20) continue;
+                if (total++ < p.StartIndex || result.Ranks.Count > 20)
+                    continue;
 
                 result.Ranks.Add(new RankInfo
                 {
@@ -3411,12 +5649,11 @@ namespace Server.Envir
                     Index = info.Index,
                     Class = info.Class,
                     Experience = info.Experience,
-                    MaxExperience = info.Level >= Globals.ExperienceList.Count ? 0 : Globals.ExperienceList[info.Level],
                     Level = info.Level,
                     Name = info.CharacterName,
                     Online = info.Player != null,
                     Observable = info.Observable || isGM,
-                    Rebirth = info.Rebirth
+                    Rebirth = info.Rebirth,
                 });
             }
 
@@ -3424,86 +5661,236 @@ namespace Server.Envir
 
             return result;
         }
-        public static Map GetMap(MapInfo info, InstanceInfo instance = null, byte instanceIndex = 0)
+        public static Map GetMap(MapInfo info)
         {
-            if (instance == null)
-            {
-                return info != null && Maps.ContainsKey(info) ? Maps[info] : null;
-            }
+            return info != null && Maps.ContainsKey(info) ? Maps[info] : null;
+        }
+        public static MapInfo NewMapInstance(MapInfo info)
+        {
+            MapInfo newInfo = MapInfoList.CreateNewObject();
 
-            var instanceMaps = Instances[instance];
-
-            if (instanceIndex >= instanceMaps.Length || instanceMaps[instanceIndex] == null)
-            {
+            if (info == null)
                 return null;
-            }
 
-            return instanceMaps != null && instanceMaps[instanceIndex].ContainsKey(info) ? instanceMaps[instanceIndex][info] : null;
+            newInfo.AllowRecall = info.AllowRecall;
+            newInfo.AllowRT = info.AllowRT;
+            newInfo.AllowTT = info.AllowTT;
+            newInfo.CanHorse = info.CanHorse;
+            newInfo.CanMarriageRecall = info.CanMarriageRecall;
+            newInfo.CanMine = info.CanMine;
+            newInfo.Description = "TempMap";
+            newInfo.DropRate = info.DropRate;
+            newInfo.ExperienceRate = info.ExperienceRate;
+            newInfo.Fight = info.Fight;
+            newInfo.FileName = info.FileName;
+            newInfo.GoldRate = info.GoldRate;
+            newInfo.Light = info.Light;
+            newInfo.MaximumLevel = info.MaximumLevel;
+            newInfo.MaxMonsterDamage = info.MaxMonsterDamage;
+            newInfo.MaxMonsterHealth = info.MaxMonsterHealth;
+            newInfo.MiniMap = info.MiniMap;
+            newInfo.MinimumLevel = info.MinimumLevel;
+            newInfo.Mining = info.Mining;
+            newInfo.MonsterDamage = info.MonsterDamage;
+            newInfo.MonsterHealth = info.MonsterHealth;
+            newInfo.Music = info.Music;
+            newInfo.ReconnectMap = info.ReconnectMap;
+            newInfo.Regions = info.Regions;
+            newInfo.SkillDelay = info.SkillDelay;
+            newInfo.InstanceIndex = newInfo.Index;
+            newInfo.AllowGEO = info.AllowGEO;
+
+
+
+            return newInfo;
         }
-
-        public static byte? LoadInstance(InstanceInfo instance)
+        public static ClientMapInfo NewClientMapInstance(MapInfo info)
         {
-            var mapInstance = Instances[instance];
-
-            var index = -1;
-
-            for (int i = 0; i < mapInstance.Length; i++)
-            {
-                if (mapInstance[i] == null)
-                {
-                    index = i;
-                    break;
-                }
-            }
-
-            if (index < 0)
-            {
+            ClientMapInfo newInfo = new ClientMapInfo();
+            if (info == null)
                 return null;
-            }
 
-            mapInstance[index] = new Dictionary<MapInfo, Map>();
+            newInfo.AllowRecall = info.AllowRecall;
+            newInfo.AllowRT = info.AllowRT;
+            newInfo.AllowTT = info.AllowTT;
+            newInfo.CanHorse = info.CanHorse;
+            newInfo.CanMarriageRecall = info.CanMarriageRecall;
+            newInfo.CanMine = info.CanMine;
+            newInfo.Description = "TempMap";
+            newInfo.DropRate = info.DropRate;
+            newInfo.ExperienceRate = info.ExperienceRate;
+            newInfo.Fight = info.Fight;
+            newInfo.FileName = info.FileName;
+            newInfo.GoldRate = info.GoldRate;
+            newInfo.Light = info.Light;
+            newInfo.MaximumLevel = info.MaximumLevel;
+            newInfo.MaxMonsterDamage = info.MaxMonsterDamage;
+            newInfo.MaxMonsterHealth = info.MaxMonsterHealth;
+            newInfo.MiniMap = info.MiniMap;
+            newInfo.MinimumLevel = info.MinimumLevel;
+            newInfo.MonsterDamage = info.MonsterDamage;
+            newInfo.MonsterHealth = info.MonsterHealth;
+            newInfo.Music = info.Music;
+            newInfo.ReconnectMap = info.ReconnectMap;
+            newInfo.SkillDelay = info.SkillDelay;
+            newInfo.InstanceIndex = info.Index;
+            newInfo.AllowGEO = info.AllowGEO;
 
-            for (int i = 0; i < instance.Maps.Count; i++)
-            {
-                mapInstance[index][instance.Maps[i].Map] = new Map(instance.Maps[i].Map, instance, (byte)index);
-            }
 
-            Parallel.ForEach(mapInstance[index], x => x.Value.Load());
-
-            foreach (Map map in mapInstance[index].Values)
-            {
-                map.Setup();
-            }
-
-            CreateSafeZones();
-
-            CreateMovements(instance, (byte)index);
-
-            CreateNPCs(instance, (byte)index);
-
-            CreateSpawns(instance, (byte)index);
-
-            Log($"Loaded Instance {instance.Name} at index {index}");
-
-            return (byte)index;
+            return newInfo;
         }
-
-        public static void UnloadInstance(InstanceInfo instance, byte index)
-        {
-            //TODO - Dispose of all spawns/npcs/spell objects on map (remove from spawn list??)
-
-            Instances[instance][index] = null;
-
-            Log($"Unloaded Instance {instance.Name} at index {index}");
-        }
-
         public static UserConquestStats GetConquestStats(PlayerObject player)
         {
             foreach (ConquestWar war in ConquestWars)
             {
-                if (war.Map != player.CurrentMap) continue;
+                if (war.Map != player.CurrentMap)
+                    continue;
 
                 return war.GetStat(player.Character);
+            }
+
+            return null;
+        }
+        public static void CastleGuildFlagChange(CastleInfo castle, GuildInfo guild)
+        {
+            if (castle != null)
+            {
+                Map castlemap = SEnvir.GetMap(castle.Map);
+                foreach (MonsterObject ob in castlemap.Flags)
+                {
+                    ob.FlagShape = guild.FlagShape;
+                    ob.FlagColour = guild.FlagColour;
+                    ob.Name = guild.GuildName;
+                    Broadcast(new S.ObjectFlagColour { ObjectID = ob.ObjectID, FlagColour = ob.FlagColour, FlagShape = ob.FlagShape, name = ob.Name });
+
+                }
+            }
+
+        }
+        public static ClientMiniGames NewClientMiniGame(MiniGame game)
+        {
+            ClientMiniGames newMG = new ClientMiniGames();
+
+            if (game == null)
+                return null;
+
+            newMG.index = game.MGInfo.Index;
+            newMG.Started = game.Started;
+            newMG.StartTime = game.StartTime;
+            newMG.EndTime = game.EndTime;
+
+            return newMG;
+        }
+        public static void SendMiniGamesUpdate()
+        {
+            List<ClientMiniGames> CMiniGames = new List<ClientMiniGames>();
+            foreach (var mgs in MiniGames)
+            {
+                if (mgs == null || mgs.MGInfo == null)
+                    continue;
+                CMiniGames.Add(NewClientMiniGame(mgs));
+            }
+            foreach (PlayerObject player in SEnvir.Players)
+                player.Enqueue(new S.UpdateMiniGames { games = CMiniGames });
+        }
+        public static void CheckCTFDeath(PlayerObject player)
+        {
+            foreach (CaptureTheFlag mgs in MiniGames.OfType<CaptureTheFlag>())
+            {
+                if (!mgs.Players.Contains(player))
+                    continue;
+
+                if (player.HasFlag)
+                {
+                    if (player.EventTeam == 2)
+                        mgs.RespawnFlag(1, player.CurrentLocation);
+
+                    if (player.EventTeam == 1)
+                        mgs.RespawnFlag(2, player.CurrentLocation);
+                    player.HasFlag = false;
+                    foreach (PlayerObject players in mgs.Players)
+                    {
+                        players.Enqueue(new S.HasFlag { ObjectID = player.ObjectID, hasFLag = false });
+                    }
+                }
+                break;
+            }
+        }
+        public static void CheckArenaPvpDeath(PlayerObject player)
+        {
+            foreach (PvPArena mgs in MiniGames.OfType<PvPArena>())
+            {
+                if (!mgs.Players.Contains(player))
+                    continue;
+
+                if (!mgs.CanRevive)
+                {
+                    mgs.PlayersDead.Add(player.Character);
+                    mgs.PlayersAlive.Remove(player.Character);
+                }
+                break;
+            }
+        }
+        public static TimeSpan CheckEventReviveDelay(PlayerObject player)
+        {
+            TimeSpan delay = new TimeSpan();
+            delay = Config.AutoReviveDelay;
+            foreach (var mgs in MiniGames)
+            {
+                if (!mgs.Players.Contains(player))
+                    continue;
+
+                if (mgs.Map != player.CurrentMap && mgs.LobbyMap != player.CurrentMap)
+                    continue;
+
+                if (mgs.LobbyMap == player.CurrentMap)
+                {
+                    delay = TimeSpan.FromSeconds(2);
+                    return delay;
+                }
+
+                if (mgs.Map == player.CurrentMap)
+                {
+                    delay = TimeSpan.FromSeconds(mgs.MGInfo.ReviveDelay);
+                }
+            }
+
+            return delay;
+        }
+        public static bool CheckMgMap(PlayerObject playera, PlayerObject playerb)
+        {
+            foreach (var mgs in MiniGames)
+            {
+                if (mgs.Players.Contains(playera))
+                {
+                    if (mgs.Map == playera.CurrentMap)
+                    {
+                        if (mgs.MGInfo.TeamGame)
+                        {
+                            if (mgs.TeamA.Contains(playera.Character) && mgs.TeamA.Contains(playerb.Character))
+                                return false; // on same team
+                            else
+                                return true; //not on same team
+                        }
+                        else
+                            return true; //not a team game so can attack anyone
+                    }
+                    else
+                        return false; //player in lobby not game map
+                }
+                else
+                    continue; //player not in this mini game
+            }
+            return false; //on a map marked minigame but not in an active game
+        }
+        public static UserArenaPvPStats GetArenaPvPStats(PlayerObject player)
+        {
+            foreach (var arena in MiniGames)
+            {
+                if (arena.Map != player.CurrentMap)
+                    continue;
+
+                return arena.GetStat(player.Character);
             }
 
             return null;
@@ -3512,8 +5899,14 @@ namespace Server.Envir
 
     public class WebCommand
     {
-        public CommandType Command { get; set; }
-        public AccountInfo Account { get; set; }
+        public CommandType Command
+        {
+            get; set;
+        }
+        public AccountInfo Account
+        {
+            get; set;
+        }
 
         public WebCommand(CommandType command, AccountInfo account)
         {
@@ -3534,9 +5927,21 @@ namespace Server.Envir
 
     public sealed class IPNMessage
     {
-        public string Message { get; set; }
-        public bool Verified { get; set; } //Ensures Paypal sent it
-        public string FileName { get; set; }
-        public bool Duplicate { get; set; }
+        public string Message
+        {
+            get; set;
+        }
+        public bool Verified
+        {
+            get; set;
+        } //Ensures Paypal sent it
+        public string FileName
+        {
+            get; set;
+        }
+        public bool Duplicate
+        {
+            get; set;
+        }
     }
 }
