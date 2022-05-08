@@ -491,6 +491,7 @@ namespace Library
         public List<ClientMiniGames> CMiniGames { get; set; }
         public PoisonType Poison { get; set; }
 
+        public List<ClientUserCurrency> Currencies { get; set; }
         public bool InSafeZone { get; set; }
         public bool Observable { get; set; }
 
@@ -1269,6 +1270,12 @@ namespace Library
         public bool Started { get; set; }
 
 
+    }
+    public class ClientUserCurrency
+    {
+        public int CurrencyIndex { get; set; }
+        public CurrencyInfo Info;
+        public long Amount { get; set; }
     }
 }
 

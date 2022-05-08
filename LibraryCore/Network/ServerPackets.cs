@@ -1341,5 +1341,23 @@ namespace Library.Network.ServerPackets
         public uint ObjectID { get; set; }
         public int team { get; set; }
     }
+    public sealed class JoinInstance : Packet
+    {
+        public InstanceResult Result { get; set; }
+        public bool Success { get; set; }
+    }
+    public sealed class QuestCancelled : Packet
+    {
+        public int Index { get; set; }
+    }
+    public sealed class InformMaxExperience : Packet
+    {
+        public decimal MaxExperience { get; set; }
+    }
+    public sealed class CurrencyChanged : Packet
+    {
+        public int CurrencyIndex { get; set; }
+        public long Amount { get; set; }
+    }
 }
 

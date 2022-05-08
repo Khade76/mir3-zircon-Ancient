@@ -1396,7 +1396,15 @@ namespace Library
         Marriage = 128,
         NonRefinable = 256
     }
-    
+    public enum CurrencyType
+    {
+        Gold,
+        GameGold,
+        HuntGold,
+        Other,
+        Famepoints,
+
+    }
     public enum HorseType : byte
     {
         None,
@@ -1731,7 +1739,17 @@ namespace Library
         Crashed
     }
 
-
+    public enum InstanceResult : byte
+    {
+        Invalid,
+        InsufficientLevel,
+        TooFewInGroup,
+        TooManyInGroup,
+        ConnectRegionNotSet,
+        NoSlots,
+        NoMap,
+        Success
+    }
 
 
     #endregion
