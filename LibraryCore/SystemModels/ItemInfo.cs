@@ -1,9 +1,12 @@
 ﻿using MirDB;
+using System;
+using System.Text.Json.Serialization;
 
 namespace Library.SystemModels
 {
     public class ItemInfo : DBObject
     {
+        [IsIdentity]
         public string ItemName
         {
             get { return _ItemName; }
@@ -109,7 +112,8 @@ namespace Library.SystemModels
         }
         private int _Shape;
 
-
+        [JsonIgnore]
+        [Obsolete("Use ItemEffect instead")]
         public ItemEffect Effect
         {
             get { return _Effect; }
@@ -121,9 +125,40 @@ namespace Library.SystemModels
                 _Effect = value;
 
                 OnChanged(oldValue, value, "Effect");
+                ItemEffect = value;
             }
         }
         private ItemEffect _Effect;
+
+        public ItemEffect ItemEffect
+        {
+            get { return _ItemEffect; }
+            set
+            {
+                if (_ItemEffect == value) return;
+
+                var oldValue = _ItemEffect;
+                _ItemEffect = value;
+
+                OnChanged(oldValue, value, "ItemEffect");
+            }
+        }
+        private ItemEffect _ItemEffect;
+
+        public ExteriorEffect ExteriorEffect
+        {
+            get { return _ExteriorEffect; }
+            set
+            {
+                if (_ExteriorEffect == value) return;
+
+                var oldValue = _ExteriorEffect;
+                _ExteriorEffect = value;
+
+                OnChanged(oldValue, value, "ExteriorEffect");
+            }
+        }
+        private ExteriorEffect _ExteriorEffect;
 
         public int Image
         {
@@ -394,8 +429,6 @@ namespace Library.SystemModels
             }
         }
         private int _PartCount;
-        
-        
 
         [Association("Set")]
         public SetInfo Set
@@ -412,19 +445,19 @@ namespace Library.SystemModels
             }
         }
         private SetInfo _Set;
-        
-        public Stats Stats = new Stats();
 
         [Association("ItemStats")]
         public DBBindingList<ItemInfoStat> ItemStats { get; set; }
 
+        [JsonIgnore]
         [Association("Drops", true)]
         public DBBindingList<DropInfo> Drops { get; set; }
-        
 
+        [JsonIgnore]
         [IgnoreProperty]
         public bool ShouldLinkInfo => StackSize > 1 || ItemType == ItemType.Consumable || ItemType == ItemType.Scroll;
 
+        public Stats Stats = new();
 
         protected internal override void OnCreated()
         {
@@ -455,7 +488,6 @@ namespace Library.SystemModels
             foreach (ItemInfoStat stat in ItemStats)
                 Stats[stat.Stat] += stat.Amount;
         }
-
 
         public override string ToString()
         {

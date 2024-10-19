@@ -46,12 +46,15 @@ namespace Client.Scenes.Views
                 };
             }
 
+            Grid.BringToFront();
+            Grid.Visible = true;
+
             UpdateLinks();
         }
 
         public override WindowType Type => WindowType.BeltBox;
         public override bool CustomSize => true;
-        public override bool AutomaticVisiblity => true;
+        public override bool AutomaticVisibility => true;
 
         #endregion
 
@@ -70,6 +73,19 @@ namespace Client.Scenes.Views
                 Links[i] = new ClientBeltLink { Slot = i };
 
             Size = GetAcceptableResize(Size.Empty);
+
+            Grid = new DXItemGrid
+            {
+                Parent = this,
+                Location = new Point(0, 0),
+                GridSize = new Size(1, 1),
+                GridType = GridType.Belt,
+                AllowLink = false,
+            };
+
+            Grid.BringToFront();
+            Grid.Visible = true;
+
         }
 
         #region Methods
@@ -82,7 +98,7 @@ namespace Client.Scenes.Views
 
                 if (link.LinkInfoIndex > 0)
                     Grid.Grid[link.Slot].QuickInfo = Globals.ItemInfoList.Binding.FirstOrDefault(x => x.Index == link.LinkInfoIndex);
-                else if (link.LinkItemIndex >= 0)
+                else if (link.LinkItemIndex > 0)
                     Grid.Grid[link.Slot].QuickItem = GameScene.Game.Inventory.FirstOrDefault(x => x?.Index == link.LinkItemIndex);
             }
         }

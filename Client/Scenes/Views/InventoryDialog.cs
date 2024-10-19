@@ -1,166 +1,98 @@
-﻿using System;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
-using Client.Controls;
+﻿using Client.Controls;
 using Client.Envir;
 using Client.Models;
 using Client.UserModels;
 using Library;
+using Library.SystemModels;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using C = Library.Network.ClientPackets;
 
-//Cleaned
 namespace Client.Scenes.Views
 {
-    public sealed class InventoryDialogOld : DXWindow
-    {
-        #region Properties
-
-        public DXItemGrid Grid;
-
-        public DXLabel GoldLabel, WeightLabel;
-        public override void OnIsVisibleChanged(bool oValue, bool nValue)
-        {
-            if (!IsVisible)
-                Grid.ClearLinks();
-
-            base.OnIsVisibleChanged(oValue, nValue);
-        }
-
-        public override WindowType Type => WindowType.InventoryBox;
-        public override bool CustomSize => false;
-        public override bool AutomaticVisiblity => true;
-
-        #endregion
-
-        public InventoryDialogOld()
-        {
-            TitleLabel.Text = "Inventory";
-            
-            Grid = new DXItemGrid
-            {
-                GridSize = new Size(7, 7),
-                Parent = this,
-                ItemGrid = GameScene.Game.Inventory,
-                GridType = GridType.Inventory
-            };
-
-            SetClientSize(new Size(Grid.Size.Width, Grid.Size.Height+ 45));
-            Grid.Location = ClientArea.Location;
-
-
-            GoldLabel = new DXLabel
-            {
-                AutoSize = false,
-                Border = true,
-                BorderColour = Color.FromArgb(99, 83, 50),
-                ForeColour = Color.White,
-                DrawFormat = TextFormatFlags.VerticalCenter,
-                Parent = this,
-                Location = new Point(ClientArea.Left + 80, ClientArea.Bottom - 41),
-                Text = "0",
-                Size = new Size(ClientArea.Width - 81, 20),
-                Sound = SoundIndex.GoldPickUp
-            };
-            GoldLabel.MouseClick += GoldLabel_MouseClick;
-
-            new DXLabel
-            {
-                AutoSize = false,
-                Border = true,
-                BorderColour = Color.FromArgb(99, 83, 50),
-                ForeColour = Color.White,
-                DrawFormat = TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter,
-                Parent = this,
-                Location = new Point(ClientArea.Left + 1, ClientArea.Bottom - 41),
-                Text = "Gold",
-                Size = new Size(78, 20),
-                IsControl = false,
-            };
-
-
-            WeightLabel = new DXLabel
-            {
-                AutoSize = false,
-                Border = true,
-                BorderColour = Color.FromArgb(99, 83, 50),
-                ForeColour = Color.White,
-                DrawFormat = TextFormatFlags.VerticalCenter,
-                Parent = this,
-                Location = new Point(ClientArea.Left + 80, ClientArea.Bottom - 20),
-                Text = "0",
-                Size = new Size(ClientArea.Width - 81, 20),
-                Sound = SoundIndex.GoldPickUp
-            };
-
-            new DXLabel
-            {
-                AutoSize = false,
-                Border = true,
-                BorderColour = Color.FromArgb(99, 83, 50),
-                ForeColour = Color.White,
-                DrawFormat = TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter,
-                Parent = this,
-                Location = new Point(ClientArea.Left + 1, ClientArea.Bottom - 20),
-                Text = "Weight",
-                Size = new Size(78, 20),
-                IsControl = false,
-            };
-        }
-
-        #region Methods
-        private void GoldLabel_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (GameScene.Game.SelectedCell == null)
-                GameScene.Game.GoldPickedUp = !GameScene.Game.GoldPickedUp && MapObject.User.Gold.Amount > 0;
-        }
-        #endregion
-
-        #region IDisposable
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-
-            if (disposing)
-            {
-                if (Grid != null)
-                {
-                    if (!Grid.IsDisposed)
-                        Grid.Dispose();
-
-                    Grid = null;
-                }
-
-                if (GoldLabel != null)
-                {
-                    if (!GoldLabel.IsDisposed)
-                        GoldLabel.Dispose();
-
-                    GoldLabel = null;
-                }
-
-                if (WeightLabel != null)
-                {
-                    if (!WeightLabel.IsDisposed)
-                        WeightLabel.Dispose();
-
-                    WeightLabel = null;
-                }
-            }
-
-        }
-
-        #endregion
-    }
-
     public sealed class InventoryDialog : DXImageControl
     {
         #region Properties
 
         public DXItemGrid Grid;
 
-        public DXLabel TitleLabel, GoldLabel, GameGoldLabel, WeightLabel, CurrencyLabel, GoldTitle, GameGoldTitle;
+        public DXLabel TitleLabel, PrimaryCurrencyLabel, SecondaryCurrencyLabel, WeightLabel, WalletLabel, PrimaryCurrencyTitle, SecondaryCurrencyTitle;
         public DXButton CloseButton, SortButton, TrashButton;
+
+        public DXButton SellButton;
+
+        public List<DXItemCell> SelectedItems = new();
+
+        public List<ItemType> SellableItemTypes = new();
+
+        #region PrimaryCurrency
+
+        public CurrencyInfo PrimaryCurrency
+        {
+            get => _PrimaryCurrency;
+            set
+            {
+                if (_PrimaryCurrency == value) return;
+
+                CurrencyInfo oldValue = _PrimaryCurrency;
+                _PrimaryCurrency = value;
+
+                OnPrimaryCurrencyChanged(oldValue, value);
+            }
+        }
+        private CurrencyInfo _PrimaryCurrency;
+
+        public event EventHandler<EventArgs> PrimaryCurrencyChanged;
+        public void OnPrimaryCurrencyChanged(CurrencyInfo oValue, CurrencyInfo nValue)
+        {
+            if (GameScene.Game.User == null)
+                return;
+
+            foreach (DXItemCell cell in Grid.Grid)
+                cell.Selected = false;
+
+            RefreshPrimaryCurrency();
+
+            PrimaryCurrencyChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
+        #region SecondaryCurrency
+
+        public CurrencyInfo SecondaryCurrency
+        {
+            get => _SecondaryCurrency;
+            set
+            {
+                if (_SecondaryCurrency == value) return;
+
+                CurrencyInfo oldValue = _SecondaryCurrency;
+                _SecondaryCurrency = value;
+
+                OnPrimaryCurrencyChanged(oldValue, value);
+            }
+        }
+        private CurrencyInfo _SecondaryCurrency;
+
+        public event EventHandler<EventArgs> SecondaryCurrencyChanged;
+        public void OnSecondaryCurrencyChanged(CurrencyInfo oValue, CurrencyInfo nValue)
+        {
+            if (GameScene.Game.User == null)
+                return;
+
+            foreach (DXItemCell cell in Grid.Grid)
+                cell.Selected = false;
+
+            RefreshSecondaryCurrency();
+
+            SecondaryCurrencyChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
 
         public override void OnIsVisibleChanged(bool oValue, bool nValue)
         {
@@ -182,6 +114,23 @@ namespace Client.Scenes.Views
 
             if (Settings != null && IsMoving)
                 Settings.Location = nValue;
+        }
+
+        public override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+
+            switch (e.KeyCode)
+            {
+                case Keys.Escape:
+                    if (CloseButton.Visible)
+                    {
+                        CloseButton.InvokeMouseClick();
+                        if (!Config.EscapeCloseAll)
+                            e.Handled = true;
+                    }
+                    break;
+            }
         }
 
         #endregion
@@ -228,6 +177,7 @@ namespace Client.Scenes.Views
             LibraryFile = LibraryFile.Interface;
             Index = 130;
             Movable = true;
+            Sort = true;
 
             CloseButton = new DXButton
             {
@@ -235,12 +185,12 @@ namespace Client.Scenes.Views
                 Index = 15,
                 LibraryFile = LibraryFile.Interface,
             };
-            CloseButton.Location = new Point(DisplayArea.Width - CloseButton.Size.Width - 5, 5);
+            CloseButton.Location = new Point(DisplayArea.Width - CloseButton.Size.Width - 3, 3);
             CloseButton.MouseClick += (o, e) => Visible = false;
 
             TitleLabel = new DXLabel
             {
-                Text = "Inventory",
+                Text = CEnvir.Language.InventoryDialogTitle,
                 Parent = this,
                 Font = new Font(Config.FontName, CEnvir.FontSize(10F), FontStyle.Bold),
                 ForeColour = Color.FromArgb(198, 166, 99),
@@ -261,6 +211,11 @@ namespace Client.Scenes.Views
                 BackColour = Color.Empty,
                 Border = false
             };
+
+            foreach (DXItemCell cell in Grid.Grid)
+            {
+                cell.SelectedChanged += Cell_SelectedChanged;
+            }
 
             CEnvir.LibraryList.TryGetValue(LibraryFile.GameInter, out MirLibrary library);
 
@@ -300,7 +255,7 @@ namespace Client.Scenes.Views
                 WeightLabel.Location = new Point(WeightBar.Location.X + (WeightBar.Size.Width - WeightLabel.Size.Width) / 2, WeightBar.Location.Y - 1 + (WeightBar.Size.Height - WeightLabel.Size.Height) / 2);
             };
 
-            GoldTitle = new DXLabel
+            PrimaryCurrencyTitle = new DXLabel
             {
                 AutoSize = false,
                 ForeColour = Color.Goldenrod,
@@ -308,24 +263,23 @@ namespace Client.Scenes.Views
                 Parent = this,
                 Location = new Point(55, 381),
                 Font = new Font(Config.FontName, CEnvir.FontSize(8F), FontStyle.Bold),
-                Text = "Gold",
+                Text = CEnvir.Language.InventoryDialogPrimaryCurrencyTitle,
                 Size = new Size(97, 20)
             };
 
-            GoldLabel = new DXLabel
+            PrimaryCurrencyLabel = new DXLabel
             {
                 AutoSize = false,
                 ForeColour = Color.White,
-                DrawFormat = TextFormatFlags.VerticalCenter  | TextFormatFlags.Right,
+                DrawFormat = TextFormatFlags.VerticalCenter | TextFormatFlags.Right,
                 Parent = this,
                 Location = new Point(80, 381),
                 Text = "0",
-                Size = new Size(97, 20),
-                Sound = SoundIndex.GoldPickUp
+                Size = new Size(97, 20)
             };
-            GoldLabel.MouseClick += GoldLabel_MouseClick;
+            PrimaryCurrencyLabel.MouseClick += PrimaryCurrencyLabel_MouseClick;
 
-            GameGoldTitle = new DXLabel
+            SecondaryCurrencyTitle = new DXLabel
             {
                 AutoSize = false,
                 ForeColour = Color.DarkOrange,
@@ -333,11 +287,11 @@ namespace Client.Scenes.Views
                 Parent = this,
                 Location = new Point(55, 400),
                 Font = new Font(Config.FontName, CEnvir.FontSize(8F), FontStyle.Bold),
-                Text = "GG",
+                Text = CEnvir.Language.InventoryDialogSecondaryCurrencyTitle,
                 Size = new Size(97, 20)
             };
 
-            GameGoldLabel = new DXLabel
+            SecondaryCurrencyLabel = new DXLabel
             {
                 AutoSize = false,
                 ForeColour = Color.White,
@@ -347,6 +301,7 @@ namespace Client.Scenes.Views
                 Text = "0",
                 Size = new Size(97, 20)
             };
+            SecondaryCurrencyLabel.MouseClick += SecondaryCurrencyLabel_MouseClick;
 
             SortButton = new DXButton
             {
@@ -354,9 +309,9 @@ namespace Client.Scenes.Views
                 Index = 364,
                 Parent = this,
                 Location = new Point(180, 384),
-                Hint = "Sort",
-                Enabled = false
+                Hint = CEnvir.Language.InventoryDialogSortButtonHint
             };
+            SortButton.MouseClick += SortButton_MouseClick;
 
             TrashButton = new DXButton
             {
@@ -364,33 +319,268 @@ namespace Client.Scenes.Views
                 Index = 358,
                 Parent = this,
                 Location = new Point(218, 384),
-                Hint = "Trash",
-                Enabled = false
+                Hint = CEnvir.Language.InventoryDialogTrashButtonHint
             };
+            TrashButton.MouseClick += TrashButton_MouseClick;
 
-            CurrencyLabel = new DXLabel
+            SellButton = new DXButton
+            {
+                LibraryFile = LibraryFile.GameInter,
+                Index = 354,
+                Parent = this,
+                Location = new Point(218, 384),
+                Hint = "Sell",
+                Enabled = false,
+                Visible = false
+            };
+            SellButton.MouseClick += SellButton_MouseClick;
+
+            WalletLabel = new DXLabel
             {
                 Parent = this,
                 Location = new Point(8, 380),
-                Hint = "Wallet [Ctrl + C]",
+                Hint = string.Format(CEnvir.Language.InventoryDialogWalletLabelHint, CEnvir.GetKeyBindLabel(KeyBindAction.CurrencyWindow)),
                 Size = new Size(45, 40),
                 Sound = SoundIndex.GoldPickUp
             };
-            CurrencyLabel.MouseClick += CurrencyLabel_MouseClick;
+            WalletLabel.MouseClick += WalletLabel_MouseClick;
+        }
+
+        private void SortButton_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (GameScene.Game.Observer) return;
+
+            C.ItemSort packet = new C.ItemSort { Grid = GridType.Inventory };
+            CEnvir.Enqueue(packet);
+        }
+
+        private void TrashButton_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (GameScene.Game.Observer) return;
+
+            var cell = DXItemCell.SelectedCell;
+
+            if (cell == null || cell.Item == null) return;
+            if ((cell.Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked) return;
+            if ((cell.Item.Flags & UserItemFlags.Bound) == UserItemFlags.Bound) return;
+            if ((cell.Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return;
+
+            if (cell.GridType != GridType.Inventory) return;
+
+            cell.Locked = true;
+
+            C.ItemDelete packet = new C.ItemDelete { Grid = cell.GridType, Slot = cell.Slot };
+
+            CEnvir.Enqueue(packet);
+        }
+
+        private void Cell_SelectedChanged(object sender, EventArgs e)
+        {
+            var cell = sender as DXItemCell;
+
+            if (InvMode == InventoryMode.Sell)
+            {
+                if (cell.Selected)
+                {
+                    if (cell.Item != null && (cell.Item.Flags & UserItemFlags.Locked) != UserItemFlags.Locked)
+                    {
+                        if (!SellableItemTypes.Contains(cell.Item.Info.ItemType))
+                        {
+                            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToSellHere, cell.Item.Info.ItemName), MessageType.System);
+                            cell.Selected = false;
+                            return;
+                        }
+
+                        SelectedItems.Add(cell);
+                    }
+                }
+                else
+                    SelectedItems.Remove(cell);
+
+                long sum = 0;
+                int count = 0;
+                foreach (DXItemCell itemCell in SelectedItems)
+                {
+                    count++;
+                    sum += (long)(itemCell.Item.Price(itemCell.Item.Count) * PrimaryCurrency.ExchangeRate);
+                }
+
+                SecondaryCurrencyLabel.Text = sum.ToString("#,##0");
+
+                SellButton.Enabled = count > 0;
+            }
+        }
+
+        private void SellButton_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (GameScene.Game.Observer) return;
+
+            var cell = DXItemCell.SelectedCell;
+
+            if (cell != null && cell.Item != null && (cell.Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked) return;
+
+            List<CellLinkInfo> links = new();
+
+            foreach (DXItemCell itemCell in SelectedItems)
+            {
+                if ((itemCell.Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked) continue;
+
+                links.Add(new CellLinkInfo { Count = itemCell.Item.Count, GridType = GridType.Inventory, Slot = itemCell.Slot });
+            }
+
+            CEnvir.Enqueue(new C.NPCSell { Links = links });
+        }
+
+        private void PrimaryCurrencyLabel_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (GameScene.Game.SelectedCell == null)
+            {
+                var userCurrency = GameScene.Game.User.GetCurrency(PrimaryCurrency);
+
+                if (!userCurrency.CanPickup) return;
+                DXSoundManager.Play(SoundIndex.GoldPickUp);
+
+                if (GameScene.Game.CurrencyPickedUp == null && userCurrency.Amount > 0)
+                    GameScene.Game.CurrencyPickedUp = userCurrency;
+                else
+                    GameScene.Game.CurrencyPickedUp = null;
+            }
+        }
+
+        private void SecondaryCurrencyLabel_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (GameScene.Game.SelectedCell == null)
+            {
+                var userCurrency = GameScene.Game.User.GetCurrency(SecondaryCurrency);
+
+                if (!userCurrency.CanPickup) return;
+                DXSoundManager.Play(SoundIndex.GoldPickUp);
+
+                if (GameScene.Game.CurrencyPickedUp == null && userCurrency.Amount > 0)
+                    GameScene.Game.CurrencyPickedUp = userCurrency;
+                else
+                    GameScene.Game.CurrencyPickedUp = null;
+            }
+        }
+
+        private void WalletLabel_MouseClick(object sender, MouseEventArgs e)
+        {
+            GameScene.Game.CurrencyBox.Visible = !GameScene.Game.CurrencyBox.Visible;
         }
 
         #region Methods
 
-        private void GoldLabel_MouseClick(object sender, MouseEventArgs e)
+        public void RefreshCurrency()
         {
-            if (GameScene.Game.SelectedCell == null)
-                GameScene.Game.GoldPickedUp = !GameScene.Game.GoldPickedUp && MapObject.User.Gold.Amount > 0;
+            RefreshPrimaryCurrency();
+            RefreshSecondaryCurrency();
         }
 
-        private void CurrencyLabel_MouseClick(object sender, MouseEventArgs e)
+        private void SetPrimaryCurrency(CurrencyInfo currency)
         {
-            GameScene.Game.CurrencyBox.Visible = !GameScene.Game.CurrencyBox.Visible;
+            PrimaryCurrency = currency ?? Globals.CurrencyInfoList.Binding.First(x => x.Type == CurrencyType.Gold);
         }
+
+        private void RefreshPrimaryCurrency()
+        {
+            SetPrimaryCurrency(PrimaryCurrency);
+
+            var userCurrency = GameScene.Game.User.GetCurrency(PrimaryCurrency);
+
+            PrimaryCurrencyTitle.Text = userCurrency.Info.Abbreviation;
+            PrimaryCurrencyLabel.Text = userCurrency.Amount.ToString("#,##0");
+        }
+
+        private void SetSecondaryCurrency(CurrencyInfo currency)
+        {
+            SecondaryCurrency = currency ?? Globals.CurrencyInfoList.Binding.First(x => x.Type == CurrencyType.GameGold);
+        }
+
+        private void RefreshSecondaryCurrency()
+        {
+            SetSecondaryCurrency(SecondaryCurrency);
+
+            if (InvMode == InventoryMode.Sell) return;
+
+            var userCurrency = GameScene.Game.User.GetCurrency(SecondaryCurrency);
+
+            SecondaryCurrencyTitle.Text = userCurrency.Info.Abbreviation;
+            SecondaryCurrencyTitle.ForeColour = Color.DarkOrange;
+            SecondaryCurrencyLabel.Text = userCurrency.Amount.ToString("#,##0");
+        }
+
+        public void SellMode(CurrencyInfo currency, List<ItemType> sellableItemTypes)
+        {
+            SetPrimaryCurrency(currency);
+
+            SellableItemTypes = sellableItemTypes;
+
+            InvMode = InventoryMode.Sell;
+        }
+
+        public void NormalMode()
+        {
+            SetPrimaryCurrency(null);
+
+            SellableItemTypes.Clear();
+
+            InvMode = InventoryMode.Normal;
+        }
+
+        #region InventoryMode
+
+        public InventoryMode InvMode
+        {
+            get => _InvMode;
+            set
+            {
+                if (_InvMode == value) return;
+
+                InventoryMode oldValue = _InvMode;
+                _InvMode = value;
+
+                OnInventoryModeChanged(oldValue, value);
+            }
+        }
+        private InventoryMode _InvMode;
+        public event EventHandler<EventArgs> InventoryModeChanged;
+        public void OnInventoryModeChanged(InventoryMode oValue, InventoryMode nValue)
+        {
+            TrashButton.Visible = false;
+            SellButton.Visible = false;
+
+            DXItemCell.SelectedCell = null;
+
+            switch (nValue)
+            {
+                case InventoryMode.Normal:
+                    {
+                        RefreshCurrency();
+
+                        TrashButton.Visible = true;
+
+                        TitleLabel.Text = CEnvir.Language.InventoryDialogTitle;
+                        TitleLabel.Location = new Point((DisplayArea.Width - TitleLabel.Size.Width) / 2, 8);
+                    }
+                    break;
+                case InventoryMode.Sell:
+                    {
+                        SecondaryCurrencyTitle.Text = "Total";
+                        SecondaryCurrencyTitle.ForeColour = Color.CornflowerBlue;
+                        SecondaryCurrencyLabel.Text = 0.ToString("#,##0");
+
+                        SellButton.Visible = true;
+
+                        TitleLabel.Text = CEnvir.Language.InventoryDialogTitle + " [Sell]";
+                        TitleLabel.Location = new Point((DisplayArea.Width - TitleLabel.Size.Width) / 2, 8);
+                    }
+                    break;
+            }
+
+            InventoryModeChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
 
         #endregion
 
@@ -410,7 +600,6 @@ namespace Client.Scenes.Views
                     Grid = null;
                 }
 
-
                 if (TitleLabel != null)
                 {
                     if (!TitleLabel.IsDisposed)
@@ -419,20 +608,36 @@ namespace Client.Scenes.Views
                     TitleLabel = null;
                 }
 
-                if (GoldLabel != null)
+                if (PrimaryCurrencyLabel != null)
                 {
-                    if (!GoldLabel.IsDisposed)
-                        GoldLabel.Dispose();
+                    if (!PrimaryCurrencyLabel.IsDisposed)
+                        PrimaryCurrencyLabel.Dispose();
 
-                    GoldLabel = null;
+                    PrimaryCurrencyLabel = null;
                 }
 
-                if (GameGoldLabel != null)
+                if (SecondaryCurrencyLabel != null)
                 {
-                    if (!GameGoldLabel.IsDisposed)
-                        GameGoldLabel.Dispose();
+                    if (!SecondaryCurrencyLabel.IsDisposed)
+                        SecondaryCurrencyLabel.Dispose();
 
-                    GameGoldLabel = null;
+                    SecondaryCurrencyLabel = null;
+                }
+
+                if (PrimaryCurrencyTitle != null)
+                {
+                    if (!PrimaryCurrencyTitle.IsDisposed)
+                        PrimaryCurrencyTitle.Dispose();
+
+                    PrimaryCurrencyTitle = null;
+                }
+
+                if (SecondaryCurrencyTitle != null)
+                {
+                    if (!SecondaryCurrencyTitle.IsDisposed)
+                        SecondaryCurrencyTitle.Dispose();
+
+                    SecondaryCurrencyTitle = null;
                 }
 
                 if (WeightLabel != null)
@@ -443,12 +648,12 @@ namespace Client.Scenes.Views
                     WeightLabel = null;
                 }
 
-                if (CurrencyLabel != null)
+                if (WalletLabel != null)
                 {
-                    if (!CurrencyLabel.IsDisposed)
-                        CurrencyLabel.Dispose();
+                    if (!WalletLabel.IsDisposed)
+                        WalletLabel.Dispose();
 
-                    CurrencyLabel = null;
+                    WalletLabel = null;
                 }
 
                 if (CloseButton != null)
@@ -475,20 +680,20 @@ namespace Client.Scenes.Views
                     TrashButton = null;
                 }
 
-                if (GoldTitle != null)
+                if (PrimaryCurrencyTitle != null)
                 {
-                    if (!GoldTitle.IsDisposed)
-                        GoldTitle.Dispose();
+                    if (!PrimaryCurrencyTitle.IsDisposed)
+                        PrimaryCurrencyTitle.Dispose();
 
-                    GameGoldTitle = null;
+                    SecondaryCurrencyTitle = null;
                 }
 
-                if (GameGoldTitle != null)
+                if (SecondaryCurrencyTitle != null)
                 {
-                    if (!GameGoldTitle.IsDisposed)
-                        GameGoldTitle.Dispose();
+                    if (!SecondaryCurrencyTitle.IsDisposed)
+                        SecondaryCurrencyTitle.Dispose();
 
-                    GameGoldTitle = null;
+                    SecondaryCurrencyTitle = null;
                 }
             }
         }

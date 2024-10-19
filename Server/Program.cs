@@ -26,11 +26,12 @@ namespace Server
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
             Application.EnableVisualStyles();
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
             BonusSkins.Register();
             SkinManager.EnableFormSkins();
-            UserLookAndFeel.Default.SetSkinStyle("DevExpress Style");
+            UserLookAndFeel.Default.SetSkinStyle(SkinStyle.Office2010Blue);
 
             Application.Run(new SMain());
 

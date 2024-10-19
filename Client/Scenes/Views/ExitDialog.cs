@@ -9,34 +9,66 @@ using C = Library.Network.ClientPackets;
 //Cleaned
 namespace Client.Scenes.Views
 {
-    public sealed class ExitDialog : DXWindow
+    public sealed class ExitDialog : DXImageControl
     {
         #region Properties
+
+        public DXLabel TitleLabel;
+        public DXButton CloseButton;
+
         public DXButton ToSelectButton, ExitButton;
 
-        public override WindowType Type => WindowType.ExitBox;
-        public override bool CustomSize => false;
-        public override bool AutomaticVisiblity => false;
+        public bool Exiting { get; set; }
+
+        public override void OnVisibleChanged(bool oValue, bool nValue)
+        {
+            base.OnVisibleChanged(oValue, nValue);
+
+            BringToFront();
+        }
 
         #endregion
 
         public ExitDialog()
         {
-            TitleLabel.Text = @"Exit Game";
+            LibraryFile = LibraryFile.Interface;
+            Index = 281;
+            Sort = true;
+            Modal = true;
 
-            SetClientSize(new Size(200, 50 + DefaultHeight + DefaultHeight));
+            CloseButton = new DXButton
+            {
+                Parent = this,
+                Index = 15,
+                LibraryFile = LibraryFile.Interface,
+            };
+            CloseButton.Location = new Point(252 - CloseButton.Size.Width - 3, 3);
+            CloseButton.MouseClick += (o, e) => Visible = false;
+
+            TitleLabel = new DXLabel
+            {
+                Text = CEnvir.Language.ExitDialogTitle,
+                Parent = this,
+                Font = new Font(Config.FontName, CEnvir.FontSize(10F), FontStyle.Bold),
+                ForeColour = Color.FromArgb(198, 166, 99),
+                Outline = true,
+                OutlineColour = Color.Black,
+                IsControl = false,
+            };
+            TitleLabel.Location = new Point((DisplayArea.Width - TitleLabel.Size.Width) / 2, 8);
+
             ToSelectButton = new DXButton
             {
-                Location = new Point(ClientArea.X + 35, ClientArea.Y + 20),
+                Location = new Point(61, 45),
                 Size = new Size(130, DefaultHeight),
                 Parent = this,
-                Label = { Text = "Character Select" },
+                Label = { Text = CEnvir.Language.ExitDialogToSelectButtonLabel },
             };
             ToSelectButton.MouseClick += (o, e) =>
             {
                 if (CEnvir.Now < MapObject.User.CombatTime.AddSeconds(10) && !GameScene.Game.Observer)
                 {
-                    GameScene.Game.ReceiveChat("Unable to logout whilst in combat.", MessageType.System);
+                    GameScene.Game.ReceiveChat(CEnvir.Language.LogoutInCombat, MessageType.System);
                     return;
                 }
 
@@ -45,19 +77,20 @@ namespace Client.Scenes.Views
 
             ExitButton = new DXButton
             {
-                Location = new Point(ClientArea.X + 35, ClientArea.Y + 30 + DefaultHeight),
+                Location = new Point(61, 55 + DefaultHeight),
                 Size = new Size(130, DefaultHeight),
                 Parent = this,
-                Label = { Text = "Exit Game" },
+                Label = { Text = CEnvir.Language.ExitDialogExitButtonLabel },
             };
             ExitButton.MouseClick += (o, e) =>
             {
                 if (CEnvir.Now < MapObject.User.CombatTime.AddSeconds(10) && !GameScene.Game.Observer)
                 {
-                    GameScene.Game.ReceiveChat("Unable to exit game whilst in combat.", MessageType.System);
+                    GameScene.Game.ReceiveChat(CEnvir.Language.ExitInCombat, MessageType.System);
                     return;
                 }
 
+                Exiting = true;
                 CEnvir.Target.Close();
             };
 
@@ -71,6 +104,14 @@ namespace Client.Scenes.Views
 
             if (disposing)
             {
+                if (TitleLabel != null)
+                {
+                    if (!TitleLabel.IsDisposed)
+                        TitleLabel.Dispose();
+
+                    TitleLabel = null;
+                }
+
                 if (ToSelectButton != null)
                 {
                     if (!ToSelectButton.IsDisposed)

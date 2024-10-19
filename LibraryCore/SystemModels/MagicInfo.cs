@@ -4,6 +4,7 @@ namespace Library.SystemModels
 {
     public sealed class MagicInfo : DBObject
     {
+        [IsIdentity]
         public string Name
         {
             get { return _Name; }
@@ -63,6 +64,21 @@ namespace Library.SystemModels
             }
         }
         private MagicSchool _School;
+
+        public MagicProperty Property
+        {
+            get { return _Property; }
+            set
+            {
+                if (_Property == value) return;
+
+                var oldValue = _Property;
+                _Property = value;
+
+                OnChanged(oldValue, value, "Property");
+            }
+        }
+        private MagicProperty _Property;
 
         public int Icon
         {

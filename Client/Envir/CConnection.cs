@@ -1,4 +1,11 @@
-﻿using System;
+﻿using Client.Controls;
+using Client.Models;
+using Client.Scenes;
+using Client.Scenes.Views;
+using Library;
+using Library.Network;
+using Library.SystemModels;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -6,16 +13,9 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-using Client.Controls;
-using Client.Models;
-using Client.Scenes;
-using Client.Scenes.Views;
-using Library.Network;
-using Library;
-using Library.SystemModels;
+using C = Library.Network.ClientPackets;
 using G = Library.Network.GeneralPackets;
 using S = Library.Network.ServerPackets;
-using C = Library.Network.ClientPackets;
 
 namespace Client.Envir
 {
@@ -110,6 +110,9 @@ namespace Client.Envir
                 case DisconnectReason.Banned:
                     DXMessageBox.Show("Disconnected from server\nReason: You have been banned.", "Disconnected", DialogAction.ReturnToLogin);
                     break;
+                case DisconnectReason.Kicked:
+                    DXMessageBox.Show("Disconnected from server\nReason: You have been kicked.", "Disconnected", DialogAction.ReturnToLogin);
+                    break;
                 case DisconnectReason.Crashed:
                     DXMessageBox.Show("Disconnected from server\nReason: Server Crashed.", "Disconnected", DialogAction.ReturnToLogin);
                     break;
@@ -120,6 +123,7 @@ namespace Client.Envir
             if (this == CEnvir.Connection)
                 CEnvir.Connection = null;
         }
+
         public void Process(G.Connected p)
         {
             Enqueue(new G.Connected());
@@ -139,8 +143,11 @@ namespace Client.Envir
         }
         public void Process(G.GoodVersion p)
         {
+            Encryption.SetKey(p.DatabaseKey);
+
             LoginScene scene = DXControl.ActiveScene as LoginScene;
-            scene?.ShowLogin();
+
+            scene?.LoadDatabase();
 
             Enqueue(new C.SelectLanguage { Language = Config.Language });
         }
@@ -277,26 +284,26 @@ namespace Client.Envir
             LoginScene login = DXControl.ActiveScene as LoginScene;
             if (login == null) return;
 
-            login.RequestPassswordBox.RequestAttempted = false;
+            login.RequestPasswordBox.RequestAttempted = false;
 
             DateTime expiry;
             DXMessageBox box;
             switch (p.Result)
             {
                 case RequestPasswordResetResult.Disabled:
-                    login.RequestPassswordBox.Clear();
+                    login.RequestPasswordBox.Clear();
                     DXMessageBox.Show("Password Reset is currently disabled.", "Reset Password");
                     break;
                 case RequestPasswordResetResult.BadEMail:
-                    login.RequestPassswordBox.EMailTextBox.SetFocus();
+                    login.RequestPasswordBox.EMailTextBox.SetFocus();
                     DXMessageBox.Show("E-Mail is not acceptable.", "Reset Password");
                     break;
                 case RequestPasswordResetResult.AccountNotFound:
-                    login.RequestPassswordBox.EMailTextBox.SetFocus();
+                    login.RequestPasswordBox.EMailTextBox.SetFocus();
                     DXMessageBox.Show("Account does not exist.", "Reset Password");
                     break;
                 case RequestPasswordResetResult.AccountNotActivated:
-                    login.ShowActivationBox(login.RequestPassswordBox);
+                    login.ShowActivationBox(login.RequestPasswordBox);
                     break;
                 case RequestPasswordResetResult.ResetDelay:
                     expiry = CEnvir.Now.Add(p.Duration);
@@ -308,8 +315,8 @@ namespace Client.Envir
                     {
                         if (CEnvir.Now > expiry)
                         {
-                            if (login.RequestPassswordBox.CanReset)
-                                login.RequestPassswordBox.Request();
+                            if (login.RequestPasswordBox.CanReset)
+                                login.RequestPasswordBox.Request();
                             box.ProcessAction = null;
                             return;
                         }
@@ -331,8 +338,8 @@ namespace Client.Envir
                     {
                         if (CEnvir.Now > expiry)
                         {
-                            if (login.RequestPassswordBox.CanReset)
-                                login.RequestPassswordBox.Request();
+                            if (login.RequestPasswordBox.CanReset)
+                                login.RequestPasswordBox.Request();
                             box.ProcessAction = null;
                             return;
                         }
@@ -346,7 +353,7 @@ namespace Client.Envir
                     };
                     break;
                 case RequestPasswordResetResult.Success:
-                    login.RequestPassswordBox.Clear();
+                    login.RequestPasswordBox.Clear();
                     DXMessageBox.Show("Password reset request success\n" +
                                       "Please check your E-Mail for further instructions.", "Reset Password");
                     break;
@@ -538,7 +545,7 @@ namespace Client.Envir
                     login.LoginBox.Visible = false;
                     login.AccountBox.Visible = false;
                     login.ChangeBox.Visible = false;
-                    login.RequestPassswordBox.Visible = false;
+                    login.RequestPasswordBox.Visible = false;
                     login.ResetBox.Visible = false;
                     login.ActivationBox.Visible = false;
                     login.RequestActivationBox.Visible = false;
@@ -552,7 +559,7 @@ namespace Client.Envir
                     }
 
                     login.Dispose();
-                    DXSoundManager.Stop(SoundIndex.LoginScene);
+                    DXSoundManager.Stop(SoundIndex.LoginScene2);
                     DXSoundManager.Play(SoundIndex.SelectScene);
 
                     p.Characters.Sort((x1, x2) => x2.LastLogin.CompareTo(x1.LastLogin));
@@ -768,7 +775,9 @@ namespace Client.Envir
 
                         if (!string.IsNullOrEmpty(p.Message)) DXMessageBox.Show(p.Message, "Start Game");
 
-                        GameScene.Game.CompanionFilterBox.Refresh();
+                        GameScene.Game.CompanionBox.RefreshFilter();
+
+                        GameScene.Game.CharacterBox.UpdateDiscipline();
 
                         break;
                 }
@@ -791,7 +800,6 @@ namespace Client.Envir
         {
             GameScene.Game.DayTime = p.DayTime;
         }
-
         public void Process(S.UserLocation p)
         {
             GameScene.Game.Displacement(p.Direction, p.Location);
@@ -868,18 +876,38 @@ namespace Client.Envir
                 PlayerObject player = (PlayerObject)ob;
 
                 player.LibraryWeaponShape = p.Weapon;
+
                 player.ArmourShape = p.Armour;
                 player.ArmourColour = p.ArmourColour;
+
+                player.CostumeShape = p.Costume;
+
                 player.HelmetShape = p.Helmet;
                 player.HorseShape = p.HorseArmour;
-                player.ArmourImage = p.ArmourImage;
+
                 player.ShieldShape = p.Shield;
-                player.EmblemShape = p.EmblemShape;
-                player.WingsShape = p.WingsShape;
+
+                player.HideHead = p.HideHead;
+
+                player.ArmourEffect = p.ArmourEffect;
+                player.EmblemEffect = p.EmblemEffect;
+                player.WeaponEffect = p.WeaponEffect;
+                player.ShieldEffect = p.ShieldEffect;
 
                 player.Light = p.Light;
                 if (player == MapObject.User)
+                {
                     player.Light = Math.Max(p.Light, 3);
+
+                    if (p.Light == 0)
+                    {
+                        player.LightColour = Globals.PlayerLightColour;
+                    }
+                    else 
+                    {
+                        player.LightColour = Globals.NoneColour;
+                    }
+                }
 
                 player.UpdateLibraries();
                 return;
@@ -936,7 +964,6 @@ namespace Client.Envir
                 {
                     switch (((MonsterObject)ob).Image)
                     {
-
                         case MonsterImage.VoraciousGhost:
                         case MonsterImage.DevouringGhost:
                         case MonsterImage.CorpseRaisingGhost:
@@ -963,15 +990,14 @@ namespace Client.Envir
         {
             if (MapObject.User.ObjectID == p.ObjectID && !GameScene.Game.Observer)
             {
-
                 if (MapObject.User.CurrentLocation != p.Location || MapObject.User.Direction != p.Direction)
                     GameScene.Game.Displacement(p.Direction, p.Location);
+
                 MapObject.User.ServerTime = DateTime.MinValue;
 
                 MapObject.User.NextActionTime += p.Slow;
                 return;
             }
-
 
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
@@ -1021,6 +1047,7 @@ namespace Client.Envir
 
                 if (player.Interupt)
                     player.FrameStart = DateTime.MinValue;
+
                 return;
             }
         }
@@ -1030,49 +1057,98 @@ namespace Client.Envir
             GameScene.Game.User.Horse = p.Horse;
         }
 
-        public void Process(S.ObjectStruck p)
+        public void Process(S.ObjectFishing p)
         {
-
-
-
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
                 if (ob.ObjectID != p.ObjectID) continue;
 
-                if (ob == MapObject.User) //{
+                if (ob == MapObject.User)
                 {
-                    GameScene.Game.CanRun = false;
-                    //   MapObject.User.NextRunTime = CEnvir.Now.AddMilliseconds(600);
-                    //MapObject.User.NextActionTime = CEnvir.Now.AddMilliseconds(300);
+                    MapObject.User.ServerTime = DateTime.MinValue;
 
-                    /* if (MapObject.User.ServerTime > DateTime.MinValue) //fix desyncing attack timers and being struck
-                     {
-                         switch (MapObject.User.CurrentAction)
-                         {
-                             case MirAction.Attack:
-                             case MirAction.RangeAttack:
-                                 MapObject.User.AttackTime += TimeSpan.FromMilliseconds(300);
-                                 break;
-                             case MirAction.Spell:
-                                 MapObject.User.NextMagicTime += TimeSpan.FromMilliseconds(300);
-                                 break;
-                         }
-                     }*/
+                    GameScene.Game.MapControl.FishingState = p.State;
+
+                    MapObject.User.FishingState = p.State;
+                    MapObject.User.FishFound = p.FishFound;
+                    MapObject.User.FloatLocation = p.FloatLocation;
+
+                    if (p.State == FishingState.Cancel)
+                        GameScene.Game.MapControl.FishingState = FishingState.None;
+
+                    GameScene.Game.FishingCatchBox.Visible = p.State == FishingState.Cast;
+
+                    if (p.State == FishingState.Reel)
+                    {
+                        if (GameScene.Game.FishingCatchBox.AutoCastCheckBox.Checked)
+                            GameScene.Game.MapControl.AutoCast = true;
+
+                        MapObject.User.ActionQueue.Add(new ObjectAction(MirAction.Fishing, p.Direction, MapObject.User.CurrentLocation, p.State, p.FloatLocation, p.FishFound));
+                    }
+                }
+                else
+                {
+                    ob.ActionQueue.Add(new ObjectAction(MirAction.Fishing, p.Direction, ob.CurrentLocation, p.State, p.FloatLocation, p.FishFound));
                 }
 
-                //   Point loc = ob.ActionQueue.Count > 0 ? ob.ActionQueue[ob.ActionQueue.Count - 1].Location : ob.CurrentLocation;
+                return;
+            }
+        }
 
-                // ob.ActionQueue.Add(new ObjectAction(MirAction.Struck, p.Direction, loc, p.AttackerID, p.Element));
+        public void Process(S.FishingStats p)
+        {
+            GameScene.Game.FishingCatchBox.Update(p);
+        }
 
-                ob.Struck(p.AttackerID, p.Element);
+        public void Process(S.ObjectStruck p)
+        {
+            foreach (MapObject ob in GameScene.Game.MapControl.Objects)
+            {
+                if (ob.ObjectID != p.ObjectID) continue;
 
+                if (ob == MapObject.User)
+                {
+                    if (GameScene.Game.MapControl.FishingState != FishingState.None)
+                        GameScene.Game.MapControl.FishingState = FishingState.Cancel;
+
+                    GameScene.Game.CanRun = false;
+                    
+                    if (GameScene.Game.StruckEnabled)
+                    {
+                        MapObject.User.NextRunTime = CEnvir.Now.AddMilliseconds(600);
+                        MapObject.User.NextActionTime = CEnvir.Now.AddMilliseconds(300);
+
+                        if (MapObject.User.ServerTime > DateTime.MinValue) //fix desyncing attack timers and being struck
+                        {
+                            switch (MapObject.User.CurrentAction)
+                            {
+                                case MirAction.Attack:
+                                case MirAction.RangeAttack:
+                                    MapObject.User.AttackTime += TimeSpan.FromMilliseconds(300);
+                                    break;
+                                case MirAction.Spell:
+                                    MapObject.User.NextMagicTime += TimeSpan.FromMilliseconds(300);
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                if (GameScene.Game.StruckEnabled)
+                {
+                    Point loc = ob.ActionQueue.Count > 0 ? ob.ActionQueue[^1].Location : ob.CurrentLocation;
+
+                    ob.ActionQueue.Add(new ObjectAction(MirAction.Struck, p.Direction, loc, p.AttackerID, p.Element));
+                }
+                else
+                {
+                    ob.Struck(p.AttackerID, p.Element);
+                }
                 return;
             }
         }
         public void Process(S.ObjectDash p)
         {
-
-
             if (MapObject.User.ObjectID == p.ObjectID && !GameScene.Game.Observer)
                 MapObject.User.ServerTime = DateTime.MinValue;
 
@@ -1110,6 +1186,7 @@ namespace Client.Envir
                 return;
             }
         }
+
         public void Process(S.ObjectMining p)
         {
             if (MapObject.User.ObjectID == p.ObjectID && !GameScene.Game.Observer)
@@ -1174,6 +1251,7 @@ namespace Client.Envir
                 MapObject.User.MagicLocations = p.Locations;
                 MapObject.User.MagicCast = p.Cast;
                 MapObject.User.NextActionTime += p.Slow;
+                MapObject.User.AttackElement = p.AttackElement;
                 return;
             }
 
@@ -1181,10 +1259,86 @@ namespace Client.Envir
             {
                 if (ob.ObjectID != p.ObjectID) continue;
 
-                ob.ActionQueue.Add(new ObjectAction(MirAction.Spell, p.Direction, p.CurrentLocation, p.Type, p.Targets, p.Locations, p.Cast));
+                ob.ActionQueue.Add(new ObjectAction(MirAction.Spell, p.Direction, p.CurrentLocation, p.Type, p.Targets, p.Locations, p.Cast, p.AttackElement));
                 return;
             }
         }
+        public void Process(S.ObjectProjectile p)
+        {
+            MapObject source = GameScene.Game.MapControl.Objects.FirstOrDefault(x => x.ObjectID == p.ObjectID);
+
+            if (source == null) return;
+
+            var targets = new List<MapObject>();
+            var locations = p.Locations;
+
+            foreach (uint target in p.Targets)
+            {
+                MapObject attackTarget = GameScene.Game.MapControl.Objects.FirstOrDefault(x => x.ObjectID == target);
+
+                if (attackTarget == null) continue;
+
+                targets.Add(attackTarget);
+            }
+
+            MirEffect spell;
+
+            switch (p.Type)
+            {
+                case MagicType.ChainLightning:
+                    {
+                        if (locations.Count > 0)
+                            DXSoundManager.Play(SoundIndex.ChainLightningEnd);
+                    }
+                    break;
+                case MagicType.LightningStrike:
+                    {
+                        foreach (MapObject attackTarget in targets)
+                        {
+                            source.Effects.Add(spell = new MirProjectile(500, 8, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx6, 35, 35, Globals.LightningColour, source.CurrentLocation)
+                            {
+                                Blend = true,
+                                Target = attackTarget,
+                                Skip = 0
+                            });
+                            spell.Process();
+                        }
+
+                        if (targets.Count > 0)
+                            DXSoundManager.Play(SoundIndex.LightningBeamEnd);
+                    }
+                    break;
+                case MagicType.FireBounce:
+                    {
+                        foreach (MapObject attackTarget in targets)
+                        {
+                            source.Effects.Add(spell = new MirProjectile(1640, 6, TimeSpan.FromMilliseconds(100), LibraryFile.Magic, 35, 35, Globals.FireColour, source.CurrentLocation, typeof(Client.Models.Particles.FireballTrail))
+                            {
+                                Blend = true,
+                                Target = attackTarget,
+                            });
+
+                            spell.CompleteAction += () =>
+                            {
+                                attackTarget.Effects.Add(spell = new MirEffect(1800, 10, TimeSpan.FromMilliseconds(100), LibraryFile.Magic, 10, 35, Globals.FireColour)
+                                {
+                                    Blend = true,
+                                    Target = attackTarget,
+                                });
+                                spell.Process();
+
+                                DXSoundManager.Play(SoundIndex.GreaterFireBallEnd);
+                            };
+                            spell.Process();
+                        }
+
+                        if (targets.Count > 0)
+                            DXSoundManager.Play(SoundIndex.GreaterFireBallTravel);
+                    }
+                    break;
+            }
+        }
+
         public void Process(S.ObjectDied p)
         {
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
@@ -1241,6 +1395,15 @@ namespace Client.Envir
                         });
 
                         DXSoundManager.Play(SoundIndex.TeleportIn);
+                        break;
+                    case Effect.ThunderBolt:
+                        ob.Effects.Add(new MirEffect(1450, 3, TimeSpan.FromMilliseconds(150), LibraryFile.Magic, 150, 50, Globals.LightningColour)
+                        {
+                            Blend = true,
+                            Target = ob
+                        });
+
+                        DXSoundManager.Play(SoundIndex.LightningStrikeEnd);
                         break;
                     case Effect.FullBloom:
                         ob.Effects.Add(new MirEffect(1700, 4, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx4, 30, 60, Color.White)
@@ -1333,22 +1496,8 @@ namespace Client.Envir
                             BlendRate = 0.6F
                         });
                         break;
-                    #region Thunder Bolt & Thunder Strike
-
-                    case Effect.ThunderBolt:
-
-                        ob.Effects.Add(new MirEffect(1450, 3, TimeSpan.FromMilliseconds(150), LibraryFile.Magic, 150, 50, Globals.LightningColour)
-                        {
-                            Blend = true,
-                            Target = ob
-                        });
-
-                        DXSoundManager.Play(SoundIndex.LightningStrikeEnd);
-                        break;
-
-                    #endregion
                     case Effect.DanceOfSwallow:
-                        ob.Effects.Add(new MirEffect(1300, 8, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx4, 20, 70, Globals.NoneColour) //Element style?
+                        ob.Effects.Add(new MirEffect(1300, 8, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx4, 20, 70, Globals.NoneColour)
                         {
                             Blend = true,
                             Target = ob,
@@ -1357,7 +1506,7 @@ namespace Client.Envir
                         DXSoundManager.Play(SoundIndex.DanceOfSwallowsEnd);
                         break;
                     case Effect.FlashOfLight:
-                        ob.Effects.Add(new MirEffect(2400, 5, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx4, 20, 70, Globals.NoneColour) //Element style?
+                        ob.Effects.Add(new MirEffect(2400, 5, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx4, 20, 70, Globals.NoneColour)
                         {
                             Blend = true,
                             Target = ob,
@@ -1375,6 +1524,15 @@ namespace Client.Envir
 
                         //DXSoundManager.Play(SoundIndex.FlashOfLightEnd);
                         break;
+                    case Effect.ParasiteExplode:
+                        ob.Effects.Add(new MirEffect(700, 7, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx5, 30, 60, Globals.NoneColour)
+                        {
+                            Target = ob,
+                            Blend = true
+                        });
+
+                        DXSoundManager.Play(SoundIndex.ParasiteExplode);
+                        break;
                     case Effect.FrostBiteEnd:
                         ob.Effects.Add(new MirEffect(700, 7, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx5, 30, 60, Globals.IceColour)
                         {
@@ -1384,6 +1542,19 @@ namespace Client.Envir
                         });
 
                         DXSoundManager.Play(SoundIndex.FireStormEnd);
+                        break;
+                    case Effect.ChainOfFireExplode:
+                        var effect = new MirEffect(600, 12, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx10, 30, 60, Globals.FireColour)
+                        {
+                            Target = ob,
+                            Blend = true
+                        };
+
+                        effect.FrameIndexAction = () =>
+                        {
+                            if (effect.FrameIndex == 8)
+                                DXSoundManager.Play(SoundIndex.ChainofFireExplode);
+                        };
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -1414,6 +1585,47 @@ namespace Client.Envir
 
                     DXSoundManager.Play(SoundIndex.SummonShinsuEnd);
                     break;
+                case Effect.MirrorImage:
+                    new MirEffect(1280, 10, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx2, 30, 60, Globals.NoneColour)
+                    {
+                        MapTarget = p.Location,
+                        Blend = true,
+                    };
+
+                    DXSoundManager.Play(SoundIndex.SummonSkeletonEnd);
+                    break;
+                case Effect.CursedDoll:
+                    new MirEffect(700, 13, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx3, 30, 60, Globals.NoneColour)
+                    {
+                        MapTarget = p.Location,
+                        Blend = true,
+                    };
+                    
+                    DXSoundManager.Play(SoundIndex.CursedDollEnd);
+                    break;
+                case Effect.UndeadSoul:
+                    new MirEffect(3300, 10, TimeSpan.FromMilliseconds(100), LibraryFile.MonMagicEx20, 35, 10, Globals.NoneColour)
+                    {
+                        MapTarget = p.Location,
+                        Blend = true,
+                    };
+                    new MirEffect(400, 13, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx10, 35, 10, Globals.NoneColour)
+                    {
+                        MapTarget = p.Location,
+                        Blend = true,
+                    };
+
+                    DXSoundManager.Play(SoundIndex.SummonDeadEnd);
+                    break;
+                case Effect.BurningFireExplode:
+                    new MirEffect(1100, 10, TimeSpan.FromMilliseconds(100), LibraryFile.MagicEx6, 30, 60, Globals.FireColour)
+                    {
+                        MapTarget = p.Location,
+                        Blend = true
+                    };
+
+                    DXSoundManager.Play(SoundIndex.FireStormEnd);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -1425,6 +1637,10 @@ namespace Client.Envir
                 if (ob.ObjectID != p.ObjectID) continue;
 
                 ob.VisibleBuffs.Add(p.Type);
+
+                if (p.Type == BuffType.SuperiorMagicShield)
+                    ob.EndMagicEffect(MagicEffect.MagicShield);
+
                 return;
             }
         }
@@ -1497,14 +1713,25 @@ namespace Client.Envir
         {
             MapObject.User.Magics[p.Magic.Info] = p.Magic;
 
-            GameScene.Game.MagicBox.Magics[p.Magic.Info].Refresh();
+            if (GameScene.Game.MagicBox.Magics.ContainsKey(p.Magic.Info))
+                GameScene.Game.MagicBox.Magics[p.Magic.Info].Refresh();
+
+            if (GameScene.Game.CharacterBox.DisciplineMagics.ContainsKey(p.Magic.Info))
+                GameScene.Game.CharacterBox.DisciplineMagics[p.Magic.Info].Refresh();
         }
+
         public void Process(S.MagicLeveled p)
         {
             MapObject.User.Magics[p.Info].Level = p.Level;
             MapObject.User.Magics[p.Info].Experience = p.Experience;
-            GameScene.Game.MagicBox.Magics[p.Info].Refresh();
+
+            if (GameScene.Game.MagicBox.Magics.ContainsKey(p.Info))
+                GameScene.Game.MagicBox.Magics[p.Info].Refresh();
+
+            if (GameScene.Game.CharacterBox.DisciplineMagics.ContainsKey(p.Info))
+                GameScene.Game.CharacterBox.DisciplineMagics[p.Info].Refresh();
         }
+
         public void Process(S.MagicCooldown p)
         {
             MapObject.User.Magics[p.Info].NextCast = CEnvir.Now.AddMilliseconds(p.Delay);
@@ -1523,25 +1750,30 @@ namespace Client.Envir
                     GameScene.Game.User.CanHalfMoon = p.CanUse;
                     break;
                 case MagicType.DestructiveSurge:
-                    GameScene.Game.User.CanDestructiveBlow = p.CanUse;
+                    GameScene.Game.User.CanDestructiveSurge = p.CanUse;
                     break;
                 case MagicType.FlamingSword:
                     GameScene.Game.User.CanFlamingSword = p.CanUse;
                     if (p.CanUse)
-                        GameScene.Game.ReceiveChat("Energy builds up within your weapon, Flaming Sword is ready.", MessageType.Hint);
+                        GameScene.Game.ReceiveChat(CEnvir.Language.WeaponEnergyFlamingSword, MessageType.Hint);
                     break;
                 case MagicType.DragonRise:
                     GameScene.Game.User.CanDragonRise = p.CanUse;
                     if (p.CanUse)
-                        GameScene.Game.ReceiveChat("Energy builds up within your weapon, Dragon Rise is ready.", MessageType.Hint);
+                        GameScene.Game.ReceiveChat(CEnvir.Language.WeaponEnergyDragonRise, MessageType.Hint);
                     break;
                 case MagicType.BladeStorm:
                     GameScene.Game.User.CanBladeStorm = p.CanUse;
                     if (p.CanUse)
-                        GameScene.Game.ReceiveChat("Energy builds up within your weapon, Blade Storm is ready.", MessageType.Hint);
+                        GameScene.Game.ReceiveChat(CEnvir.Language.WeaponEnergyBladeStorm, MessageType.Hint);
                     break;
                 case MagicType.FlameSplash:
                     GameScene.Game.User.CanFlameSplash = p.CanUse;
+                    break;
+                case MagicType.DefensiveBlow:
+                    GameScene.Game.User.CanDefensiveBlow = p.CanUse;
+                    if (p.CanUse)
+                        GameScene.Game.ReceiveChat(CEnvir.Language.WeaponEnergyDefensiveBlow, MessageType.Hint);
                     break;
                 case MagicType.FullBloom:
                 case MagicType.WhiteLotus:
@@ -1551,9 +1783,17 @@ namespace Client.Envir
                     if (GameScene.Game.User.AttackMagic == p.Magic)
                         GameScene.Game.User.AttackMagic = MagicType.None;
                     break;
+                case MagicType.DragonBlood:
+                    GameScene.Game.User.CanPoisonAttack = p.CanUse;
+                    break;
+                case MagicType.CalamityOfFullMoon:
+                    GameScene.Game.User.CanFullMoonAttack = p.CanUse;
+                    break;
+                case MagicType.WaningMoon:
+                    GameScene.Game.User.CanWaningMoonAttack = p.CanUse;
+                    break;
             }
         }
-
 
         public void Process(S.ManaChanged p)
         {
@@ -1566,6 +1806,19 @@ namespace Client.Envir
                 return;
             }
         }
+
+        public void Process(S.FocusChanged p)
+        {
+            foreach (MapObject ob in GameScene.Game.MapControl.Objects)
+            {
+                if (ob.ObjectID != p.ObjectID) continue;
+
+                ob.CurrentFP += p.Change;
+
+                return;
+            }
+        }
+
         public void Process(S.InformMaxExperience p)
         {
             MapObject.User.MaxExperience = p.MaxExperience;
@@ -1576,7 +1829,7 @@ namespace Client.Envir
             MapObject.User.Experience = p.Experience;
             MapObject.User.MaxExperience = p.MaxExperience;
 
-            GameScene.Game.ReceiveChat("Level Increased", MessageType.System);
+            GameScene.Game.ReceiveChat(CEnvir.Language.LevelIncreased, MessageType.System);
         }
         public void Process(S.GainedExperience p)
         {
@@ -1586,14 +1839,11 @@ namespace Client.Envir
 
             if (p.Amount < 0)
             {
-                GameScene.Game.ReceiveChat($"Experience Lost {p.Amount:#,##0.#}.", MessageType.Combat);
+                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.LostExperience, p.Amount), MessageType.Combat);
                 return;
             }
 
-
-            string message = $"Experience Gained {p.Amount:#,##0.#}";
-
-            if (weapon != null && weapon.Info.Effect != ItemEffect.PickAxe && (weapon.Flags & UserItemFlags.Refinable) != UserItemFlags.Refinable && (weapon.Flags & UserItemFlags.NonRefinable) != UserItemFlags.NonRefinable && weapon.Level < Globals.WeaponExperienceList.Count)
+            if (weapon != null && weapon.Info.ItemEffect != ItemEffect.PickAxe && (weapon.Flags & UserItemFlags.Refinable) != UserItemFlags.Refinable && (weapon.Flags & UserItemFlags.NonRefinable) != UserItemFlags.NonRefinable && weapon.Level < Globals.WeaponExperienceList.Count)
             {
                 weapon.Experience += p.Amount / 10;
 
@@ -1603,13 +1853,11 @@ namespace Client.Envir
                     weapon.Level++;
                     weapon.Flags |= UserItemFlags.Refinable;
 
-                    message += ", Your weapon is ready for refine";
+                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GainedExperienceAndReadyForRefine, p.Amount), MessageType.Combat);
                 }
                 else
-                    message += $", Weapon Experience {p.Amount / 10:#,##0.#}";
+                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GainedExperienceAndWeaponExperience, p.Amount, p.Amount / 10), MessageType.Combat);
             }
-
-            GameScene.Game.ReceiveChat(message + ".", MessageType.Combat);
         }
         public void Process(S.ObjectLeveled p)
         {
@@ -1629,8 +1877,6 @@ namespace Client.Envir
         }
         public void Process(S.ObjectRevive p)
         {
-
-
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
                 if (ob.ObjectID != p.ObjectID) continue;
@@ -1654,22 +1900,20 @@ namespace Client.Envir
 
         public void Process(S.ItemsGained p)
         {
-
-
             foreach (ClientUserItem item in p.Items)
             {
                 ItemInfo displayInfo = item.Info;
 
-                if (item.Info.Effect == ItemEffect.ItemPart)
+                if (item.Info.ItemEffect == ItemEffect.ItemPart)
                     displayInfo = Globals.ItemInfoList.Binding.First(x => x.Index == item.AddedStats[Stat.ItemIndex]);
 
                 item.New = true;
-                string text = item.Count > 1 ? $"You gained {displayInfo.ItemName} x{item.Count}." : $"You gained {displayInfo.ItemName}.";
+                string text = item.Count > 1 ? string.Format(CEnvir.Language.ItemsGained, displayInfo.ItemName, item.Count) : string.Format(CEnvir.Language.ItemGained, displayInfo.ItemName);
 
                 if ((item.Flags & UserItemFlags.QuestItem) == UserItemFlags.QuestItem)
                     text += " (Quest)";
 
-                if (item.Info.Effect == ItemEffect.ItemPart)
+                if (item.Info.ItemEffect == ItemEffect.ItemPart)
                     text += " [Part]";
 
                 GameScene.Game.ReceiveChat(text, MessageType.Combat);
@@ -1923,13 +2167,11 @@ namespace Client.Envir
                         throw new ArgumentOutOfRangeException();
                 }
 
-
-
                 DXItemCell fromCell = grid[cellLinkInfo.Slot];
                 fromCell.Locked = false;
+                fromCell.Selected = false;
 
                 if (!p.Success) continue;
-
 
                 if (!fromCell.Item.Info.ShouldLinkInfo)
                 {
@@ -1948,7 +2190,6 @@ namespace Client.Envir
                     }
                 }
 
-
                 if (cellLinkInfo.Count == fromCell.Item.Count)
                     fromCell.Item = null;
                 else
@@ -1956,7 +2197,10 @@ namespace Client.Envir
 
                 fromCell.RefreshItem();
             }
+
+            DXItemCell.SelectedCell = null;
         }
+
         public void Process(S.ItemStatsChanged p)
         {
             DXItemCell[] grid;
@@ -1990,7 +2234,7 @@ namespace Client.Envir
 
             if (p.NewStats.Count == 0)
             {
-                GameScene.Game.ReceiveChat($"Nothing happen to your {fromCell.Item.Info.ItemName}", MessageType.Hint);
+                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.NothingHappen, fromCell.Item.Info.ItemName), MessageType.Hint);
                 return;
             }
 
@@ -1998,7 +2242,7 @@ namespace Client.Envir
             {
                 if (pair.Key == Stat.WeaponElement)
                 {
-                    GameScene.Game.ReceiveChat($"Your {fromCell.Item.Info.ItemName} has been effected: New Element {(Element)fromCell.Item.AddedStats[Stat.WeaponElement]}", MessageType.Hint);
+                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.ItemStatsNewElement, fromCell.Item.Info.ItemName, (Element)fromCell.Item.AddedStats[Stat.WeaponElement]), MessageType.Hint);
                     continue;
                 }
 
@@ -2006,7 +2250,7 @@ namespace Client.Envir
 
                 if (string.IsNullOrEmpty(msg)) continue;
 
-                GameScene.Game.ReceiveChat($"Your {fromCell.Item.Info.ItemName} has been effected: {msg}", MessageType.Hint);
+                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.ItemStatsEffected, fromCell.Item.Info.ItemName, msg), MessageType.Hint);
             }
 
             fromCell.RefreshItem();
@@ -2079,7 +2323,7 @@ namespace Client.Envir
 
 
             if (p.CurrentDurability == 0)
-                GameScene.Game.ReceiveChat($"Your item {fromCell.Item.Info.ItemName} has dropped to durability 0", MessageType.System);
+                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.ItemDurabilityDrop, fromCell.Item.Info.ItemName), MessageType.System);
 
             fromCell.RefreshItem();
         }
@@ -2095,8 +2339,6 @@ namespace Client.Envir
         }
         public void Process(S.ItemSplit p)
         {
-
-
             DXItemCell fromCell;
 
             switch (p.Grid)
@@ -2162,9 +2404,8 @@ namespace Client.Envir
                 fromCell.Item.Count -= p.Count;
 
             fromCell.RefreshItem();
-
-
         }
+
         public void Process(S.ItemLock p)
         {
             DXItemCell cell;
@@ -2204,6 +2445,89 @@ namespace Client.Envir
 
             cell.RefreshItem();
         }
+        public void Process(S.ItemSort p)
+        {
+            DXItemCell[] grid;
+
+            switch (p.Grid)
+            {
+                case GridType.Inventory:
+                    grid = GameScene.Game.InventoryBox.Grid.Grid;
+                    break;
+                case GridType.Storage:
+                    grid = GameScene.Game.StorageBox.Grid.Grid;
+                    break;
+                case GridType.PartsStorage:
+                    grid = GameScene.Game.StorageBox.PartGrid.Grid;
+                    break;
+                default:
+                    return;
+            }
+
+            for (int i = 0; i < grid.Length; i++)
+            {
+                grid[i].Locked = false;
+                grid[i].Selected = false;
+                grid[i].Item = null;
+            }
+
+            foreach (var item in p.Items)
+            {
+                switch (p.Grid)
+                {
+                    case GridType.Inventory:
+                        grid[item.Slot].Item = item;
+                        break;
+                    case GridType.Storage:
+                        grid[item.Slot].Item = item;
+                        break;
+                    case GridType.PartsStorage:
+                        grid[item.Slot - Globals.PartsStorageOffset].Item = item;
+                        break;
+                }
+            }
+        }
+
+        public void Process(S.ItemDelete p)
+        {
+            DXItemCell cell;
+
+            switch (p.Grid)
+            {
+                case GridType.Inventory:
+                    cell = GameScene.Game.InventoryBox.Grid.Grid[p.Slot];
+                    break;
+                default:
+                    return;
+            }
+
+            cell.Locked = false;
+            cell.Selected = false;
+            DXItemCell.SelectedCell = null;
+
+            if (!p.Success) return;
+
+            if (!cell.Item.Info.ShouldLinkInfo)
+            {
+                for (int i = 0; i < GameScene.Game.BeltBox.Links.Length; i++)
+                {
+                    ClientBeltLink link = GameScene.Game.BeltBox.Links[i];
+                    if (link.LinkItemIndex != cell.Item.Index) continue;
+
+                    link.LinkItemIndex = -1;
+
+                    if (i < GameScene.Game.BeltBox.Grid.Grid.Length)
+                        GameScene.Game.BeltBox.Grid.Grid[i].QuickItem = null; //set belt to null
+
+                    if (!GameScene.Game.Observer)
+                        CEnvir.Enqueue(new C.BeltLinkChanged { Slot = link.Slot, LinkIndex = link.LinkInfoIndex, LinkItemIndex = link.LinkItemIndex }); //Update server
+                }
+            }
+
+            cell.Item = null;
+            cell.RefreshItem();
+        }
+
         public void Process(S.ItemExperience p)
         {
             DXItemCell cell;
@@ -2240,17 +2564,13 @@ namespace Client.Envir
             cell.RefreshItem();
         }
 
-
-
         public void Process(S.Chat p)
         {
             if (GameScene.Game == null) return;
 
-            GameScene.Game.ReceiveChat(p.Text, p.Type);
+            GameScene.Game.ReceiveChat(p.Text, p.Type, p.LinkedItems);
 
             if (p.Type != MessageType.Normal || p.ObjectID <= 0) return;
-
-            //TODO Items?
 
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
             {
@@ -2520,7 +2840,7 @@ namespace Client.Envir
                 fromCell.Item = null;
                 fromCell.RefreshItem();
 
-                GameScene.Game.ReceiveChat($"Your Refine has been placed successfully, please collect your weapon in {Functions.ToString(Globals.RefineTimes[p.RefineQuality], false)}", MessageType.System);
+                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.RefineSuccess, Functions.ToString(Globals.RefineTimes[p.RefineQuality], false)), MessageType.System);
             }
         }
         public void Process(S.NPCMasterRefine p)
@@ -2900,8 +3220,7 @@ namespace Client.Envir
         {
             GameScene.Game.GroupBox.Members.Add(new ClientPlayerInfo { ObjectID = p.ObjectID, Name = p.Name });
 
-
-            GameScene.Game.ReceiveChat($"-{p.Name} has joined the group.", MessageType.Group);
+            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GroupJoin, p.Name), MessageType.Group);
 
             GameScene.Game.GroupBox.UpdateMembers();
 
@@ -2910,13 +3229,12 @@ namespace Client.Envir
 
             GameScene.Game.BigMapBox.Update(data);
             GameScene.Game.MiniMapBox.Update(data);
-
         }
         public void Process(S.GroupRemove p)
         {
             ClientPlayerInfo info = GameScene.Game.GroupBox.Members.First(x => x.ObjectID == p.ObjectID);
 
-            GameScene.Game.ReceiveChat($"-{info.Name} has left the group.", MessageType.Group);
+            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GroupRemove, info.Name), MessageType.Group);
 
             HashSet<uint> checks = new HashSet<uint>();
 
@@ -2960,8 +3278,7 @@ namespace Client.Envir
 
         public void Process(S.BuffAdd p)
         {
-            MapObject.User.Buffs.Add(p.Buff);
-            MapObject.User.VisibleBuffs.Add(p.Buff.Type);
+            MapObject.User.AddBuff(p.Buff);
 
             GameScene.Game.BuffBox.BuffsChanged();
         }
@@ -2992,8 +3309,6 @@ namespace Client.Envir
         }
         public void Process(S.BuffPaused p)
         {
-
-
             MapObject.User.Buffs.First(x => x.Index == p.Index).Pause = p.Paused;
 
             GameScene.Game.BuffBox.BuffsChanged();
@@ -3003,6 +3318,7 @@ namespace Client.Envir
         {
             MapObject.User.InSafeZone = P.InSafeZone;
         }
+
         public void Process(S.CombatTime p)
         {
             GameScene.Game.User.CombatTime = CEnvir.Now;
@@ -3010,16 +3326,24 @@ namespace Client.Envir
 
         public void Process(S.Inspect p)
         {
-
-
-            GameScene.Game.InspectBox.NewInformation(p);
-
+            if (p.Ranking)
+                GameScene.Game.RankingBox.NewInformation(p);
+            else
+                GameScene.Game.InspectBox.NewInformation(p);
         }
+
         public void Process(S.Rankings p)
         {
             (DXControl.ActiveScene as LoginScene)?.RankingBox.Update(p);
             GameScene.Game?.RankingBox.Update(p);
         }
+
+        public void Process(S.RankSearch p)
+        {
+            (DXControl.ActiveScene as LoginScene)?.RankingBox.Update(p);
+            GameScene.Game?.RankingBox.Update(p);
+        }
+
         public void Process(S.StartObserver p)
         {
             CEnvir.FillStorage(p.Items, true);
@@ -3057,11 +3381,13 @@ namespace Client.Envir
             GameScene.Game.BuffBox.BuffsChanged();
 
             GameScene.Game.RankingBox.StartIndex = index;
+
+            GameScene.Game.CompanionBox.RefreshFilter();
+
+            GameScene.Game.CharacterBox.UpdateDiscipline();
         }
         public void Process(S.ObservableSwitch p)
         {
-
-
             GameScene.Game.RankingBox.Observable = p.Allow;
         }
 
@@ -3149,50 +3475,40 @@ namespace Client.Envir
         }
         public void Process(S.MarketPlaceStoreBuy p)
         {
-
-
             GameScene.Game.MarketPlaceBox.StoreBuyButton.Enabled = true;
         }
 
-
         public void Process(S.MailList p)
         {
-
-
-            GameScene.Game.MailBox.MailList.AddRange(p.Mail);
-            GameScene.Game.MailBox.UpdateIcon();
+            GameScene.Game.CommunicationBox.ReceivedMailList.AddRange(p.Mail);
+            GameScene.Game.CommunicationBox.UpdateIcon();
         }
+
         public void Process(S.MailNew p)
         {
-
-
-
-            GameScene.Game.MailBox.MailList.Insert(0, p.Mail);
-            GameScene.Game.MailBox.RefreshList();
-            GameScene.Game.MailBox.UpdateIcon();
-            GameScene.Game.ReceiveChat($"You have received a new mail from {p.Mail.Sender}.", MessageType.System);
+            GameScene.Game.CommunicationBox.ReceivedMailList.Insert(0, p.Mail);
+            GameScene.Game.CommunicationBox.RefreshList();
+            GameScene.Game.CommunicationBox.UpdateIcon();
+            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.MailNew, p.Mail.Sender), MessageType.System);
         }
+
         public void Process(S.MailDelete p)
         {
-
-
-            ClientMailInfo mail = GameScene.Game.MailBox.MailList.FirstOrDefault(x => x.Index == p.Index);
+            ClientMailInfo mail = GameScene.Game.CommunicationBox.ReceivedMailList.FirstOrDefault(x => x.Index == p.Index);
 
             if (mail == null) return;
 
-            GameScene.Game.MailBox.MailList.Remove(mail);
-            GameScene.Game.MailBox.RefreshList();
-            GameScene.Game.MailBox.UpdateIcon();
+            GameScene.Game.CommunicationBox.ReceivedMailList.Remove(mail);
+            GameScene.Game.CommunicationBox.RefreshList();
+            GameScene.Game.CommunicationBox.UpdateIcon();
 
-            if (mail == GameScene.Game.ReadMailBox.Mail)
-                GameScene.Game.ReadMailBox.Mail = null;
+            if (mail == GameScene.Game.CommunicationBox.ReadMail)
+                GameScene.Game.CommunicationBox.ReadMail = null;
         }
 
         public void Process(S.MailItemDelete p)
         {
-
-
-            ClientMailInfo mail = GameScene.Game.MailBox.MailList.FirstOrDefault(x => x.Index == p.Index);
+            ClientMailInfo mail = GameScene.Game.CommunicationBox.ReceivedMailList.FirstOrDefault(x => x.Index == p.Index);
 
             if (mail == null) return;
 
@@ -3202,7 +3518,7 @@ namespace Client.Envir
             {
                 mail.Items.Remove(item);
 
-                foreach (MailRow row in GameScene.Game.MailBox.Rows)
+                foreach (CommunicationReceivedRow row in GameScene.Game.CommunicationBox.ReceivedRows)
                 {
                     if (row.Mail != mail) continue;
 
@@ -3211,11 +3527,11 @@ namespace Client.Envir
                 }
             }
 
-            GameScene.Game.MailBox.UpdateIcon();
+            GameScene.Game.CommunicationBox.UpdateIcon();
 
-            if (mail != GameScene.Game.ReadMailBox.Mail) return;
+            if (mail != GameScene.Game.CommunicationBox.ReadMail) return;
 
-            foreach (DXItemCell cell in GameScene.Game.ReadMailBox.Grid.Grid)
+            foreach (DXItemCell cell in GameScene.Game.CommunicationBox.ReadGrid.Grid)
             {
                 if (cell.Slot != p.Slot) continue;
 
@@ -3223,36 +3539,28 @@ namespace Client.Envir
                 break;
             }
         }
+
         public void Process(S.MailSend p)
         {
-
-
-            GameScene.Game.SendMailBox.SendAttempted = false;
+            GameScene.Game.CommunicationBox.SendAttempted = false;
         }
 
         public void Process(S.ChangeAttackMode p)
         {
-
-
             GameScene.Game.User.AttackMode = p.Mode;
 
             GameScene.Game.ReceiveChat(GameScene.Game.MainPanel.AttackModeLabel.Text, MessageType.System);
-
         }
+
         public void Process(S.ChangePetMode p)
         {
-
-
             GameScene.Game.User.PetMode = p.Mode;
 
             GameScene.Game.ReceiveChat(GameScene.Game.MainPanel.PetModeLabel.Text, MessageType.System);
-
         }
 
         public void Process(S.WeightUpdate p)
         {
-
-
             GameScene.Game.User.BagWeight = p.BagWeight;
             GameScene.Game.User.WearWeight = p.WearWeight;
             GameScene.Game.User.HandWeight = p.HandWeight;
@@ -3260,11 +3568,8 @@ namespace Client.Envir
             GameScene.Game.WeightChanged();
         }
 
-
         public void Process(S.TradeRequest p)
         {
-
-
             DXMessageBox messageBox = new DXMessageBox($"{p.Name} wishes to trade with you, Do you want to accept?", "Trade Request", DXMessageBoxButtons.YesNo);
 
             messageBox.YesButton.MouseClick += (o, e) => CEnvir.Enqueue(new C.TradeRequestResponse { Accept = true });
@@ -3273,23 +3578,17 @@ namespace Client.Envir
         }
         public void Process(S.TradeOpen p)
         {
-
-
             GameScene.Game.TradeBox.Visible = true;
             GameScene.Game.TradeBox.IsTrading = true;
             GameScene.Game.TradeBox.PlayerLabel.Text = p.Name;
         }
         public void Process(S.TradeClose p)
         {
-
-
             GameScene.Game.TradeBox.Visible = false;
             GameScene.Game.TradeBox.Clear();
         }
         public void Process(S.TradeAddItem p)
         {
-
-
             DXItemCell fromCell;
 
             switch (p.Cell.GridType)
@@ -3337,10 +3636,9 @@ namespace Client.Envir
             }
 
         }
+
         public void Process(S.TradeItemAdded p)
         {
-
-
             foreach (DXItemCell cell in GameScene.Game.TradeBox.PlayerGrid.Grid)
             {
                 if (cell.Item != null) continue;
@@ -3349,29 +3647,24 @@ namespace Client.Envir
                 return;
             }
         }
+
         public void Process(S.TradeAddGold p)
         {
-
-
             GameScene.Game.TradeBox.UserGoldLabel.Text = p.Gold.ToString("#,##0");
         }
+
         public void Process(S.TradeGoldAdded p)
         {
-
-
             GameScene.Game.TradeBox.PlayerGoldLabel.Text = p.Gold.ToString("#,##0");
         }
+
         public void Process(S.TradeUnlock p)
         {
-
-
             GameScene.Game.TradeBox.ConfirmButton.Enabled = true;
         }
 
         public void Process(S.GuildCreate p)
         {
-
-
             GameScene.Game.GuildBox.CreateAttempted = false;
         }
         public void Process(S.GuildInfo p)
@@ -3403,20 +3696,17 @@ namespace Client.Envir
                 GameScene.Game.MiniMapBox.Update(data);
             }
         }
+
         public void Process(S.GuildNoticeChanged p)
         {
-
-
             GameScene.Game.GuildBox.GuildInfo.Notice = p.Notice;
 
             if (!GameScene.Game.GuildBox.NoticeTextBox.Editable)
                 GameScene.Game.GuildBox.NoticeTextBox.TextBox.Text = p.Notice;
         }
+
         public void Process(S.GuildGetItem p)
         {
-
-
-
             DXItemCell[] grid;
 
             switch (p.Grid)
@@ -3451,12 +3741,12 @@ namespace Client.Envir
 
             fromCell.Item = p.Item;
         }
+
         public void Process(S.GuildNewItem p)
         {
-
-
             GameScene.Game.GuildBox.StorageGrid.Grid[p.Slot].Item = p.Item;
         }
+
         public void Process(S.GuildUpdate p)
         {
             GameScene.Game.GuildBox.GuildInfo.GuildFunds = p.GuildFunds;
@@ -3473,6 +3763,9 @@ namespace Client.Envir
 
             GameScene.Game.GuildBox.GuildInfo.DefaultPermission = p.DefaultPermission;
             GameScene.Game.GuildBox.GuildInfo.DefaultRank = p.DefaultRank;
+
+            GameScene.Game.GuildBox.GuildInfo.Colour = p.Colour;
+            GameScene.Game.GuildBox.GuildInfo.Flag = p.Flag;
 
             foreach (ClientGuildMemberInfo member in p.Members)
             {
@@ -3506,13 +3799,12 @@ namespace Client.Envir
                 GameScene.Game.MiniMapBox.Update(data);
             }
 
+
             if (GameScene.Game.GuildBox.Visible)
                 GameScene.Game.GuildBox.RefreshGuildDisplay();
         }
         public void Process(S.GuildKick p)
         {
-
-
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
             GameScene.Game.GuildBox.GuildInfo.Members.Remove(info);
@@ -3529,33 +3821,26 @@ namespace Client.Envir
         }
         public void Process(S.GuildIncreaseMember p)
         {
-
-
             GameScene.Game.GuildBox.IncreaseMemberButton.Enabled = true;
         }
+
         public void Process(S.GuildIncreaseStorage p)
         {
             GameScene.Game.GuildBox.IncreaseStorageButton.Enabled = true;
         }
+
         public void Process(S.GuildInviteMember p)
         {
-
-
-            GameScene.Game.GuildBox.AddMemberTextBox.Enabled = true;
             GameScene.Game.GuildBox.AddMemberButton.Enabled = true;
         }
+
         public void Process(S.GuildTax p)
         {
-
-
-            GameScene.Game.GuildBox.GuildTaxBox.Enabled = true;
             GameScene.Game.GuildBox.SetTaxButton.Enabled = true;
         }
 
         public void Process(S.GuildMemberOffline p)
         {
-
-
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
             info.LastOnline = CEnvir.Now;
@@ -3567,8 +3852,6 @@ namespace Client.Envir
         }
         public void Process(S.GuildInvite p)
         {
-
-
             DXMessageBox messageBox = new DXMessageBox($"{p.Name} has invited you to the guild {p.GuildName}\n" +
                                                        $"Do you want to join the guild?", "Guild Invitation", DXMessageBoxButtons.YesNo);
 
@@ -3581,8 +3864,6 @@ namespace Client.Envir
         }
         public void Process(S.GuildMemberOnline p)
         {
-
-
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
             info.LastOnline = DateTime.MaxValue;
@@ -3594,8 +3875,6 @@ namespace Client.Envir
         }
         public void Process(S.GuildMemberContribution p)
         {
-
-
             ClientGuildMemberInfo info = GameScene.Game.GuildBox.GuildInfo.Members.First(x => x.Index == p.Index);
 
             info.DailyContribution += p.Contribution;
@@ -3612,8 +3891,6 @@ namespace Client.Envir
         }
         public void Process(S.GuildDayReset p)
         {
-
-
             foreach (ClientGuildMemberInfo member in GameScene.Game.GuildBox.GuildInfo.Members)
                 member.DailyContribution = 0;
 
@@ -3623,16 +3900,16 @@ namespace Client.Envir
             if (GameScene.Game.GuildBox.Visible)
                 GameScene.Game.GuildBox.RefreshGuildDisplay();
         }
+
         public void Process(S.GuildFundsChanged p)
         {
-
-
             GameScene.Game.GuildBox.GuildInfo.GuildFunds += p.Change;
             GameScene.Game.GuildBox.GuildInfo.DailyGrowth += p.Change;
 
             if (GameScene.Game.GuildBox.Visible)
                 GameScene.Game.GuildBox.RefreshGuildDisplay();
         }
+
         public void Process(S.GuildChanged p)
         {
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
@@ -3644,31 +3921,32 @@ namespace Client.Envir
                 return;
             }
         }
+
         public void Process(S.GuildWar p)
         {
-            GameScene.Game.GuildBox.WarAttempted = false;
 
-            if (p.Success)
-                GameScene.Game.GuildBox.GuildWarTextBox.TextBox.Text = string.Empty;
         }
+
         public void Process(S.GuildWarStarted p)
         {
             GameScene.Game.GuildWars.Add(p.GuildName);
 
-            GameScene.Game.ReceiveChat($"You are at war with {p.GuildName} for {Functions.ToString(p.Duration, true)}", MessageType.Hint);
+            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GuildWarStarted, p.GuildName, Functions.ToString(p.Duration, true)), MessageType.Hint);
 
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
                 ob.NameChanged();
         }
+
         public void Process(S.GuildWarFinished p)
         {
             GameScene.Game.GuildWars.Remove(p.GuildName);
 
-            GameScene.Game.ReceiveChat($"Your war with {p.GuildName} has ended.", MessageType.Hint);
+            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GuildWarFinished, p.GuildName), MessageType.Hint);
 
             foreach (MapObject ob in GameScene.Game.MapControl.Objects)
                 ob.NameChanged();
         }
+
         public void Process(S.GuildConquestStarted p)
         {
             GameScene.Game.ConquestWars.Add(CEnvir.CastleInfoList.Binding.First(x => x.Index == p.Index));
@@ -3692,6 +3970,8 @@ namespace Client.Envir
                 ob.NameChanged();
 
             GameScene.Game.GuildBox.CastlePanels[castle].Update();
+
+            GameScene.Game.GuildBox.RefreshCastleControls();
         }
         public void Process(S.GuildConquestDate p)
         {
@@ -3700,15 +3980,11 @@ namespace Client.Envir
             castle.WarDate = p.WarDate;
         }
 
-
         public void Process(S.ReviveTimers p)
         {
-
-
             GameScene.Game.ItemReviveTime = CEnvir.Now + p.ItemReviveTime;
             GameScene.Game.ReincarnationPillTime = CEnvir.Now + p.ReincarnationPillTime;
         }
-
 
         public void Process(S.QuestChanged p)
         {
@@ -3722,6 +3998,11 @@ namespace Client.Envir
                 quest.SelectedReward = p.Quest.SelectedReward;
                 quest.Tasks.Clear();
                 quest.Tasks.AddRange(p.Quest.Tasks);
+
+                if (quest.Completed)
+                {
+                    DXSoundManager.Play(SoundIndex.QuestComplete);
+                }
             
                 GameScene.Game.QuestChanged(p.Quest);
                 return;
@@ -3729,6 +4010,8 @@ namespace Client.Envir
 
             GameScene.Game.QuestLog.Add(p.Quest);
             GameScene.Game.QuestChanged(p.Quest);
+
+            DXSoundManager.Play(SoundIndex.QuestTake);
         }
 
         public void Process(S.QuestCancelled p)
@@ -3811,16 +4094,16 @@ namespace Client.Envir
             {
                 ItemInfo displayInfo = item.Info;
 
-                if (item.Info.Effect == ItemEffect.ItemPart)
+                if (item.Info.ItemEffect == ItemEffect.ItemPart)
                     displayInfo = Globals.ItemInfoList.Binding.First(x => x.Index == item.AddedStats[Stat.ItemIndex]);
 
                 item.New = true;
-                string text = item.Count > 1 ? $"Your companion gained {displayInfo.ItemName} x{item.Count}." : $"Your companion gained {displayInfo.ItemName}.";
+                string text = item.Count > 1 ? string.Format(CEnvir.Language.CompanionItemsGained, displayInfo.ItemName, item.Count) : string.Format(CEnvir.Language.CompanionItemGained, displayInfo.ItemName);
 
                 if ((item.Flags & UserItemFlags.QuestItem) == UserItemFlags.QuestItem)
                     text += " (Quest)";
 
-                if (item.Info.Effect == ItemEffect.ItemPart)
+                if (item.Info.ItemEffect == ItemEffect.ItemPart)
                     text += " [Part]";
 
                 GameScene.Game.ReceiveChat(text, MessageType.Combat);
@@ -3905,7 +4188,7 @@ namespace Client.Envir
                 Location = p.CurrentLocation,
 
                 Name = p.Name,
-
+        
                 Health = p.Health,
                 MaxHealth = p.MaxHealth,
                 Dead = p.Dead,
@@ -4028,7 +4311,7 @@ namespace Client.Envir
         {
             CEnvir.BlockList.Add(p.Info);
 
-            GameScene.Game.BlockBox.RefreshList();
+            GameScene.Game.CommunicationBox.RefreshBlockList();
         }
         public void Process(S.BlockRemove p)
         {
@@ -4036,12 +4319,62 @@ namespace Client.Envir
 
             CEnvir.BlockList.Remove(block);
 
-            GameScene.Game.BlockBox.RefreshList();
+            GameScene.Game.CommunicationBox.RefreshBlockList();
+        }
+
+        public void Process(S.FriendAdd p)
+        {
+            GameScene.Game.CommunicationBox.FriendList.Add(p.Info);
+            GameScene.Game.CommunicationBox.RefreshFriendList();
+        }
+        public void Process(S.FriendRemove p)
+        {
+            ClientFriendInfo friend = GameScene.Game.CommunicationBox.FriendList.First(x => x.Index == p.Index);
+
+            GameScene.Game.CommunicationBox.FriendList.Remove(friend);
+
+            GameScene.Game.CommunicationBox.RefreshFriendList();
+        }
+
+        public void Process(S.FriendUpdate p)
+        {
+            GameScene.Game.CommunicationBox.FriendList.RemoveAll(x => x.Name == p.Info.Name);
+            GameScene.Game.CommunicationBox.FriendList.Add(p.Info);
+            GameScene.Game.CommunicationBox.RefreshFriendList();
+        }
+
+        public void Process(S.DisciplineUpdate p)
+        {
+            GameScene.Game.User.Discipline = p.Discipline;
+
+            if (GameScene.Game.User.Discipline != null)
+            {
+                GameScene.Game.User.Discipline.DisciplineInfo = Globals.DisciplineInfoList.Binding.First(x => x.Index == p.Discipline.InfoIndex);
+            }
+
+            GameScene.Game.CharacterBox.UpdateDiscipline();
+        }
+
+        public void Process(S.DisciplineExperienceChanged p)
+        {
+            GameScene.Game.User.Discipline.Experience = p.Experience;
+
+            GameScene.Game.CharacterBox.UpdateDiscipline();
+        }
+
+        public void Process(S.NPCRoll p)
+        {
+            GameScene.Game.NPCRollBox.Setup(p.Type, p.Result, false);
+        }
+
+        public void Process(S.SetTimer p)
+        {
+            GameScene.Game.TimerBox.AddTimer(p);
         }
 
         public void Process(S.HelmetToggle p)
         {
-            GameScene.Game.CharacterBox.ShowHelmetBox.Checked = !p.HideHelmet;
+            GameScene.Game.ConfigBox.DisplayHelmetCheckBox.Checked = !p.HideHelmet;
         }
 
         public void Process(S.StorageSize p)
@@ -4057,6 +4390,7 @@ namespace Client.Envir
                 PlayerObject player = (PlayerObject)ob;
 
                 player.Name = p.Name;
+                player.Caption = p.Caption;
                 player.Gender = p.Gender;
                 player.HairType = p.HairType;
                 player.HairColour = p.HairColour;
@@ -4469,7 +4803,7 @@ namespace Client.Envir
 
             if (p.NewStats.Count == 0)
             {
-                GameScene.Game.ReceiveChat($"Nothing happen to your {fromCell.Item.Info.ItemName}", MessageType.Hint);
+                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.NothingHappen, fromCell.Item.Info.ItemName), MessageType.Hint);
                 return;
             }
 
@@ -4480,6 +4814,11 @@ namespace Client.Envir
 
         public void Process(S.JoinInstance p)
         {
+        }
+
+        public void Process(S.SendCompanionFilters p)
+        {
+
         }
     }
 }

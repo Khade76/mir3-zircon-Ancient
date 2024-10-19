@@ -1,78 +1,79 @@
-﻿using Library;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 namespace PluginCore
 {
     public class PluginLoader
     {
-        public static PluginLoader Loader;
-
         public event EventHandler<LogEventArgs> Log;
+        public event EventHandler<ShowViewEventArgs> View;
+        public event EventHandler<ShowMapViewerEventArgs> MapViewer;
 
-        public List<IPluginStart> Plugins = new List<IPluginStart>();
+        public List<IPluginStart> Plugins { get; } = new List<IPluginStart>();
 
-        /// <summary>
-        /// Main entry
-        /// </summary>
-        public PluginLoader()
+        private PluginLoader() { }
+
+        private static PluginLoader instance;
+        public static PluginLoader Instance
         {
-        }
-
-        public static void Init()
-        {
-            if (Loader == null)
+            get
             {
-                Loader = new PluginLoader();
+                instance ??= new PluginLoader();
+                return instance;
             }
         }
 
-        /// <summary>
-        /// Load all plugins in root folder
-        /// </summary>
-        /// <param name="ribbonPage">Reference to the plugin ribbon tab</param>
-        public static void Load(IComponent ribbonPage)
+        public static IPluginStart LoadPlugin(string file)
         {
-            if (Loader == null) return;
+            try
+            {
+                Assembly assembly = Assembly.LoadFrom(file);
+                string filename = Path.GetFileNameWithoutExtension(file);
+
+                Type pluginType = assembly.GetType($"{filename}.Start");
+                if (pluginType != null && typeof(IPluginStart).IsAssignableFrom(pluginType))
+                {
+                    var pluginInstance = (IPluginStart)Activator.CreateInstance(pluginType);
+
+                    AttachEventHandlers(pluginInstance);
+                    Instance.Plugins.Add(pluginInstance);
+
+                    return pluginInstance;
+                }
+            }
+            catch (Exception ex)
+            {
+                Instance.LogMessage(ex.ToString());
+            }
+
+            return null;
+        }
+
+        public static void LoadPlugins(IComponent pluginPage, MirDB.Session session)
+        {
+            if (Instance == null) return;
 
             var files = Directory.GetFiles("./", "Plugin.*.dll", SearchOption.TopDirectoryOnly);
 
             foreach (var file in files)
             {
-                try
+                var pluginInstance = LoadPlugin(file);
+                if (pluginInstance != null)
                 {
-                    Assembly dll = Assembly.LoadFrom(file);
-                    var filename = Path.GetFileNameWithoutExtension(file);
-
-                    Type classType = dll.GetType(String.Format("{0}.Start", filename));
-                    if (classType != null && typeof(IPluginStart).IsAssignableFrom(classType))
-                    {
-                        var pluginStart = (IPluginStart)Activator.CreateInstance(classType);
-
-                        pluginStart.Log += (o, e) =>
-                        {
-                            Loader.Log?.Invoke(o, e);
-                        };
-
-                        pluginStart.SetupMenu(ribbonPage);
-
-                        Loader.Plugins.Add(pluginStart);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Loader.LogMessage(ex.ToString());
+                    pluginInstance.Session = session;
+                    pluginInstance.Type.SetupMenu(pluginPage);
                 }
             }
         }
 
-        public IPluginStart FindPlugin(string pluginNamespace)
+        private static void AttachEventHandlers(IPluginStart pluginInstance)
         {
-            return Plugins.FirstOrDefault(x => x.Namespace == pluginNamespace);
+            pluginInstance.Log += (o, e) => Instance.Log?.Invoke(o, e);
+            pluginInstance.View += (o, e) => Instance.View?.Invoke(o, e);
+            pluginInstance.MapViewer += (o, e) => Instance.MapViewer?.Invoke(o, e);
         }
 
         private void LogMessage(string message)

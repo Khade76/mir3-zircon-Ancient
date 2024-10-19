@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using Library;
+﻿using Library;
 using Library.Network;
 using Library.SystemModels;
 using Server.DBModels;
 using Server.Envir;
 using Server.Models.Monsters;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
 using S = Library.Network.ServerPackets;
 
 namespace Server.Models
@@ -17,7 +17,9 @@ namespace Server.Models
     {
         public MapInfo Info { get; }
         public InstanceInfo Instance { get; }
-        public byte InstanceIndex { get; }
+        public byte InstanceSequence { get; }
+        public int RespawnIndex { get; }
+
         public int Width { get; private set; }
         public int Height { get; private set; }
 
@@ -29,36 +31,40 @@ namespace Server.Models
         public List<MapObject> Objects { get; } = new List<MapObject>();
         public List<PlayerObject> Players { get; } = new List<PlayerObject>();
         public List<MonsterObject> Bosses { get; } = new List<MonsterObject>();
+        public List<CastleFlag> CastleFlags { get; } = new List<CastleFlag>();
+        public List<CastleGate> CastleGates { get; } = new List<CastleGate>();
+        public List<CastleGuard> CastleGuards { get; } = new List<CastleGuard>();
         public List<NPCObject> NPCs { get; } = new List<NPCObject>();
         public HashSet<MapObject>[] OrderedObjects;
 
-        public DateTime LastProcess, LastPlayer;
+        public DateTime LastProcess, LastPlayer, InstanceExpiryDateTime;
 
         public DateTime HalloweenEventTime, ChristmasEventTime;
 
-        public Map(MapInfo info, InstanceInfo instance = null, byte instanceIndex = 0)
+        public Map(MapInfo info, InstanceInfo instance = null, byte instanceSequence = 0, int respawnIndex = 0)
         {
             Info = info;
+            RespawnIndex = respawnIndex;
 
             if (instance != null)
             {
                 Instance = instance;
-                InstanceIndex = instanceIndex;
+                InstanceSequence = instanceSequence;
+                InstanceExpiryDateTime = instance.TimeLimitInMinutes > 0 ? SEnvir.Now.AddMinutes(instance.TimeLimitInMinutes) : DateTime.MaxValue;
             }
         }
 
         public void Load()
         {
-            string fileName = $"{Config.MapPath}{Info.FileName}.map";
+            var path = Path.Combine(Config.MapPath, Info.FileName + ".map");
 
-            if (!File.Exists(fileName))
+            if (!File.Exists(path))
             {
-                SEnvir.Log($"Map: {fileName} not found.");
+                SEnvir.Log($"Map: {path} not found.");
                 return;
             }
 
-
-            byte[] fileBytes = File.ReadAllBytes(fileName);
+            byte[] fileBytes = File.ReadAllBytes(path);
 
             Width = fileBytes[23] << 8 | fileBytes[22];
             Height = fileBytes[25] << 8 | fileBytes[24];
@@ -85,7 +91,11 @@ namespace Server.Models
         {
             CreateGuards();
 
-            LastPlayer = DateTime.Now;
+            CreateCastleFlags();
+            CreateCastleGates();
+            CreateCastleGuards();
+
+            LastPlayer = DateTime.UtcNow;
         }
 
         private void CreateGuards()
@@ -103,12 +113,80 @@ namespace Server.Models
             }
         }
 
+        private void CreateCastleFlags()
+        {
+            foreach (var castle in Info.Castles)
+            {
+                foreach (var info in castle.Flags)
+                {
+                    CastleFlag mob = MonsterObject.GetMonster(info.Monster) as CastleFlag;
+
+                    mob.Castle = castle;
+
+                    if (!mob.Spawn(castle, info))
+                    {
+                        SEnvir.Log($"Failed to spawn Flag Map:{Info.Description}, Location: {info.X}, {info.Y}");
+                        continue;
+                    }
+                }
+            }
+        }
+        private void CreateCastleGates()
+        {
+            foreach (var castle in Info.Castles)
+            {
+                foreach (var gate in castle.Gates)
+                {
+                    var mob = CastleGates.FirstOrDefault(x => x.GateInfo == gate);
+
+                    if (mob == null)
+                    {
+                        mob = MonsterObject.GetMonster(gate.Monster) as CastleGate;
+
+                        mob.Spawn(castle, gate);
+                    }
+                    else
+                    {
+                        mob.RepairGate();
+                    }
+                }
+            }
+        }
+        private void CreateCastleGuards()
+        {
+            foreach (var castle in Info.Castles)
+            {
+                foreach (var guard in castle.Guards)
+                {
+                    var mob = CastleGuards.FirstOrDefault(x => x.GuardInfo == guard);
+
+                    if (mob == null)
+                    {
+                        mob = MonsterObject.GetMonster(guard.Monster) as CastleGuard;
+
+                        mob.Spawn(castle, guard);
+                    }
+                    else
+                    {
+                        mob.RepairGuard();
+                    }
+                }
+            }
+        }
+
+        public void RefreshFlags()
+        {
+            foreach (var ob in CastleFlags)
+            {
+                ob.Refresh();
+            }
+        }
 
         public void Process()
         {
-            if (LastPlayer.AddMinutes(1) < DateTime.Now && Players.Any())
+            if (LastPlayer.AddMinutes(1) < DateTime.UtcNow && Players.Any())
             {
-                LastPlayer = DateTime.Now;
+                LastPlayer = DateTime.UtcNow;
             }
         }
 
@@ -169,7 +247,7 @@ namespace Server.Models
         {
             return GetCell(location.X, location.Y);
         }
-        public List<Cell> GetCells(Point location, int minRadius, int maxRadius)
+        public List<Cell> GetCells(Point location, int minRadius, int maxRadius, bool randomOrder = false)
         {
             List<Cell> cells = new List<Cell>();
 
@@ -194,9 +272,13 @@ namespace Server.Models
                 }
             }
 
+            if (randomOrder)
+            {
+                return cells.OrderBy(item => SEnvir.Random.Next()).ToList();
+            }
+
             return cells;
         }
-
 
         public Point GetRandomLocation()
         {
@@ -268,6 +350,8 @@ namespace Server.Models
 
         public void DoSpawn(bool eventSpawn)
         {
+            if (CurrentMap.RespawnIndex != Info.RespawnIndex) return;
+
             if (!eventSpawn)
             {
                 if (Info.EventSpawn || SEnvir.Now < NextSpawn) return;
@@ -312,10 +396,9 @@ namespace Server.Models
                     }
                 }
 
-
                 mob.SpawnInfo = this;
 
-                if (!mob.Spawn(Info.Region, CurrentMap.Instance, CurrentMap.InstanceIndex))
+                if (!mob.Spawn(Info.Region, CurrentMap.Instance, CurrentMap.InstanceSequence))
                 {
                     mob.SpawnInfo = null;
                     continue;
@@ -351,8 +434,8 @@ namespace Server.Models
         public SafeZoneInfo SafeZone;
 
         public List<MovementInfo> Movements;
-        public bool HasMovement;
 
+        public List<QuestTask> QuestTasks;
 
         public Cell(Point location)
         {
@@ -403,6 +486,36 @@ namespace Server.Models
 
         public Cell GetMovement(MapObject ob)
         {
+            if (QuestTasks != null && QuestTasks.Count > 0)
+            {
+                if (ob.Race == ObjectType.Player)
+                {
+                    PlayerObject player = (PlayerObject)ob;
+
+                    foreach (var task in QuestTasks)
+                    {
+                        var userQuest = player.Quests.FirstOrDefault(x => x.QuestInfo == task.Quest && !x.Completed);
+
+                        if (userQuest == null) continue;
+
+                        UserQuestTask userTask = userQuest.Tasks.FirstOrDefault(x => x.Task == task);
+
+                        if (userTask == null)
+                        {
+                            userTask = SEnvir.UserQuestTaskList.CreateNewObject();
+                            userTask.Task = task;
+                            userTask.Quest = userQuest;
+                        }
+
+                        if (userTask.Completed) continue;
+
+                        userTask.Amount = 1;
+
+                        player.Enqueue(new S.QuestChanged { Quest = userQuest.ToClientInfo() });
+                    }
+                }
+            }
+
             if (Movements == null || Movements.Count == 0)
                 return this;
 
@@ -410,8 +523,31 @@ namespace Server.Models
             {
                 MovementInfo movement = Movements[SEnvir.Random.Next(Movements.Count)];
 
-                Map map = SEnvir.GetMap(movement.DestinationRegion.Map, Map.Instance, Map.InstanceIndex);
+                Map map = SEnvir.GetMap(movement.DestinationRegion.Map, Map.Instance, Map.InstanceSequence);
 
+                if (movement.NeedInstance != null)
+                {
+                    if (ob.Race != ObjectType.Player) break;
+
+                    if (Map.Instance != null) //Moving from instance
+                    {
+                        map = SEnvir.GetMap(movement.DestinationRegion.Map, null, 0);
+                    }
+                    else //Moving to instance
+                    {
+                        var (index, result) = ((PlayerObject)ob).GetInstance(movement.NeedInstance);
+
+                        if (result != InstanceResult.Success)
+                        {
+                            ((PlayerObject)ob).SendInstanceMessage(movement.NeedInstance, result);
+                            break;
+                        }
+
+                        map = SEnvir.GetMap(movement.DestinationRegion.Map, movement.NeedInstance, index.Value);
+                    }
+                }
+
+                if (map == null) break;
 
                 Cell cell = map.GetCell(movement.DestinationRegion.PointList[SEnvir.Random.Next(movement.DestinationRegion.PointList.Count)]);
 
@@ -424,20 +560,12 @@ namespace Server.Models
 
                     if (movement.DestinationRegion.Map.MinimumLevel > ob.Level && !player.Character.Account.TempAdmin)
                     {
-                        player.Connection.ReceiveChat(string.Format(player.Connection.Language.NeedLevel, movement.DestinationRegion.Map.MinimumLevel), MessageType.System);
-
-                        foreach (SConnection con in player.Connection.Observers)
-                            con.ReceiveChat(string.Format(con.Language.NeedLevel, movement.DestinationRegion.Map.MinimumLevel), MessageType.System);
-
+                        player.Connection.ReceiveChatWithObservers(con => string.Format(con.Language.NeedLevel, movement.DestinationRegion.Map.MinimumLevel), MessageType.System);
                         break;
                     }
                     if (movement.DestinationRegion.Map.MaximumLevel > 0 && movement.DestinationRegion.Map.MaximumLevel < ob.Level && !player.Character.Account.TempAdmin)
                     {
-                        player.Connection.ReceiveChat(string.Format(player.Connection.Language.NeedMaxLevel, movement.DestinationRegion.Map.MaximumLevel), MessageType.System);
-
-                        foreach (SConnection con in player.Connection.Observers)
-                            con.ReceiveChat(string.Format(con.Language.NeedMaxLevel, movement.DestinationRegion.Map.MaximumLevel), MessageType.System);
-
+                        player.Connection.ReceiveChatWithObservers(con => string.Format(con.Language.NeedMaxLevel, movement.DestinationRegion.Map.MaximumLevel), MessageType.System);
                         break;
                     }
 
@@ -465,15 +593,10 @@ namespace Server.Models
 
                         if (!allowed)
                         {
-                            var message = string.Format(player.Connection.Language.NeedClass, movement.DestinationRegion.Map.RequiredClass.ToString());
-                            player.Connection.ReceiveChat(message, MessageType.System);
-
-                            foreach (SConnection con in player.Connection.Observers)
-                                con.ReceiveChat(message, MessageType.System);
+                            player.Connection.ReceiveChatWithObservers(con => string.Format(con.Language.NeedClass, movement.DestinationRegion.Map.RequiredClass.ToString()), MessageType.System);
 
                             break;
                         }
-
                     }
 
                     if (movement.NeedSpawn != null)
@@ -485,59 +608,21 @@ namespace Server.Models
 
                         if (spawn.AliveCount == 0)
                         {
-                            player.Connection.ReceiveChat(player.Connection.Language.NeedMonster, MessageType.System);
-
-                            foreach (SConnection con in player.Connection.Observers)
-                                con.ReceiveChat(con.Language.NeedMonster, MessageType.System);
+                            player.Connection.ReceiveChatWithObservers(con => con.Language.NeedMonster, MessageType.System);
 
                             break;
                         }
-
                     }
 
                     if (movement.NeedItem != null)
                     {
                         if (player.GetItemCount(movement.NeedItem) == 0)
                         {
-                            player.Connection.ReceiveChat(string.Format(player.Connection.Language.NeedItem, movement.NeedItem.ItemName), MessageType.System);
-
-                            foreach (SConnection con in player.Connection.Observers)
-                                con.ReceiveChat(string.Format(con.Language.NeedItem, movement.NeedItem.ItemName), MessageType.System);
+                            player.Connection.ReceiveChatWithObservers(con => string.Format(con.Language.NeedItem, movement.NeedItem.ItemName), MessageType.System);
                             break;
                         }
 
                         player.TakeItem(movement.NeedItem, 1);
-                    }
-
-                    foreach (UserQuest quest in player.Character.Quests)
-                    {
-                        //For Each Active Quest
-                        if (quest.Completed) continue;
-                        bool changed = false;
-
-                        foreach (QuestTask task in quest.QuestInfo.Tasks)
-                        {
-                            if (task.Task != QuestTaskType.Region || task.RegionParameter == null) continue;
-
-                            if (task.RegionParameter != movement.SourceRegion) continue;
-
-                            UserQuestTask userTask = quest.Tasks.FirstOrDefault(x => x.Task == task);
-
-                            if (userTask == null)
-                            {
-                                userTask = SEnvir.UserQuestTaskList.CreateNewObject();
-                                userTask.Task = task;
-                                userTask.Quest = quest;
-                            }
-
-                            if (userTask.Completed) continue;
-
-                            userTask.Amount = 1;
-                            changed = true;
-                        }
-
-                        if (changed)
-                            player.Enqueue(new S.QuestChanged { Quest = quest.ToClientInfo() });
                     }
 
                     switch (movement.Effect)
@@ -557,7 +642,6 @@ namespace Server.Models
                             player.RefreshStats();
                             break;
                     }
-
                 }
 
                 return cell.GetMovement(ob);

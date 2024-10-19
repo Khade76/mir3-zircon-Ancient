@@ -9,6 +9,7 @@ namespace Library.SystemModels
 {
     public sealed class EventInfo : DBObject
     {
+        [IsIdentity]
         public string Description
         {
             get { return _Description; }
@@ -241,11 +242,7 @@ namespace Library.SystemModels
             }
         }
         private MapInfo _MapParameter1;
-        
-        
-        
     }
-
 
     public enum EventActionType
     {

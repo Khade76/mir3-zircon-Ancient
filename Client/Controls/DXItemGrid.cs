@@ -66,7 +66,6 @@ namespace Client.Controls
 
         #endregion
 
-
         #region GridPadding
 
         public int GridPadding
@@ -258,7 +257,6 @@ namespace Client.Controls
 
         #endregion
 
-
         public DXItemCell[] Grid;
 
         public override void OnOpacityChanged(float oValue, float nValue)
@@ -330,7 +328,7 @@ namespace Client.Controls
 
                     cell.Visible = true;
 
-                    cell.Location = new Point((x * (DXItemCell.CellWidth - 1 + (GridPadding * 2))) + GridPadding, (y * (DXItemCell.CellHeight - 1 + (GridPadding * 2))) + GridPadding);
+                    cell.Location = new Point((x * (DXItemCell.CellWidth - 1 + (GridPadding * 2))) + GridPadding, ((y - ScrollValue) * (DXItemCell.CellHeight - 1 + (GridPadding * 2))) + GridPadding);
                 }
         }
 
@@ -393,6 +391,7 @@ namespace Client.Controls
                     cell.Link = null;
                 }
         }
+
         #endregion
 
         #region IDisposable

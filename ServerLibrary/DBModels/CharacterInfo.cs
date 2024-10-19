@@ -42,6 +42,8 @@ namespace Server.DBModels
         }
         private string _CharacterName;
 
+
+
         public MirClass Class
         {
             get { return _Class; }
@@ -86,6 +88,21 @@ namespace Server.DBModels
             }
         }
         private int _Level;
+
+        public string Caption
+        {
+            get { return _Caption; }
+            set
+            {
+                if (_Caption == value) return;
+
+                var oldValue = _Caption;
+                _Caption = value;
+
+                OnChanged(oldValue, value, "Caption");
+            }
+        }
+        private string _Caption;
 
         public int HairType
         {
@@ -567,8 +584,20 @@ namespace Server.DBModels
         }
         private int _Rebirth;
 
-        
+        public int Fame
+        {
+            get => _Fame;
+            set
+            {
+                if (_Fame == value) return;
 
+                int oldValue = _Fame;
+                _Fame = value;
+
+                OnChanged(oldValue, value, "Fame");
+            }
+        }
+        private int _Fame;
 
         public DateTime NextDeathDropChange
         {
@@ -600,7 +629,23 @@ namespace Server.DBModels
             }
         }
         private UserCompanion _Companion;
-        
+
+        [Association("Discipline")]
+        public UserDiscipline Discipline
+        {
+            get { return _Discipline; }
+            set
+            {
+                if (_Discipline == value) return;
+
+                var oldValue = _Discipline;
+                _Discipline = value;
+
+                OnChanged(oldValue, value, "Discipline");
+            }
+        }
+        private UserDiscipline _Discipline;
+
         [Association("Items", true)]
         public DBBindingList<UserItem> Items { get; set; }
 
@@ -621,6 +666,27 @@ namespace Server.DBModels
 
         [Association("Quests", true)]
         public DBBindingList<UserQuest> Quests { get; set; }
+
+        [Association("Friends", true)]
+        public DBBindingList<FriendInfo> Friends { get; set; }
+
+        [Association("FriendedBy", true)]
+        public DBBindingList<FriendInfo> FriendedBy { get; set; }
+
+        public OnlineState OnlineState
+        {
+            get { return _OnlineState; }
+            set
+            {
+                if (_OnlineState == value) return;
+
+                var oldValue = _OnlineState;
+                _OnlineState = value;
+
+                OnChanged(oldValue, value, "OnlineState");
+            }
+        }
+        private OnlineState _OnlineState;
 
         [Association("Marriage")]
         public CharacterInfo Partner
@@ -651,7 +717,7 @@ namespace Server.DBModels
                 OnChanged(oldValue, value, "FiltersClass");
             }
         }
-        private string _FiltersClass;
+        private string _FiltersClass = "";
 
         public string FiltersRarity
         {
@@ -666,7 +732,7 @@ namespace Server.DBModels
                 OnChanged(oldValue, value, "FiltersRarity");
             }
         }
-        private string _FiltersRarity;
+        private string _FiltersRarity = "";
 
         public string FiltersItemType
         {
@@ -681,7 +747,26 @@ namespace Server.DBModels
                 OnChanged(oldValue, value, "FiltersItemType");
             }
         }
-        private string _FiltersItemType;
+        private string _FiltersItemType = "";
+
+        public Dictionary<RequiredClass, int> CurrentRank = new ();
+        public Dictionary<RequiredClass, int> RankChange = new ();
+
+        protected override void OnLoaded()
+        {
+            var removeList = new List<UserItem>();
+
+            foreach (var item in Items)
+            {
+                if (item.Info == null)
+                    removeList.Add(item);
+            }
+
+            foreach (var item in removeList)
+                Items.Remove(item);
+
+            base.OnLoaded();
+        }
 
         protected override void OnDeleted()
         {
@@ -691,9 +776,6 @@ namespace Server.DBModels
             
             base.OnDeleted();
         }
-
-
-
 
         public PlayerObject Player;
         public LinkedListNode<CharacterInfo> RankingNode;

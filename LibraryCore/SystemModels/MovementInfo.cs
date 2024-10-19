@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
-using MirDB;
+﻿using MirDB;
 
 namespace Library.SystemModels
 {
     public sealed class MovementInfo : DBObject
     {
+        [IsIdentity]
         public MapRegion SourceRegion
         {
             get { return _SourceRegion; }
@@ -21,6 +20,7 @@ namespace Library.SystemModels
         }
         private MapRegion _SourceRegion;
 
+        [IsIdentity]
         public MapRegion DestinationRegion
         {
             get { return _DestinationRegion; }
@@ -81,6 +81,21 @@ namespace Library.SystemModels
         }
         private RespawnInfo _NeedSpawn;
 
+        public InstanceInfo NeedInstance
+        {
+            get { return _NeedInstance; }
+            set
+            {
+                if (_NeedInstance == value) return;
+
+                var oldValue = _NeedInstance;
+                _NeedInstance = value;
+
+                OnChanged(oldValue, value, "NeedInstance");
+            }
+        }
+        private InstanceInfo _NeedInstance;
+
         public MovementEffect Effect
         {
             get { return _Effect; }
@@ -119,5 +134,4 @@ namespace Library.SystemModels
             RequiredClass = RequiredClass.All;
         }
     }
-
 }

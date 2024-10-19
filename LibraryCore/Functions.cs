@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Library.SystemModels;
+using MirDB;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -18,8 +20,7 @@ namespace Library
             return value1 < value2 ? value1 : value2;
         }
 
-
-        public static Element GetElement(Stats stats)
+        public static Element GetAttackElement(Stats stats)
         {
             Element attackElement = Element.None;
             int value = 0;
@@ -61,72 +62,72 @@ namespace Library
             }
 
             if (stats[Stat.PhantomAttack] > value)
+            {
                 attackElement = Element.Phantom;
+            }
 
             return attackElement;
         }
-        public static int GetElement(Stats stats, out Element element)
+
+        public static Element GetAffinityElement(Stats stats)
         {
-            element = Element.None;
+            Element affinityElement = Element.None;
             int value = 0;
 
-            if (stats[Stat.FireAttack] > value)
+            if (stats[Stat.FireAffinity] > value)
             {
-                element = Element.Fire;
-                value = stats[Stat.FireAttack];
+                affinityElement = Element.Fire;
+                value = stats[Stat.FireAffinity];
             }
 
-            if (stats[Stat.IceAttack] > value)
+            if (stats[Stat.IceAffinity] > value)
             {
-                element = Element.Ice;
-                value = stats[Stat.IceAttack];
+                affinityElement = Element.Ice;
+                value = stats[Stat.IceAffinity];
             }
 
-            if (stats[Stat.LightningAttack] > value)
+            if (stats[Stat.LightningAffinity] > value)
             {
-                element = Element.Lightning;
-                value = stats[Stat.LightningAttack];
+                affinityElement = Element.Lightning;
+                value = stats[Stat.LightningAffinity];
             }
 
-            if (stats[Stat.WindAttack] > value)
+            if (stats[Stat.WindAffinity] > value)
             {
-                element = Element.Wind;
-                value = stats[Stat.WindAttack];
+                affinityElement = Element.Wind;
+                value = stats[Stat.WindAffinity];
             }
 
-            if (stats[Stat.HolyAttack] > value)
+            if (stats[Stat.HolyAffinity] > value)
             {
-                element = Element.Holy;
-                value = stats[Stat.HolyAttack];
+                affinityElement = Element.Holy;
+                value = stats[Stat.HolyAffinity];
             }
 
-            if (stats[Stat.DarkAttack] > value)
+            if (stats[Stat.DarkAffinity] > value)
             {
-                element = Element.Dark;
-                value = stats[Stat.DarkAttack];
+                affinityElement = Element.Dark;
+                value = stats[Stat.DarkAffinity];
             }
 
-            if (stats[Stat.PhantomAttack] > value)
+            if (stats[Stat.PhantomAffinity] > value)
             {
-                element = Element.Phantom;
-                value = stats[Stat.PhantomAttack];
+                affinityElement = Element.Phantom;
             }
 
-            return value;
+            return affinityElement;
         }
-        public static MirAnimation GetAttackAnimation(MirClass c, int w, MagicType m)
+
+        public static MirAnimation GetAttackAnimation(MirClass @class, int weaponShape, MagicType magicType)
         {
-            MirAnimation animation;// = MirAnimation.Combat3;
-            /*
-            if (c == MirClass.Assassin)
-            {
-            }*/
-            
-            switch (m)
+            MirAnimation animation;
+     
+            switch (magicType)
             {
                 case MagicType.Slaying:
                 case MagicType.Thrusting:
                 case MagicType.FlamingSword:
+                case MagicType.DefensiveBlow:
                     animation = MirAnimation.Combat3;
                     break;
                 case MagicType.HalfMoon:
@@ -143,31 +144,31 @@ namespace Library
                 case MagicType.WhiteLotus:
                 case MagicType.RedLotus:
                 case MagicType.DanceOfSwallow:
-                    if (w >= 1200)
+                    if (weaponShape >= 1200)
                         animation = MirAnimation.Combat13;
-                    else if (w >= 1100)
+                    else if (weaponShape >= 1100)
                         animation = MirAnimation.Combat5;
                     else
                         animation = MirAnimation.Combat3;
                     break;
                 case MagicType.SweetBrier:
                 case MagicType.Karma:
-                    if (w >= 1200)
+                    if (weaponShape >= 1200)
                         animation = MirAnimation.Combat12;
-                    else if (w >= 1100)
+                    else if (weaponShape >= 1100)
                         animation = MirAnimation.Combat10;
-                    else 
+                    else
                         animation = MirAnimation.Combat3;
                     break;
                 default:
-                    switch (c)
+                    switch (@class)
                     {
                         case MirClass.Assassin:
-                            if (w >= 1200)
+                            if (weaponShape >= 1200)
                                 animation = MirAnimation.Combat11;
-                            else if (w >= 1100)
+                            else if (weaponShape >= 1100)
                                 animation = MirAnimation.Combat4;
-                            else 
+                            else
                                 animation = MirAnimation.Combat3;
                             break;
                         default:
@@ -178,15 +179,17 @@ namespace Library
 
                     break;
             }
-            
+
             return animation;
         }
+
         public static MirAnimation GetMagicAnimation(MagicType m)
         {
             switch (m)
             {
                 case MagicType.Beckon:
                 case MagicType.MassBeckon:
+                case MagicType.ElementalSwords:
 
                 case MagicType.FireBall:
                 case MagicType.IceBolt:
@@ -195,9 +198,11 @@ namespace Library
                 case MagicType.ScortchedEarth:
                 case MagicType.LightningBeam:
                 case MagicType.AdamantineFireBall:
+                case MagicType.FireBounce:
                 case MagicType.IceBlades:
                 case MagicType.FrozenEarth:
                 case MagicType.MeteorShower:
+                case MagicType.LightningStrike:
 
                 case MagicType.ExplosiveTalisman:
                 case MagicType.EvilSlayer:
@@ -206,18 +211,21 @@ namespace Library
                 case MagicType.MassInvisibility:
                 case MagicType.GreaterEvilSlayer:
                 case MagicType.GreaterFrozenEarth:
-                case MagicType.Infection:
-
+                case MagicType.Parasite:
                 case MagicType.ElementalSuperiority:
                 case MagicType.BloodLust:
                 case MagicType.LifeSteal:
                 case MagicType.ImprovedExplosiveTalisman:
+                case MagicType.Neutralize:
+                case MagicType.CorpseExploder:
+                case MagicType.SoulResonance:
+                case MagicType.SearingLight:
+
+                case MagicType.Hemorrhage:
                     return MirAnimation.Combat1;
 
-
-
                 case MagicType.Interchange:
-                    
+
                 case MagicType.Repulsion:
                 case MagicType.ElectricShock:
                 case MagicType.LightningWave:
@@ -241,6 +249,9 @@ namespace Library
                 case MagicType.ThunderStrike:
                 case MagicType.MirrorImage:
                 case MagicType.Asteroid:
+                case MagicType.SuperiorMagicShield:
+                case MagicType.IceRain:
+                case MagicType.Tornado:
 
                 case MagicType.Heal:
                 case MagicType.PoisonDust:
@@ -254,20 +265,27 @@ namespace Library
                 case MagicType.SummonShinsu:
                 case MagicType.StrengthOfFaith:
                 case MagicType.CelestialLight:
-                case MagicType.GreaterPoisonDust:
+                case MagicType.AugmentPoisonDust:
                 case MagicType.SummonDemonicCreature:
                 case MagicType.DemonExplosion:
-                case MagicType.Scarecrow:
+                case MagicType.CursedDoll:
+                case MagicType.DarkSoulPrison:
+                case MagicType.SummonDead:
                     return MirAnimation.Combat2;
+
+                case MagicType.ElementalHurricane:
+                    return MirAnimation.ChannellingStart;
 
                 case MagicType.PoisonousCloud:
                 case MagicType.SummonPuppet:
+                case MagicType.Containment:
                     return MirAnimation.Combat14;
+
                 case MagicType.DragonRepulse:
                     return MirAnimation.DragonRepulseStart;
 
                 case MagicType.ThunderKick:
-                case MagicType.TaoistCombatKick:
+                case MagicType.CombatKick:
                     return MirAnimation.Combat7;
 
                 case MagicType.Cloak:
@@ -278,10 +296,15 @@ namespace Library
                 case MagicType.Abyss:
                 case MagicType.Evasion:
                 case MagicType.RagingWind:
+                case MagicType.Concentration:
+                case MagicType.BurningFire:
+                case MagicType.Chain:
                     return MirAnimation.Combat9;
 
                 case MagicType.Rake:
+                case MagicType.MagicCombustion:
                     return MirAnimation.Combat5;
+
                 case MagicType.FlashOfLight:
                     return MirAnimation.Combat10;
 
@@ -289,15 +312,53 @@ namespace Library
                 case MagicType.Might:
                 case MagicType.ReflectDamage:
                 case MagicType.Fetter:
+                case MagicType.Endurance:
+                case MagicType.Invincibility:
+
+                case MagicType.Spiritualism:
                     return MirAnimation.Combat15;
 
+                case MagicType.Shuriken:
                 case MagicType.SwiftBlade:
                 case MagicType.SeismicSlam:
+                case MagicType.CrushingWave:
                     return MirAnimation.Combat3;
 
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        public static Color GetElementColour(Element element)
+        {
+            Color colour = Globals.NoneColour;
+
+            switch (element)
+            {
+                case Element.Fire:
+                    colour = Globals.FireColour;
+                    break;
+                case Element.Ice:
+                    colour = Globals.IceColour;
+                    break;
+                case Element.Lightning:
+                    colour = Globals.LightningColour;
+                    break;
+                case Element.Wind:
+                    colour = Globals.WindColour;
+                    break;
+                case Element.Holy:
+                    colour = Globals.HolyColour;
+                    break;
+                case Element.Dark:
+                    colour = Globals.DarkColour;
+                    break;
+                case Element.Phantom:
+                    colour = Globals.PhantomColour;
+                    break;
+            }
+
+            return colour;
         }
 
         public static bool IsMatch(byte[] a, byte[] b, long offSet = 0)
@@ -316,10 +377,9 @@ namespace Library
 
             foreach (KeyValuePair<Stat, int> pair in a.Values)
                 if (pair.Value != b[pair.Key]) return false;
-            
+
             return true;
         }
-
 
         public static Color Lerp(Color source, Color destination, float rate)
         {
@@ -455,13 +515,22 @@ namespace Library
                     return type == ItemType.HorseArmour;
                 case EquipmentSlot.Shield:
                     return type == ItemType.Shield;
-                case EquipmentSlot.Wings:
-                    return type == ItemType.Wings;
+                case EquipmentSlot.Costume:
+                    return type == ItemType.Costume;
+                case EquipmentSlot.Hook:
+                    return type == ItemType.Hook;
+                case EquipmentSlot.Float:
+                    return type == ItemType.Float;
+                case EquipmentSlot.Bait:
+                    return type == ItemType.Bait;
+                case EquipmentSlot.Finder:
+                    return type == ItemType.Finder;
+                case EquipmentSlot.Reel:
+                    return type == ItemType.Reel;
                 default:
                     return false;
             }
         }
-
         public static bool CorrectSlot(ItemType type, CompanionSlot slot)
         {
             switch (slot)
@@ -524,7 +593,7 @@ namespace Library
             else if (time.Minutes >= 1) textM = $"{time.Minutes} {(small ? "Min" : "Minute")}";
 
             if (time.Seconds >= 2) textS = $"{time.Seconds} {(small ? "Secs" : "Seconds")}";
-            else if (time.Seconds >= 1) textS = $"{ time.Seconds} {(small ? "Sec" : "Second")}";
+            else if (time.Seconds >= 1) textS = $"{time.Seconds} {(small ? "Sec" : "Second")}";
             else if (time.TotalSeconds > 1 && time.Seconds > 0) textS = "less than a second";
 
             if (!details)
@@ -552,6 +621,114 @@ namespace Library
                 str.Append(chars[Random.Next(chars.Length)]);
 
             return str.ToString();
+        }
+
+        public static bool ValidFishingDistance(int throwDistance, int throwLevel)
+        {
+            switch (throwLevel)
+            {
+                default:
+                case 1:
+                    return throwDistance <= 4;
+                case 2:
+                    return throwDistance <= 6;
+                case 3:
+                    return throwDistance <= 8;
+                case 4:
+                    return throwDistance <= 9;
+            }
+        }
+
+        public static int FishingThrowQuality(int throwDistance)
+        {
+            switch (throwDistance)
+            {
+                default:
+                case 4:
+                    return 1;
+                case 5:
+                case 6:
+                    return 2;
+                case 7:
+                case 8:
+                    return 3;
+                case 9:
+                    return 4;
+            }
+        }
+
+        public static FishingInfo FishingZone(DBCollection<FishingInfo> col, MapInfo info, int mapWidth, int mapHeight, Point location)
+        {
+            if (location.X < 0 || location.Y < 0 || location.X > mapWidth || location.Y > mapHeight)
+                return null;
+
+            foreach (var zone in col.Binding)
+            {
+                if (zone.Region != null && zone.Region.Map == info)
+                {
+                    if (zone.Region.PointList == null)
+                        zone.Region.CreatePoints(mapWidth);
+
+                    if (zone.Region.PointList.Contains(location))
+                    {
+                        return zone;
+                    }
+                }
+            }
+
+            return null;
+
+        }
+
+        public static Point[] CreateGridPoints(int gridSize, int middleIgnore = -1)
+        {
+            List<Point> gridPoints = new List<Point>();
+
+            // Iterate through X and Y coordinates
+            for (int x = -gridSize; x <= gridSize; x++)
+            {
+                for (int y = -gridSize; y <= gridSize; y++)
+                {
+                    if (middleIgnore >= 0 && Math.Abs(x) <= middleIgnore && Math.Abs(y) <= middleIgnore) continue;
+
+                    gridPoints.Add(new Point(x, y));
+                }
+            }
+
+            return gridPoints.ToArray();
+        }
+
+        public static string BreakStringIntoLines(string input, int maxLineLength)
+        {
+            // Split the input string into an array of words
+            string[] words = input.Split(' ');
+
+            // Initialize variables
+            int currentLineLength = 0;
+            string result = "";
+
+            // Iterate through the words
+            foreach (string word in words)
+            {
+                // Check if adding the current word exceeds the maxLineLength limit
+                if (currentLineLength + word.Length + 1 <= maxLineLength)
+                {
+                    // Add the word and a space to the result
+                    result += word + " ";
+                    currentLineLength += word.Length + 1;
+                }
+                else
+                {
+                    // Start a new line and reset the line length
+                    result += "\n" + word + " ";
+                    currentLineLength = word.Length + 1;
+                }
+            }
+
+            // Trim any leading or trailing whitespace
+            result = result.Trim();
+
+            return result;
         }
     }
 }

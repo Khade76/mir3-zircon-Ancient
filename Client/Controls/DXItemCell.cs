@@ -1,8 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
-using Client.Envir;
+﻿using Client.Envir;
 using Client.Models;
 using Client.Scenes;
 using Client.Scenes.Views;
@@ -10,9 +6,12 @@ using Client.UserModels;
 using Library;
 using Library.SystemModels;
 using SlimDX;
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 using C = Library.Network.ClientPackets;
 
-//Cleaned
 namespace Client.Controls
 {
     public sealed class DXItemCell : DXControl
@@ -30,7 +29,7 @@ namespace Client.Controls
         #endregion
 
         #region Properties
-        
+
         #region FixedBorder
 
         public bool FixedBorder
@@ -502,7 +501,10 @@ namespace Client.Controls
         #endregion
         
         public DXLabel CountLabel;
-
+        public override void OnMouseWheel(MouseEventArgs e)
+        {
+            HandleMouseWheel(e);
+        }
         public override void OnIsVisibleChanged(bool oValue, bool nValue)
         {
             base.OnIsVisibleChanged(oValue, nValue);
@@ -532,6 +534,32 @@ namespace Client.Controls
 
             UpdateBorder();
         }
+        #endregion
+
+        #region Hidden
+
+        public bool Hidden
+        {
+            get => _Hidden;
+            set
+            {
+                if (_Hidden == value) return;
+
+                bool oldValue = _Hidden;
+                _Hidden = value;
+
+                OnHiddenChanged(oldValue, value);
+            }
+        }
+        private bool _Hidden;
+        public event EventHandler<EventArgs> HiddenChanged;
+        public void OnHiddenChanged(bool oValue, bool nValue)
+        {
+            HiddenChanged?.Invoke(this, EventArgs.Empty);
+
+            UpdateBorder();
+        }
+
         #endregion
 
         public DXItemCell()
@@ -596,49 +624,36 @@ namespace Client.Controls
             {
                 int drawIndex;
 
-                if (Item.Info == Globals.GoldInfo)
+                if (CEnvir.IsCurrencyItem(Item.Info))
                 {
-                    if (Item.Count < 100)
-                        drawIndex = 120;
-                    else if (Item.Count < 200)
-                        drawIndex = 121;
-                    else if (Item.Count < 500)
-                        drawIndex = 122;
-                    else if (Item.Count < 1000)
-                        drawIndex = 123;
-                    else if (Item.Count < 1000000) //1 Million
-                        drawIndex = 124;
-                    else if (Item.Count < 5000000) //5 Million
-                        drawIndex = 125;
-                    else if (Item.Count < 10000000) //10 Million
-                        drawIndex = 126;
-                    else
-                        drawIndex = 127;
+                    drawIndex = CEnvir.CurrencyImage(Item.Info, Item.Count);
                 }
                 else
                 {
                     ItemInfo info = Item.Info;
 
-                    if (info.Effect == ItemEffect.ItemPart && Item.AddedStats[Stat.ItemIndex] > 0)
+                    if (info.ItemEffect == ItemEffect.ItemPart && Item.AddedStats[Stat.ItemIndex] > 0)
                         info = Globals.ItemInfoList.Binding.First(x => x.Index == Item.AddedStats[Stat.ItemIndex]);
 
                     drawIndex = info.Image;
                 }
 
-
-                MirImage image = Library.CreateImage(drawIndex, ImageType.Image);
-                if (image != null)
+                if (!Hidden)
                 {
-                    Rectangle area = new Rectangle(DisplayArea.X, DisplayArea.Y, image.Width, image.Height);
-                    area.Offset((Size.Width - image.Width)/2, (Size.Height - image.Height)/2);
-                    ItemInfo info = Item.Info;
-                    if (info.Effect == ItemEffect.ItemPart && Item.AddedStats[Stat.ItemIndex] > 0)
+                    MirImage image = Library.CreateImage(drawIndex, ImageType.Image);
+                    if (image != null)
                     {
-                        info = Globals.ItemInfoList.Binding.First(x => x.Index == Item.AddedStats[Stat.ItemIndex]);
-                        PresentTexture(image.Image, this, area, Item.Count >= info.PartCount ? Color.White : Color.Gray, this);
+                        Rectangle area = new Rectangle(DisplayArea.X, DisplayArea.Y, image.Width, image.Height);
+                        area.Offset((Size.Width - image.Width) / 2, (Size.Height - image.Height) / 2);
+                        ItemInfo info = Item.Info;
+                        if (info.ItemEffect == ItemEffect.ItemPart && Item.AddedStats[Stat.ItemIndex] > 0)
+                        {
+                            info = Globals.ItemInfoList.Binding.First(x => x.Index == Item.AddedStats[Stat.ItemIndex]);
+                            PresentTexture(image.Image, this, area, Item.Count >= info.PartCount ? Color.White : Color.Gray, this);
+                        }
+                        else
+                            PresentTexture(image.Image, this, area, Item.Count > 0 ? Color.White : Color.Gray, this);
                     }
-                    else
-                        PresentTexture(image.Image, this, area, Item.Count > 0 ? Color.White : Color.Gray, this);
                 }
             }
 
@@ -650,16 +665,16 @@ namespace Client.Controls
                     PresentTexture(image.Image, this, new Rectangle(DisplayArea.X + 1, DisplayArea.Y + 1, image.Width, image.Height), Item.Count > 0 ? Color.White : Color.Gray, this);
 
                 image = InterfaceLibrary.CreateImage(48, ImageType.Image);
-                if (Item != null && (Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked && image != null)
+                if (Item != null && (Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked && image != null && !Hidden && GridType != GridType.Inspect)
                     PresentTexture(image.Image, this, new Rectangle(DisplayArea.X + 1, DisplayArea.Y + 1, image.Width, image.Height), Item.Count > 0 ? Color.White : Color.Gray, this);
 
 
                 image = InterfaceLibrary.CreateImage(49, ImageType.Image);
-                if (Item != null && GameScene.Game != null && !GameScene.Game.CanUseItem(Item) && image != null)
+                if (Item != null && GameScene.Game != null && !GameScene.Game.CanUseItem(Item) && image != null && !Hidden && GridType != GridType.Inspect)
                     PresentTexture(image.Image, this, new Rectangle(DisplayArea.Right - 12, DisplayArea.Y + 1, image.Width, image.Height), Item.Count > 0 ? Color.White : Color.Gray, this);
 
                 image = InterfaceLibrary.CreateImage(103, ImageType.Image);
-                if (Item != null && GameScene.Game != null && image != null && Item.Info.Effect == ItemEffect.ItemPart)
+                if (Item != null && GameScene.Game != null && image != null && Item.Info.ItemEffect == ItemEffect.ItemPart)
                     PresentTexture(image.Image, this, new Rectangle(DisplayArea.Right - 16, DisplayArea.Y + 1, image.Width, image.Height), Item.Count > 0 ? Color.White : Color.Gray, this);
             }
 
@@ -669,6 +684,13 @@ namespace Client.Controls
         public void UpdateBorder()
         {
             BackColour = Color.Empty;
+
+            if (Hidden)
+            {
+                BackColour = Color.Empty;
+                Border = false;
+                return;
+            }
 
             if (!Enabled)
                 BackColour = Color.FromArgb(125,0,125,125);
@@ -709,7 +731,7 @@ namespace Client.Controls
                 GameScene.Game.MouseItem = Item;
             }
 
-            CountLabel.Visible = ShowCountLabel && Item != null && (!CEnvir.IsCurrencyItem(Item.Info) && Item.Info.Effect != ItemEffect.Experience) && (Item.Info.StackSize > 1 || Item.Count > 1);
+            CountLabel.Visible = ShowCountLabel && !Hidden && Item != null && (!CEnvir.IsCurrencyItem(Item.Info) && Item.Info.ItemEffect != ItemEffect.Experience) && (Item.Info.StackSize > 1 || Item.Count > 1);
             CountLabel.Text = Linked ? LinkedCount.ToString() : Item?.Count.ToString();
         }
         public void MoveItem()
@@ -735,8 +757,6 @@ namespace Client.Controls
                 return;
             }
 
-
-
             switch (SelectedCell.GridType) //FROM Grid
             {
                 case GridType.Equipment:
@@ -747,6 +767,8 @@ namespace Client.Controls
                         //Don't want to move items around the character body (no point)
                         return;
                     }
+
+                    if (GameScene.Game.MapControl.FishingState != FishingState.None) return;
 
                     if (Item == null || (SelectedCell.Item.Info == Item.Info && SelectedCell.Item.Count < SelectedCell.Item.Info.StackSize))
                         SelectedCell.MoveItem(this);
@@ -763,8 +785,7 @@ namespace Client.Controls
                         //Don't want to move items around the character body (no point)
                         return;
                     }
-                    
-                    
+                             
                     if (Item == null || (SelectedCell.Item.Info == Item.Info && SelectedCell.Item.Count < SelectedCell.Item.Info.StackSize))
                         SelectedCell.MoveItem(this);
                     else
@@ -776,8 +797,11 @@ namespace Client.Controls
 
             switch (GridType) //To Grid
             {
+                case GridType.Storage:
+                    if (SelectedCell.Item.Info.ItemEffect == ItemEffect.ItemPart) return;
+                    break;
                 case GridType.PartsStorage:
-                    if (SelectedCell.Item.Info.Effect != ItemEffect.ItemPart) return;
+                    if (SelectedCell.Item.Info.ItemEffect != ItemEffect.ItemPart) return;
                     break;
                 case GridType.Equipment:
                     if (!Functions.CorrectSlot(SelectedCell.Item.Info.ItemType, (EquipmentSlot)Slot) || SelectedCell.GridType == GridType.Belt) return;
@@ -800,6 +824,8 @@ namespace Client.Controls
             if (Locked || ReadOnly) return;
 
             if (Item != null && (Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return;
+
+            if (GameScene.Game.MapControl.FishingState != FishingState.None) return;
 
             if (fromCell == SelectedCell) SelectedCell = null;
 
@@ -937,7 +963,9 @@ namespace Client.Controls
                 return;
             }
 
-            if (GridType == GridType.PartsStorage && toCell.Item != null && toCell.Item.Info.Effect != ItemEffect.ItemPart) return;
+            if (GridType == GridType.PartsStorage && toCell.Item != null && toCell.Item.Info.ItemEffect != ItemEffect.ItemPart) return;
+
+            if (GridType == GridType.Storage && toCell.Item != null && toCell.Item.Info.ItemEffect == ItemEffect.ItemPart) return;
 
             if (toCell.Linked)
             {
@@ -948,10 +976,6 @@ namespace Client.Controls
                 if (Item?.Count > 1)
                 {
                     DXItemAmountWindow window = new DXItemAmountWindow("Amount", Item);
-
-                    if (toCell.GridType == GridType.Sell)
-                        window.AmountBox.Value = Item.Count;
-
 
                     window.ConfirmButton.MouseClick += (o, e) =>
                     {
@@ -991,11 +1015,16 @@ namespace Client.Controls
             toCell.Locked = true;
             CEnvir.Enqueue(packet);
         }
+
+        public bool SellMode
+        {
+            get { return (GameScene.Game.InventoryBox.InvMode == InventoryMode.Sell && GridType == GridType.Inventory); }
+        }
+
         public bool MoveItem(DXItemGrid toGrid, bool skipCount = false)
         {
             if (toGrid.GridType == GridType.Belt || toGrid.GridType == GridType.AutoPotion) return false;
-
-            
+          
             C.ItemMove packet = new C.ItemMove
             {
                 FromGrid = GridType,
@@ -1037,10 +1066,6 @@ namespace Client.Controls
                                 if (Item.Count > 1 && !skipCount)
                                 {
                                     DXItemAmountWindow window = new DXItemAmountWindow("Amount", Item);
-
-                                    if (cell.GridType == GridType.Sell)
-                                        window.AmountBox.Value = Item.Count;
-
 
                                     window.ConfirmButton.MouseClick += (o, e) =>
                                     {
@@ -1116,15 +1141,8 @@ namespace Client.Controls
         {
             if (!AllowLink || Item == null || (!Linked && Link != null) || grid == null) return false;
 
-
             switch (grid.GridType)
             {
-                case GridType.Sell:
-                    if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if ((GridType != GridType.Inventory && GridType != GridType.CompanionInventory) || (Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked || (Item.Flags & UserItemFlags.Worthless) == UserItemFlags.Worthless || !Item.Info.CanSell)
-                        return false;
-                    break;
-
                 case GridType.Repair:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
                     if (GameScene.Game.NPCBox.Page.Types.All(x => x.ItemType != Item.Info.ItemType) || !Item.Info.CanRepair || Item.CurrentDurability >= Item.MaxDurability || (GameScene.Game.NPCRepairBox.SpecialCheckBox.Checked && CEnvir.Now < Item.NextSpecialRepair))
@@ -1135,7 +1153,7 @@ namespace Client.Controls
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
                     if (!MapObject.User.InSafeZone) return false;
                     if (GridType != GridType.Inventory) return false;
-                    if (Item.Info.Effect != ItemEffect.ItemPart) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.ItemPart) return false;
                     break;
 
                 case GridType.Storage:
@@ -1143,36 +1161,37 @@ namespace Client.Controls
                     if (!MapObject.User.InSafeZone) return false;
                     if (GridType != GridType.Inventory && GridType != GridType.Equipment) return false;
                     if (!Item.Info.CanStore) return false;
+                    if (Item.Info.ItemEffect == ItemEffect.ItemPart) return false;
                     break;
 
                 case GridType.RefinementStoneIronOre:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.IronOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.IronOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
 
                 case GridType.RefinementStoneSilverOre:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.SilverOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.SilverOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
 
                 case GridType.RefinementStoneDiamond:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.Diamond || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.Diamond || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
 
                 case GridType.RefinementStoneGoldOre:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.GoldOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.GoldOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
 
                 case GridType.RefinementStoneCrystal:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.Crystal || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.Crystal || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
 
                 case GridType.RefineBlackIronOre:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.BlackIronOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.BlackIronOre || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
 
                 case GridType.RefineAccessory:
@@ -1316,19 +1335,19 @@ namespace Client.Controls
                     break;
                 case GridType.MasterRefineFragment1:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.Fragment1 || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.Fragment1 || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
                 case GridType.MasterRefineFragment2:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.Fragment2 || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.Fragment2 || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
                 case GridType.MasterRefineFragment3:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.Fragment3 || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.Fragment3 || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
                 case GridType.MasterRefineStone:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.RefinementStone || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.RefinementStone || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
                 case GridType.MasterRefineSpecial:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
@@ -1344,29 +1363,29 @@ namespace Client.Controls
                     }
                     break;
                 case GridType.WeaponCraftTemplate:
-                    if (Item.Info.ItemType != ItemType.Weapon && Item.Info.Effect != ItemEffect.WeaponTemplate) return false;
+                    if (Item.Info.ItemType != ItemType.Weapon && Item.Info.ItemEffect != ItemEffect.WeaponTemplate) return false;
                     break;
                 case GridType.WeaponCraftBlue:
-                    if (Item.Info.Effect != ItemEffect.BlueSlot) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.BlueSlot) return false;
                     break;
                 case GridType.WeaponCraftGreen:
-                    if (Item.Info.Effect != ItemEffect.GreenSlot) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.GreenSlot) return false;
                     break;
                 case GridType.WeaponCraftGrey:
-                    if (Item.Info.Effect != ItemEffect.GreySlot) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.GreySlot) return false;
                     break;
                 case GridType.WeaponCraftPurple:
-                    if (Item.Info.Effect != ItemEffect.PurpleSlot) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.PurpleSlot) return false;
                     break;
                 case GridType.WeaponCraftRed:
-                    if (Item.Info.Effect != ItemEffect.RedSlot) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.RedSlot) return false;
                     break;
                 case GridType.WeaponCraftYellow:
-                    if (Item.Info.Effect != ItemEffect.YellowSlot) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.YellowSlot) return false;
                     break;
                 case GridType.RefineCorundumOre:
                     if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) return false;
-                    if (Item.Info.Effect != ItemEffect.Corundum || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
+                    if (Item.Info.ItemEffect != ItemEffect.Corundum || (Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
                     break;
                 case GridType.AccessoryRefineCombTarget:
                     if ((Item.Flags & UserItemFlags.NonRefinable) == UserItemFlags.NonRefinable) return false;
@@ -1423,7 +1442,7 @@ namespace Client.Controls
 
         public bool UseItem()
         {
-            if (Item == null || Locked || ReadOnly || SelectedCell == this || (!Linked && Link != null) || !GameScene.Game.CanUseItem(Item) || GameScene.Game.Observer) return false;
+            if (Item == null || Locked || ReadOnly || SelectedCell == this || (!Linked && Link != null) || !GameScene.Game.CanUseItem(Item) || GameScene.Game.Observer || GameScene.Game.MapControl.FishingState != FishingState.None) return false;
 
             if (GridType == GridType.Belt || GridType == GridType.Belt)
             {
@@ -1436,8 +1455,6 @@ namespace Client.Controls
                 }
                 else
                     cell = GameScene.Game.InventoryBox.Grid.Grid.FirstOrDefault(x => x?.Item == QuickItem);
-
-
 
                 return cell?.UseItem() == true;
             }
@@ -1490,11 +1507,26 @@ namespace Client.Controls
                 case ItemType.Shield:
                     GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Shield].ToEquipment(this);
                     break;
-                case ItemType.Wings:
-                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Wings].ToEquipment(this);
+                case ItemType.Costume:
+                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Costume].ToEquipment(this);
                     break;
                 case ItemType.HorseArmour:
                     GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.HorseArmour].ToEquipment(this);
+                    break;
+                case ItemType.Hook:
+                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Hook].ToEquipment(this);
+                    break;
+                case ItemType.Float:
+                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Float].ToEquipment(this);
+                    break;
+                case ItemType.Bait:
+                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Bait].ToEquipment(this);
+                    break;
+                case ItemType.Finder:
+                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Finder].ToEquipment(this);
+                    break;
+                case ItemType.Reel:
+                    GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Reel].ToEquipment(this);
                     break;
                 case ItemType.CompanionBag:
                     if (GameScene.Game.Companion != null)
@@ -1512,11 +1544,13 @@ namespace Client.Controls
                 case ItemType.Scroll:
                 case ItemType.CompanionFood:
                 case ItemType.ItemPart:
-                    if (!GameScene.Game.CanUseItem(Item) || 
-                        GridType != GridType.Inventory && GridType != GridType.PartsStorage && GridType != GridType.CompanionEquipment && GridType != GridType.CompanionInventory) return false;
+                    if (!GameScene.Game.CanUseItem(Item)) return false;
 
-                    if ((CEnvir.Now < GameScene.Game.UseItemTime && Item.Info.Effect != ItemEffect.ElixirOfPurification) || MapObject.User.Horse != HorseType.None) return false;
+                    if (GridType != GridType.Inventory && GridType != GridType.PartsStorage && GridType != GridType.CompanionEquipment && GridType != GridType.CompanionInventory) return false;
+                        
+                    if ((Item.Info.Shape == 19 || Item.Info.Shape == 20 || Item.Info.Shape == 21 || Item.Info.Shape == 22) && MapObject.User.Horse != HorseType.None) return false;
 
+                    if ((CEnvir.Now < GameScene.Game.UseItemTime && Item.Info.ItemEffect != ItemEffect.ElixirOfPurification)) return false;
 
                     GameScene.Game.UseItemTime = CEnvir.Now.AddMilliseconds(Math.Max(250, Item.Info.Durability));
                     
@@ -1541,12 +1575,12 @@ namespace Client.Controls
                 case ItemType.System:
                     if (!GameScene.Game.CanUseItem(Item) || GridType != GridType.Inventory) return false;
 
-                    switch (Item.Info.Effect)
+                    switch (Item.Info.ItemEffect)
                     {
                         case ItemEffect.GenderChange:
                             if (GameScene.Game.CharacterBox.Grid[(int) EquipmentSlot.Armour].Item != null)
                             {
-                                GameScene.Game.ReceiveChat("You cannot change gender whilst you are wearing armour.", MessageType.System);
+                                GameScene.Game.ReceiveChat(CEnvir.Language.CannotChangeGenderWhileWearingArmour, MessageType.System);
                                 return false;
                             }
 
@@ -1575,7 +1609,7 @@ namespace Client.Controls
                         case ItemEffect.ArmourDye:
                             if (GameScene.Game.CharacterBox.Grid[(int)EquipmentSlot.Armour].Item == null)
                             {
-                                GameScene.Game.ReceiveChat("You need to be wearing an armour before you can apply a dye.", MessageType.System);
+                                GameScene.Game.ReceiveChat(CEnvir.Language.WearingArmourBeforeDye, MessageType.System);
                                 return false;
                             }
 
@@ -1609,6 +1643,9 @@ namespace Client.Controls
                             break;
                         case ItemEffect.FortuneChecker:
                             GameScene.Game.FortuneCheckerBox.Visible = true;
+                            break;
+                        case ItemEffect.Caption:
+                            GameScene.Game.CaptionBox.Visible = true;
                             break;
                     }
 
@@ -1671,9 +1708,14 @@ namespace Client.Controls
             GameScene.Game.MouseItem = null;
             UpdateBorder();
         }
+        public override void OnMouseUp(MouseEventArgs e)
+        {
+            //This needs to be here to stop chat box losing focus after you link an item
+        }
+
         public override void OnMouseClick(MouseEventArgs e)
         {
-            if (Locked || GameScene.Game.GoldPickedUp || (!Linked && Link != null) || GameScene.Game.Observer) return;
+            if (Locked || GameScene.Game.CurrencyPickedUp != null || (!Linked && Link != null) || GameScene.Game.Observer || GridType == GridType.Inspect) return;
 
             base.OnMouseClick(e);
 
@@ -1686,12 +1728,10 @@ namespace Client.Controls
                 if (SelectedCell == null)
                     return;
             }
-            
 
             switch (e.Button)
             {
                 case MouseButtons.Left:
-
                     if (CEnvir.Alt)
                     {
                         //Link Item
@@ -1702,27 +1742,33 @@ namespace Client.Controls
                         if (Item == null || (GridType != GridType.Inventory && GridType != GridType.Storage && GridType != GridType.PartsStorage && GridType != GridType.GuildStorage && GridType != GridType.CompanionInventory) || Item.Count <= 1) return;
 
                         DXItemAmountWindow window = new DXItemAmountWindow("Item Split", Item);
-                        
+
                         window.ConfirmButton.MouseClick += (o, e1) =>
                         {
                             Locked = true;
                             CEnvir.Enqueue(new C.ItemSplit { Grid = GridType, Slot = Slot, Count = window.Amount });
                         };
-                        
+
                         return;
                     }
 
                     if (Item != null && SelectedCell == null)
                         PlayItemSound();
-                    
+
                     MoveItem();
                     break;
                 case MouseButtons.Middle:
                     if (Item != null)
+                    {
+                        if (CEnvir.Ctrl)
+                        {
+                            GameScene.Game.ChatTextBox.LinkItem(Item);
+                            break;
+                        }
                         CEnvir.Enqueue(new C.ItemLock { GridType = GridType, SlotIndex = Slot, Locked = (Item.Flags & UserItemFlags.Locked) != UserItemFlags.Locked });
+                    }
                     break;
                 case MouseButtons.Right:
-
                     switch (GridType)
                     {
                         case GridType.Belt:
@@ -1737,24 +1783,34 @@ namespace Client.Controls
                             if (GameScene.Game.NPCRepairBox.IsVisible)
                             {
                                 if (Item.CurrentDurability >= Item.MaxDurability || !Item.Info.CanRepair)
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName}, it is already fully repaired.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairFullyRepaired, Item.Info.ItemName), MessageType.System);
                                 else if (!MoveItem(GameScene.Game.NPCRepairBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName} here.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairHere, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
-                            if (GameScene.Game.NPCSellBox.IsVisible)
+                            if (GameScene.Game.InventoryBox.IsVisible)
                             {
-                                if (!Item.Info.CanSell)
-                                    GameScene.Game.ReceiveChat($"Unable to Sell {Item.Info.ItemName}, it cannot be sold.", MessageType.System);
-                                else if (!MoveItem(GameScene.Game.NPCSellBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to Sell {Item.Info.ItemName} here.", MessageType.System);
-                                return;
+                                if (GameScene.Game.InventoryBox.InvMode == InventoryMode.Sell)
+                                {
+                                    if (!Item.Info.CanSell)
+                                        GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToSellHereCannotSold, Item.Info.ItemName), MessageType.System);
+                                    
+                                    if ((Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage) 
+                                        return;
+
+                                    if ((GridType != GridType.Inventory/* && GridType != GridType.CompanionInventory*/) || (Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked || (Item.Flags & UserItemFlags.Worthless) == UserItemFlags.Worthless || !Item.Info.CanSell)
+                                        return;
+
+                                    Selected = !Selected;
+
+                                    return;
+                                }
                             }
 
                             if (GameScene.Game.NPCMasterRefineBox.IsVisible)
                             {
-                                switch (Item.Info.Effect)
+                                switch (Item.Info.ItemEffect)
                                 {
                                     case ItemEffect.Fragment1:
                                         if (MoveItem(GameScene.Game.NPCMasterRefineBox.Fragment1Grid))
@@ -1781,12 +1837,12 @@ namespace Client.Controls
                                             return;
                                         break;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
                             if (GameScene.Game.NPCRefinementStoneBox.IsVisible)
                             {
-                                switch (Item.Info.Effect)
+                                switch (Item.Info.ItemEffect)
                                 {
                                     case ItemEffect.IronOre:
                                         MoveItem(GameScene.Game.NPCRefinementStoneBox.IronOreGrid);
@@ -1804,12 +1860,12 @@ namespace Client.Controls
                                         MoveItem(GameScene.Game.NPCRefinementStoneBox.CrystalGrid);
                                         return;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
                             if (GameScene.Game.NPCWeaponCraftBox.IsVisible)
                             {
-                                switch (Item.Info.Effect)
+                                switch (Item.Info.ItemEffect)
                                 {
                                     case ItemEffect.WeaponTemplate:
                                         MoveItem(GameScene.Game.NPCWeaponCraftBox.TemplateCell);
@@ -1839,17 +1895,16 @@ namespace Client.Controls
                                         MoveItem(GameScene.Game.NPCWeaponCraftBox.TemplateCell);
                                         return;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to Craft.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToCraft, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
                             if (GameScene.Game.NPCItemFragmentBox.IsVisible)
                             {
-
                                 if (!Item.CanFragment())
-                                    GameScene.Game.ReceiveChat($"Unable to Fragment {Item.Info.ItemName}, it cannot be Fragmented.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToFragment, Item.Info.ItemName), MessageType.System);
                                 else MoveItem(GameScene.Game.NPCItemFragmentBox.Grid);
-                                
+
                                 return;
                             }
 
@@ -1858,20 +1913,19 @@ namespace Client.Controls
                                 if (GameScene.Game.NPCAccessoryLevelBox.TargetCell.Grid[0].Link == null)
                                 {
                                     if (!MoveItem(GameScene.Game.NPCAccessoryLevelBox.TargetCell))
-                                        GameScene.Game.ReceiveChat($"Unable to Level {Item.Info.ItemName}.", MessageType.System);
+                                        GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToLevel, Item.Info.ItemName), MessageType.System);
                                 }
                                 else if (!MoveItem(GameScene.Game.NPCAccessoryLevelBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to level.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToUseToLevel, Item.Info.ItemName), MessageType.System);
 
                                 return;
                             }
-
 
                             if (GameScene.Game.NPCAccessoryUpgradeBox.IsVisible)
                             {
 
                                 if (!Item.CanAccessoryUpgrade())
-                                    GameScene.Game.ReceiveChat($"Unable to Upgrade {Item.Info.ItemName}.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToUpgrade, Item.Info.ItemName), MessageType.System);
                                 else
                                     MoveItem(GameScene.Game.NPCAccessoryUpgradeBox.TargetCell);
 
@@ -1881,8 +1935,7 @@ namespace Client.Controls
                             if (GameScene.Game.NPCAccessoryResetBox.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.NPCAccessoryResetBox.AccessoryGrid))
-                                    GameScene.Game.ReceiveChat($"Unable to Reset {Item.Info.ItemName}.", MessageType.System);
-                                
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToReset, Item.Info.ItemName), MessageType.System);
 
                                 return;
                             }
@@ -1892,8 +1945,8 @@ namespace Client.Controls
                                 switch (Item.Info.ItemType)
                                 {
                                     case ItemType.Ore:
-                                        if (Item.Info.Effect != ItemEffect.BlackIronOre)
-                                            GameScene.Game.ReceiveChat($"Only Black Iron Ore can be used.", MessageType.System);
+                                        if (Item.Info.ItemEffect != ItemEffect.BlackIronOre)
+                                            GameScene.Game.ReceiveChat(CEnvir.Language.OnlyBlackIronOreCanBeUsed, MessageType.System);
                                         else
                                             MoveItem(GameScene.Game.NPCRefineBox.BlackIronGrid);
                                         return;
@@ -1906,7 +1959,7 @@ namespace Client.Controls
                                         MoveItem(GameScene.Game.NPCRefineBox.SpecialGrid);
                                         return;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
@@ -1914,14 +1967,14 @@ namespace Client.Controls
                             {
                                 if (Item.Level > 1)
                                 {
-                                    GameScene.Game.ReceiveChat($"Unable to refine {Item.Info.ItemName} because it has been levelled.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineHasBeenLevelled, Item.Info.ItemName), MessageType.System);
                                 }
                                 else
                                 {
                                     if (Item.Info.ItemType == ItemType.Ore)
                                     {
                                         if (!MoveItem(GameScene.Game.NPCAccessoryRefineBox.OreTargetCell))
-                                            GameScene.Game.ReceiveChat($"You cannot use {Item.Info.ItemName}, you must use Corundum Ore.", MessageType.System);
+                                            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineNeedCorundumOre, Item.Info.ItemName), MessageType.System);
                                     }
                                     else
                                     {
@@ -1929,10 +1982,10 @@ namespace Client.Controls
                                         {
 
                                             if (!MoveItem(GameScene.Game.NPCAccessoryRefineBox.TargetCell))
-                                                GameScene.Game.ReceiveChat($"Unable to refine {Item.Info.ItemName}.", MessageType.System);
+                                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefine, Item.Info.ItemName), MessageType.System);
                                         }
                                         else if (!MoveItem(GameScene.Game.NPCAccessoryRefineBox.Grid))
-                                            GameScene.Game.ReceiveChat($"{Item.Info.ItemName} doesnt have the same stats as the main accessory.", MessageType.System);
+                                            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.DoesntHaveSameStats, Item.Info.ItemName), MessageType.System);
                                     }
                                 }
                                 return;
@@ -1944,44 +1997,42 @@ namespace Client.Controls
                                 return;
                             }
 
-
-                            if (GameScene.Game.SendMailBox.IsVisible)
+                            if (GameScene.Game.CommunicationBox.IsVisible)
                             {
-                                MoveItem(GameScene.Game.SendMailBox.Grid);
+                                MoveItem(GameScene.Game.CommunicationBox.SendGrid);
                                 return;
                             }
 
                             if (GameScene.Game.StorageBox.IsVisible)
                             {
-                                if (Item.Info.Effect == ItemEffect.ItemPart)
+                                if (Item.Info.ItemEffect == ItemEffect.ItemPart)
                                     MoveItem(GameScene.Game.StorageBox.PartGrid);
                                 else if (!MoveItem(GameScene.Game.StorageBox.Grid))
-                                        GameScene.Game.ReceiveChat("No Free Space in Storage.", MessageType.System);
-                                
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.NoFreeSpaceInStorage, MessageType.System);
+
                                 return;
                             }
 
                             if (GameScene.Game.TradeBox.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.TradeBox.UserGrid))
-                                    GameScene.Game.ReceiveChat("Unable to trade this item.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.UnableToTrade, MessageType.System);
                                 return;
                             }
 
                             if (GameScene.Game.GuildBox.StorageTab.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.GuildBox.StorageGrid))
-                                    GameScene.Game.ReceiveChat("Unable to store this item in guild storage.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.UnableToStoreInGuildStorage, MessageType.System);
                                 return;
                             }
 
                             if (GameScene.Game.CompanionBox.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.CompanionBox.InventoryGrid))
-                                    GameScene.Game.ReceiveChat("No Free Space in companion's Inventory.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.NoFreeSpaceInCompanionInventory, MessageType.System);
                                 return;
                             }
-
 
                             UseItem(); //Try Use Item
                             break;
@@ -1991,18 +2042,9 @@ namespace Client.Controls
                             if (GameScene.Game.NPCRepairBox.IsVisible)
                             {
                                 if (Item.CurrentDurability >= Item.MaxDurability || !Item.Info.CanRepair)
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName}, it is already fully repaired.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairFullyRepaired, Item.Info.ItemName), MessageType.System);
                                 else if (!MoveItem(GameScene.Game.NPCRepairBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName} here.", MessageType.System);
-                                return;
-                            }
-
-                            if (GameScene.Game.NPCSellBox.IsVisible)
-                            {
-                                if (!Item.Info.CanSell)
-                                    GameScene.Game.ReceiveChat($"Unable to Sell {Item.Info.ItemName}, it cannot be sold.", MessageType.System);
-                                else if (!MoveItem(GameScene.Game.NPCSellBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to Sell {Item.Info.ItemName} here.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairHere, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
@@ -2011,8 +2053,8 @@ namespace Client.Controls
                                 switch (Item.Info.ItemType)
                                 {
                                     case ItemType.Ore:
-                                        if (Item.Info.Effect != ItemEffect.BlackIronOre)
-                                            GameScene.Game.ReceiveChat($"Only Black Iron Ore can be used.", MessageType.System);
+                                        if (Item.Info.ItemEffect != ItemEffect.BlackIronOre)
+                                            GameScene.Game.ReceiveChat(CEnvir.Language.OnlyBlackIronOreCanBeUsed, MessageType.System);
                                         else
                                             MoveItem(GameScene.Game.NPCRefineBox.BlackIronGrid);
                                         return;
@@ -2025,13 +2067,13 @@ namespace Client.Controls
                                         MoveItem(GameScene.Game.NPCRefineBox.SpecialGrid);
                                         return;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
                             if (GameScene.Game.NPCMasterRefineBox.IsVisible)
                             {
-                                switch (Item.Info.Effect)
+                                switch (Item.Info.ItemEffect)
                                 {
                                     case ItemEffect.Fragment1:
                                         if (MoveItem(GameScene.Game.NPCMasterRefineBox.Fragment1Grid))
@@ -2058,7 +2100,7 @@ namespace Client.Controls
                                             return;
                                         break;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
@@ -2067,10 +2109,10 @@ namespace Client.Controls
                                 if (GameScene.Game.NPCAccessoryLevelBox.TargetCell.Grid[0].Link == null)
                                 {
                                     if (!MoveItem(GameScene.Game.NPCAccessoryLevelBox.TargetCell))
-                                        GameScene.Game.ReceiveChat($"Unable to Level {Item.Info.ItemName}.", MessageType.System);
+                                        GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToLevel, Item.Info.ItemName), MessageType.System);
                                 }
                                 else if (!MoveItem(GameScene.Game.NPCAccessoryLevelBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to level.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToUseToLevel, Item.Info.ItemName), MessageType.System);
 
                                 return;
                             }
@@ -2079,7 +2121,7 @@ namespace Client.Controls
                             {
 
                                 if (!Item.CanAccessoryUpgrade())
-                                    GameScene.Game.ReceiveChat($"Unable to Upgrade {Item.Info.ItemName}.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToUpgrade, Item.Info.ItemName), MessageType.System);
                                 else
                                     MoveItem(GameScene.Game.NPCAccessoryUpgradeBox.TargetCell);
 
@@ -2089,7 +2131,7 @@ namespace Client.Controls
                             if (GameScene.Game.NPCAccessoryResetBox.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.NPCAccessoryResetBox.AccessoryGrid))
-                                    GameScene.Game.ReceiveChat($"Unable to Reset {Item.Info.ItemName}.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToReset, Item.Info.ItemName), MessageType.System);
 
                                 return;
                             }
@@ -2100,37 +2142,36 @@ namespace Client.Controls
                                 return;
                             }
 
-                            if (GameScene.Game.SendMailBox.IsVisible)
+                            if (GameScene.Game.CommunicationBox.IsVisible)
                             {
-                                MoveItem(GameScene.Game.SendMailBox.Grid);
+                                MoveItem(GameScene.Game.CommunicationBox.SendGrid);
                                 return;
                             }
 
                             if (GameScene.Game.StorageBox.IsVisible)
                             {
-                                if (Item.Info.Effect == ItemEffect.ItemPart)
+                                if (Item.Info.ItemEffect == ItemEffect.ItemPart)
                                     MoveItem(GameScene.Game.StorageBox.PartGrid);
                                 else if (!MoveItem(GameScene.Game.StorageBox.Grid))
-                                    GameScene.Game.ReceiveChat("No Free Space in Storage.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.NoFreeSpaceInStorage, MessageType.System);
                             }
 
                             if (GameScene.Game.TradeBox.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.TradeBox.UserGrid))
-                                    GameScene.Game.ReceiveChat("Unable to trade this item.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.UnableToTrade, MessageType.System);
                                 return;
                             }
 
                             if (GameScene.Game.GuildBox.StorageTab.IsVisible)
                             {
                                 if (!MoveItem(GameScene.Game.GuildBox.StorageGrid))
-                                    GameScene.Game.ReceiveChat("Unable to store this item in guild storage.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(CEnvir.Language.UnableToStoreInGuildStorage, MessageType.System);
                                 return;
                             }
 
                             if (!MoveItem(GameScene.Game.InventoryBox.Grid))
-                                GameScene.Game.ReceiveChat("No Free Space in Inventory.", MessageType.System);
-
+                                GameScene.Game.ReceiveChat(CEnvir.Language.NoFreeSpaceInInventory, MessageType.System);
 
                             break;
                         case GridType.PartsStorage:
@@ -2144,15 +2185,15 @@ namespace Client.Controls
                             if (GameScene.Game.NPCRepairBox.Visible)
                             {
                                 if (Item.CurrentDurability >= Item.MaxDurability || !Item.Info.CanRepair)
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName}, it is already fully repaired.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairFullyRepaired, Item.Info.ItemName), MessageType.System);
                                 else if (!MoveItem(GameScene.Game.NPCRepairBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName} here.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairHere, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
                             if (GameScene.Game.NPCMasterRefineBox.IsVisible)
                             {
-                                switch (Item.Info.Effect)
+                                switch (Item.Info.ItemEffect)
                                 {
                                     case ItemEffect.Fragment1:
                                         if (MoveItem(GameScene.Game.NPCMasterRefineBox.Fragment1Grid))
@@ -2179,7 +2220,7 @@ namespace Client.Controls
                                             return;
                                         break;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
                             if (GameScene.Game.NPCRefineBox.Visible)
@@ -2187,8 +2228,8 @@ namespace Client.Controls
                                 switch (Item.Info.ItemType)
                                 {
                                     case ItemType.Ore:
-                                        if (Item.Info.Effect != ItemEffect.BlackIronOre)
-                                            GameScene.Game.ReceiveChat($"Only Black Iron Ore can be used.", MessageType.System);
+                                        if (Item.Info.ItemEffect != ItemEffect.BlackIronOre)
+                                            GameScene.Game.ReceiveChat(CEnvir.Language.OnlyBlackIronOreCanBeUsed, MessageType.System);
                                         else
                                             MoveItem(GameScene.Game.NPCRefineBox.BlackIronGrid);
                                         return;
@@ -2198,7 +2239,7 @@ namespace Client.Controls
                                         MoveItem(GameScene.Game.NPCRefineBox.AccessoryGrid);
                                         return;
                                 }
-                                GameScene.Game.ReceiveChat($"Unable to use {Item.Info.ItemName} to refine.", MessageType.System);
+                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineIncorrectItem, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
@@ -2206,14 +2247,14 @@ namespace Client.Controls
                             {
                                 if (Item.Level > 1)
                                 {
-                                    GameScene.Game.ReceiveChat($"Unable to refine {Item.Info.ItemName} because it has been levelled.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineHasBeenLevelled, Item.Info.ItemName), MessageType.System);
                                 }
                                 else
                                 {
                                     if (Item.Info.ItemType == ItemType.Ore)
                                     {
                                         if (!MoveItem(GameScene.Game.NPCAccessoryRefineBox.OreTargetCell))
-                                            GameScene.Game.ReceiveChat($"You cannot use {Item.Info.ItemName}, you must use Corundum Ore.", MessageType.System);
+                                            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefineNeedCorundumOre, Item.Info.ItemName), MessageType.System);
                                     }
                                     else
                                     {
@@ -2221,10 +2262,10 @@ namespace Client.Controls
                                         {
 
                                             if (!MoveItem(GameScene.Game.NPCAccessoryRefineBox.TargetCell))
-                                                GameScene.Game.ReceiveChat($"Unable to refine {Item.Info.ItemName}.", MessageType.System);
+                                                GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRefine, Item.Info.ItemName), MessageType.System);
                                         }
                                         else if (!MoveItem(GameScene.Game.NPCAccessoryRefineBox.Grid))
-                                            GameScene.Game.ReceiveChat($"{Item.Info.ItemName} doesnt have the same stats as the main accessory.", MessageType.System);
+                                            GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.DoesntHaveSameStats, Item.Info.ItemName), MessageType.System);
                                     }
                                 }
                                 return;
@@ -2241,16 +2282,15 @@ namespace Client.Controls
                         case GridType.GuildStorage:
                             if (Item == null) return;
 
-
                             if (GameScene.Game.NPCRepairBox.Visible)
                             {
                                 if (Item.CurrentDurability >= Item.MaxDurability || !Item.Info.CanRepair)
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName}, it is already fully repaired.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairFullyRepaired, Item.Info.ItemName), MessageType.System);
                                 else if (!MoveItem(GameScene.Game.NPCRepairBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName} here.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairHere, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
-                            
+
                             if (GameScene.Game.MarketPlaceBox.ConsignTab.IsVisible)
                             {
                                 MoveItem(GameScene.Game.MarketPlaceBox.ConsignGrid);
@@ -2262,13 +2302,15 @@ namespace Client.Controls
                         case GridType.Equipment:
 
                             if (Item == null) return;
-                            
+
+                            if (GameScene.Game.MapControl.FishingState != FishingState.None) return;
+
                             if (GameScene.Game.NPCRepairBox.Visible)
                             {
                                 if (Item.CurrentDurability >= Item.MaxDurability || !Item.Info.CanRepair)
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName}, it is already fully repaired.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairFullyRepaired, Item.Info.ItemName), MessageType.System);
                                 else if (!MoveItem(GameScene.Game.NPCRepairBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName} here.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairHere, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
@@ -2277,7 +2319,7 @@ namespace Client.Controls
                                 if (GameScene.Game.NPCAccessoryLevelBox.TargetCell.Grid[0].Link == null)
                                 {
                                     if (!MoveItem(GameScene.Game.NPCAccessoryLevelBox.TargetCell))
-                                        GameScene.Game.ReceiveChat($"Unable to Level {Item.Info.ItemName}.", MessageType.System);
+                                        GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToLevel, Item.Info.ItemName), MessageType.System);
                                 }
                                 return;
                             }
@@ -2285,13 +2327,12 @@ namespace Client.Controls
                             if (GameScene.Game.NPCAccessoryUpgradeBox.IsVisible)
                             {
                                 if (!Item.CanAccessoryUpgrade())
-                                    GameScene.Game.ReceiveChat($"Unable to Upgrade {Item.Info.ItemName}.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToUpgrade, Item.Info.ItemName), MessageType.System);
                                 else
                                     MoveItem(GameScene.Game.NPCAccessoryUpgradeBox.TargetCell);
 
                                 return;
                             }
-
 
                             if (Item != null && (Item.Flags & UserItemFlags.Marriage) == UserItemFlags.Marriage)
                             {
@@ -2300,9 +2341,8 @@ namespace Client.Controls
                                 return;
                             }
 
-
                             if (!MoveItem(GameScene.Game.InventoryBox.Grid))
-                                GameScene.Game.ReceiveChat("No Free Space in Inventory.", MessageType.System);
+                                GameScene.Game.ReceiveChat(CEnvir.Language.NoFreeSpaceInInventory, MessageType.System);
 
                             break;
                         case GridType.CompanionEquipment:
@@ -2312,22 +2352,21 @@ namespace Client.Controls
                             if (GameScene.Game.NPCRepairBox.Visible)
                             {
                                 if (Item.CurrentDurability >= Item.MaxDurability || !Item.Info.CanRepair)
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName}, it is already fully repaired.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairFullyRepaired, Item.Info.ItemName), MessageType.System);
                                 else if (!MoveItem(GameScene.Game.NPCRepairBox.Grid))
-                                    GameScene.Game.ReceiveChat($"Unable to repair {Item.Info.ItemName} here.", MessageType.System);
+                                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.UnableToRepairHere, Item.Info.ItemName), MessageType.System);
                                 return;
                             }
 
 
 
                             if (!MoveItem(GameScene.Game.InventoryBox.Grid))
-                                GameScene.Game.ReceiveChat("No Free Space in Inventory.", MessageType.System);
+                                GameScene.Game.ReceiveChat(CEnvir.Language.NoFreeSpaceInInventory, MessageType.System);
 
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
-
 
                     break;
             }
@@ -2335,7 +2374,7 @@ namespace Client.Controls
         }
         public override void OnMouseDoubleClick(MouseEventArgs e)
         {
-            if (Locked || GameScene.Game.GoldPickedUp || (!Linked && Link != null) || GameScene.Game.Observer) return;
+            if (Locked || GameScene.Game.CurrencyPickedUp != null || (!Linked && Link != null) || GameScene.Game.Observer) return;
 
             base.OnMouseDoubleClick(e);
 
@@ -2367,8 +2406,6 @@ namespace Client.Controls
 
                     break;
             }
-
-
         }
         public override void OnKeyDown(KeyEventArgs e)
         {
@@ -2381,7 +2418,7 @@ namespace Client.Controls
                 switch (action)
                 {
                     case KeyBindAction.ToggleItemLock:
-                        if (Locked || GameScene.Game.GoldPickedUp || (!Linked && Link != null) || GameScene.Game.Observer) return;
+                        if (Locked || GameScene.Game.CurrencyPickedUp != null || (!Linked && Link != null) || GameScene.Game.Observer) return;
                         if (ReadOnly || !Enabled) return;
 
 
@@ -2396,7 +2433,7 @@ namespace Client.Controls
 
             }
         }
-
+        
         #endregion
 
         #region IDisposable

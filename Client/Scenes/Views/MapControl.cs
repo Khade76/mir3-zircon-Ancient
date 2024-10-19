@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Client.Controls;
 using Client.Envir;
 using Client.Models;
+using Client.Models.Particles;
 using Library;
 using Library.SystemModels;
 using SlimDX;
@@ -72,6 +73,7 @@ namespace Client.Scenes.Views
             if (nValue != null)
                 DXSoundManager.Play(nValue.Music);
 
+            UpdateWeather();
             LLayer.UpdateLights();
             MapInfoChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -148,10 +150,16 @@ namespace Client.Scenes.Views
 
         public MouseButtons MapButtons;
         public Point MapLocation;
+
         public bool Mining;
         public Point MiningPoint;
         public MirDirection MiningDirection;
-        
+
+        public FishingState FishingState;
+        public Point FloatLocation;
+        public MirDirection FishingDirection;
+        public bool AutoCast;
+
         public Floor FLayer;
         public Light LLayer;
 
@@ -191,6 +199,8 @@ namespace Client.Scenes.Views
 
             if (!Visible) return;
 
+            DrawBackground();
+
             if (FLayer.TextureValid)
                 DXManager.Sprite.Draw(FLayer.ControlTexture, Color.White);
 
@@ -209,6 +219,26 @@ namespace Client.Scenes.Views
             if (MapObject.MouseObject != null) // && MapObject.MouseObject != MapObject.TargetObject)
                 MapObject.MouseObject.DrawBlend();
 
+            if (Config.DrawEffects)
+            {
+                foreach (MirEffect ob in Effects)
+                {
+                    if (ob.DrawType != DrawType.Final) continue;
+
+                     ob.Draw();
+                }
+            }
+
+            DXManager.Sprite.Flush();
+
+            DXManager.Device.SetRenderState(RenderState.SourceBlend, Blend.Zero);
+            DXManager.Device.SetRenderState(RenderState.DestinationBlend, Blend.SourceColor);
+
+            DXManager.Sprite.Draw(LLayer.ControlTexture, Color.White);
+
+            DXManager.Sprite.End();
+            DXManager.Sprite.Begin(SpriteFlags.AlphaBlend);
+
             foreach (MapObject ob in Objects)
             {
                 if (ob.Dead) continue;
@@ -217,7 +247,6 @@ namespace Client.Scenes.Views
                 {
                     case ObjectType.Player:
                         if (!Config.ShowPlayerNames) continue;
-
                         break;
                     case ObjectType.Item:
                         if (!Config.ShowItemNames || ob.CurrentLocation == MapLocation) continue;
@@ -234,20 +263,8 @@ namespace Client.Scenes.Views
                 ob.DrawName();
             }
 
-            if (Config.DrawEffects)
-            {
-                foreach (MirEffect ob in Effects)
-                {
-                    if (ob.DrawType != DrawType.Final) continue;
-
-                     ob.Draw();
-                }
-            }
-
             if (MapObject.MouseObject != null && MapObject.MouseObject.Race != ObjectType.Item)
                 MapObject.MouseObject.DrawName();
-
-
 
             foreach (MapObject ob in Objects)
             {
@@ -272,18 +289,8 @@ namespace Client.Scenes.Views
                         ob?.DrawFocus(layer++);
                     }
             }
-
-            DXManager.Sprite.Flush();
-
-            DXManager.Device.SetRenderState(RenderState.SourceBlend, Blend.Zero);
-            DXManager.Device.SetRenderState(RenderState.DestinationBlend, Blend.SourceColor);
-
-            DXManager.Sprite.Draw(LLayer.ControlTexture, Color.White);
-
-            DXManager.Sprite.End();
-            DXManager.Sprite.Begin(SpriteFlags.AlphaBlend);
-            
         }
+
         public override void Draw()
         {
             if (!IsVisible || Size.Width == 0 || Size.Height == 0) return;
@@ -300,6 +307,19 @@ namespace Client.Scenes.Views
             OnAfterDraw();
         }
 
+        private void DrawBackground()
+        {
+            if (MapInfo.Background <= 0) return;
+
+            if (!CEnvir.LibraryList.TryGetValue(LibraryFile.Background, out MirLibrary library)) return;
+
+            MirImage image = library.CreateImage(MapInfo.Background, ImageType.Image);
+
+            if (image?.Image == null) return;
+
+            PresentTexture(image.Image, Parent,DisplayArea, Color.White, this, 0, 0, 1F);
+        }
+
         private void DrawObjects()
         {
             int minX = Math.Max(0, User.CurrentLocation.X - OffSetX - 4), maxX = Math.Min(Width - 1, User.CurrentLocation.X + OffSetX + 4);
@@ -307,11 +327,11 @@ namespace Client.Scenes.Views
 
             for (int y = minY; y <= maxY; y++)
             {
-                int drawY = (y - User.CurrentLocation.Y + OffSetY + 1)*CellHeight - User.MovingOffSet.Y;
+                int drawY = (y - User.CurrentLocation.Y + OffSetY + 1) * CellHeight - User.MovingOffSet.Y - User.ShakeScreenOffset.Y;
 
                 for (int x = minX; x <= maxX; x++)
                 {
-                    int drawX = (x - User.CurrentLocation.X + OffSetX)*CellWidth - User.MovingOffSet.X;
+                    int drawX = (x - User.CurrentLocation.X + OffSetX) * CellWidth - User.MovingOffSet.X - User.ShakeScreenOffset.X;
 
                     Cell cell = Cells[x, y];
 
@@ -394,7 +414,7 @@ namespace Client.Scenes.Views
             float oldOpacity = MapObject.User.Opacity;
             MapObject.User.Opacity = 0.65F;
 
-            MapObject.User.DrawBody(false);
+            MapObject.User.DrawPlayer(false);
 
             MapObject.User.Opacity = oldOpacity;
 
@@ -415,17 +435,17 @@ namespace Client.Scenes.Views
                     ob.Draw();
                 }
             }
-
         }
-
 
         private void LoadMap()
         {
             try
             {
-                if (!File.Exists(Config.MapPath + MapInfo.FileName + ".map")) return;
+                var path = Path.Combine(Config.MapPath, MapInfo.FileName + ".map");
 
-                using (MemoryStream mStream = new MemoryStream(File.ReadAllBytes(Config.MapPath + MapInfo.FileName + ".map")))
+                if (!File.Exists(path)) return;
+
+                using (MemoryStream mStream = new MemoryStream(File.ReadAllBytes(path)))
                 using (BinaryReader reader = new BinaryReader(mStream))
                 {
                     mStream.Seek(22, SeekOrigin.Begin);
@@ -482,6 +502,40 @@ namespace Client.Scenes.Views
                     Cells[ob.CurrentLocation.X, ob.CurrentLocation.Y].AddObject(ob);
         }
 
+        private void UpdateWeather()
+        {
+            GameScene.Game.MapControl.ParticleEffects.Clear();
+
+            if (Config.DrawWeather)
+            {
+                var point = new Point((Size.Width) / 2, (Size.Height) / 2);
+
+                if (GameScene.Game.MapControl.MapInfo.Weather.HasFlag(Weather.Rain))
+                {
+                    var emitter = (ParticleEmitter)Activator.CreateInstance(typeof(Rain), point);
+                    GameScene.Game.MapControl.ParticleEffects.Add(emitter);
+                }
+
+                if (GameScene.Game.MapControl.MapInfo.Weather.HasFlag(Weather.Snow))
+                {
+                    var emitter = (ParticleEmitter)Activator.CreateInstance(typeof(Snow), point);
+                    GameScene.Game.MapControl.ParticleEffects.Add(emitter);
+                }
+
+                if (GameScene.Game.MapControl.MapInfo.Weather.HasFlag(Weather.Fog))
+                {
+                    var emitter = (ParticleEmitter)Activator.CreateInstance(typeof(Fog), point);
+                    GameScene.Game.MapControl.ParticleEffects.Add(emitter);
+                }
+
+                if (GameScene.Game.MapControl.MapInfo.Weather.HasFlag(Weather.Lightning))
+                {
+                    var emitter = (ParticleEmitter)Activator.CreateInstance(typeof(Lightning), point);
+                    GameScene.Game.MapControl.ParticleEffects.Add(emitter);
+                }
+            }
+        }
+
         public override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
@@ -490,7 +544,6 @@ namespace Client.Scenes.Views
         }
         public override void OnMouseDown(MouseEventArgs e)
         {
-
             base.OnMouseDown(e);
 
             if (GameScene.Game.Observer) return;
@@ -504,7 +557,6 @@ namespace Client.Scenes.Views
             }
             
             if (e.Button != MouseButtons.Left) return;
-
 
             DXItemCell cell = DXItemCell.SelectedCell;
             if (cell != null)
@@ -532,7 +584,6 @@ namespace Client.Scenes.Views
                     return;
                 }
 
-
                 if ((cell.Item.Flags & UserItemFlags.Locked) == UserItemFlags.Locked || (cell.GridType != GridType.Inventory && cell.GridType != GridType.CompanionInventory))
                 {
                     DXItemCell.SelectedCell = null;
@@ -557,29 +608,98 @@ namespace Client.Scenes.Views
                 return;
             }
 
-            if (GameScene.Game.GoldPickedUp)
+            if (GameScene.Game.CurrencyPickedUp != null)
             {
                 MapButtons &= ~e.Button;
-                DXItemAmountWindow window = new DXItemAmountWindow("Drop Item", new ClientUserItem(Globals.GoldInfo, User.Gold.Amount));
+
+                int index = GameScene.Game.CurrencyPickedUp.Info.Index;
+
+                DXItemAmountWindow window = new DXItemAmountWindow("Drop Item", new ClientUserItem(GameScene.Game.CurrencyPickedUp.Info.DropItem, GameScene.Game.CurrencyPickedUp.Amount));
 
                 window.ConfirmButton.MouseClick += (o, a) =>
                 {
                     if (window.Amount <= 0) return;
 
-                    CEnvir.Enqueue(new C.GoldDrop
+                    CEnvir.Enqueue(new C.CurrencyDrop
                     {
+                        CurrencyIndex = index,
                         Amount = window.Amount
                     });
-
                 };
 
-                GameScene.Game.GoldPickedUp = false;
+                GameScene.Game.CurrencyPickedUp = null;
                 return;
             }
             
             if (CanAttack(MapObject.MouseObject))
             {
                 MapObject.TargetObject = MapObject.MouseObject;
+
+                #region Shuriken
+                if (!Functions.InRange(MapObject.TargetObject.CurrentLocation, User.CurrentLocation, Globals.MagicRange) && User.LibraryWeaponShape == Globals.ShurikenLibraryWeaponShape)
+                {
+
+                    GameScene.Game.OutputTime = CEnvir.Now.AddSeconds(1);
+                    GameScene.Game.ReceiveChat(string.Format(CEnvir.Language.GameSceneThrowTooFar, "Shuriken"), MessageType.Hint);
+
+                    Stop();
+
+                    return;
+                }
+
+                if (User.Horse == HorseType.None && User.LibraryWeaponShape == Globals.ShurikenLibraryWeaponShape && MapObject.TargetObject != null &&
+                    (MapObject.TargetObject.Race == ObjectType.Monster || MapObject.TargetObject.Race == ObjectType.Player))
+                {
+
+                    if (CEnvir.Now < User.AttackTime)
+                    {
+                        Stop();
+
+                        return;
+                    }
+
+
+                    if (CEnvir.Now >= User.AttackTime)
+                    {
+                        int delayTime = 500;
+
+                        if (Functions.Distance(MapObject.TargetObject.CurrentLocation, MapObject.User.CurrentLocation) == 1)
+                        {
+                            delayTime = 100;
+                        }
+                        else
+                        {
+                            int x = MapObject.OffSetX * MapObject.CellWidth - MapObject.User.MovingOffSet.X;
+                            int y = MapObject.OffSetY * MapObject.CellHeight - MapObject.User.MovingOffSet.Y;
+
+                            int x1 = (MapObject.TargetObject.CurrentLocation.X - MapObject.User.CurrentLocation.X + MapObject.OffSetX) * MapObject.CellWidth - MapObject.User.MovingOffSet.X;
+                            int y1 = (MapObject.TargetObject.CurrentLocation.Y - MapObject.User.CurrentLocation.Y + MapObject.OffSetY) * MapObject.CellHeight - MapObject.User.MovingOffSet.Y;
+
+                            long duration = Functions.Distance(new Point(x, y / 32 * 48), new Point(x1, y1 / 32 * 48)) * TimeSpan.TicksPerMillisecond * 2;
+
+                            delayTime = int.Parse(duration.ToString().Substring(0, 3));
+                        }
+
+                        MapObject.User.AttemptAction(
+                            new ObjectAction
+                            (
+                                      MirAction.RangeAttack,
+                                      Functions.DirectionFromPoint(MapObject.User.CurrentLocation, MapObject.TargetObject.CurrentLocation),
+                                      MapObject.User.CurrentLocation,
+                                      MapObject.TargetObject.ObjectID, //Ranged Attack Target ID;
+                                      MagicType.Shuriken,
+                                      delayTime
+                            ));
+
+                        Stop();
+
+                        return;
+                    }
+
+
+                }
+
+                #endregion Shukiran
 
                 if (MapObject.MouseObject.Race == ObjectType.Monster && ((MonsterObject) MapObject.MouseObject).MonsterInfo.AI >= 0) //Check if AI is guard
                 {
@@ -592,6 +712,13 @@ namespace Client.Scenes.Views
             MapObject.TargetObject = null;
             GameScene.Game.FocusObject = null;
             //GameScene.Game.OldTargetObjectID = 0;
+        }
+
+        private void Stop()
+        {
+            Functions.Move(Location, MapObject.TargetObject.Direction, 0);
+            GameScene.Game.FocusObject = null;
+            MapObject.TargetObject = null;
         }
         public override void OnMouseClick(MouseEventArgs e)
         {
@@ -707,8 +834,7 @@ namespace Client.Scenes.Views
         {
             if (GameScene.Game.Observer) return;
 
-            if (User.Dead || (User.Poison & PoisonType.Paralysis) == PoisonType.Paralysis || User.Buffs.Any(x => x.Type == BuffType.DragonRepulse || x.Type == BuffType.FrostBite)) return; //Para or Frozen??
-
+            if (User.Dead || (User.Poison & PoisonType.Paralysis) == PoisonType.Paralysis || (User.Poison & PoisonType.Containment) == PoisonType.Containment || User.Buffs.Any(x => x.Type == BuffType.DragonRepulse)) return; //Para or Frozen??
 
             if (User.MagicAction != null)
             {
@@ -720,8 +846,10 @@ namespace Client.Scenes.Views
                 User.MagicAction = null;
                 Mining = false;
             }
-            
-            if (MapObject.TargetObject != null && !MapObject.TargetObject.Dead && ((MapObject.TargetObject.Race == ObjectType.Monster && string.IsNullOrEmpty(MapObject.TargetObject.PetOwner)) || CEnvir.Shift))
+
+            bool haselementalhurricane = MapObject.User.VisibleBuffs.Contains(BuffType.ElementalHurricane);
+
+            if (!haselementalhurricane && MapObject.TargetObject != null && !MapObject.TargetObject.Dead && ((MapObject.TargetObject.Race == ObjectType.Monster && string.IsNullOrEmpty(MapObject.TargetObject.PetOwner)) || CEnvir.Shift))
             {
                 if (Functions.Distance(MapObject.TargetObject.CurrentLocation, MapObject.User.CurrentLocation) ==  1 && CEnvir.Now > User.AttackTime && User.Horse == HorseType.None)
                 {
@@ -740,7 +868,7 @@ namespace Client.Scenes.Views
 
             MirDirection direction = MouseDirection(), best;
 
-            if (GameScene.Game.AutoRun)
+            if (GameScene.Game.AutoRun && !haselementalhurricane)
             {
                 if (!GameScene.Game.MoveFrame || (User.Poison & PoisonType.WraithGrip) == PoisonType.WraithGrip) return;
                 Run(direction);
@@ -756,32 +884,52 @@ namespace Client.Scenes.Views
 
                         if (CEnvir.Shift && MapObject.TargetObject == null)
                         {
+                            if (FishingState != FishingState.None) return;
 
-                            if (CEnvir.Now > User.AttackTime && User.Horse == HorseType.None)
-                                MapObject.User.AttemptAction(new ObjectAction(
-                                    MirAction.Attack, //RANDOMIZE
-                                    direction,
-                                    MapObject.User.CurrentLocation,
-                                    0, //Ranged Attack Target ID
-                                    MagicType.None,
-                                    Element.None));
+                            if (CEnvir.Now > User.AttackTime && User.Horse == HorseType.None && !haselementalhurricane)
+                                MapObject.User.AttemptAction(new ObjectAction(MirAction.Attack, direction, MapObject.User.CurrentLocation, 0, MagicType.None, Element.None));
+
                             return;
                         }
 
+                        ClientUserItem weap = GameScene.Game.Equipment[(int)EquipmentSlot.Weapon];
+                        ClientUserItem armour = GameScene.Game.Equipment[(int)EquipmentSlot.Armour];
+
                         if (CEnvir.Alt)
                         {
-                            if (User.Horse == HorseType.None)
-                                MapObject.User.AttemptAction(new ObjectAction(
-                                MirAction.Harvest,
-                                direction,
-                                MapObject.User.CurrentLocation));
-                            return;
+                            if (haselementalhurricane) return;
+                            if (User.Horse != HorseType.None) return;
+                            if (FishingState != FishingState.None) return;
+
+                            if (weap?.Info.ItemEffect == ItemEffect.FishingRod && armour?.Info.ItemEffect == ItemEffect.FishingRobe)
+                            {
+                                FloatLocation = MapLocation;
+                                FishingDirection = Functions.DirectionFromPoint(MapObject.User.CurrentLocation, FloatLocation);
+
+                                var distance = Functions.Distance(MapObject.User.CurrentLocation, FloatLocation);
+
+                                if (Functions.FishingZone(Globals.FishingInfoList, MapInfo, Width, Height, FloatLocation) != null && Functions.ValidFishingDistance(distance, User.Stats[Stat.ThrowDistance]))
+                                {
+                                    FishingState = FishingState.Cast;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                MapObject.User.AttemptAction(new ObjectAction(MirAction.Harvest, direction, MapObject.User.CurrentLocation));
+                                return;
+                            }
+                        }
+
+                        if (FishingState != FishingState.None)
+                        {
+                            FishingState = FishingState.Cancel;
+                            break;
                         }
 
                         if (MapLocation == MapObject.User.CurrentLocation)
                         {
                             if (CEnvir.Now <= GameScene.Game.PickUpTime) return;
-
 
                             CEnvir.Enqueue(new C.PickUp());
                             GameScene.Game.PickUpTime = CEnvir.Now.AddMilliseconds(250);
@@ -791,10 +939,7 @@ namespace Client.Scenes.Views
 
                         if (MapObject.MouseObject != null && MapObject.MouseObject.Race != ObjectType.Item && !MapObject.MouseObject.Dead) break;
 
-
-                        ClientUserItem weap = GameScene.Game.Equipment[(int) EquipmentSlot.Weapon];
-                        
-                        if (MapInfo.CanMine && weap != null && weap.Info.Effect == ItemEffect.PickAxe)
+                        if (!haselementalhurricane && MapInfo.CanMine && weap != null && weap.Info.ItemEffect == ItemEffect.PickAxe)
                         {
                             MiningPoint = Functions.Move(User.CurrentLocation, direction);
 
@@ -805,7 +950,7 @@ namespace Client.Scenes.Views
                             }
                         }
 
-                        if (!CanMove(direction, 1))
+                        if (!CanMove(direction, 1) || haselementalhurricane)
                         {
                             best = MouseDirectionBest(direction, 1);
 
@@ -818,17 +963,24 @@ namespace Client.Scenes.Views
 
                             direction = best;
                         }
-                        if (GameScene.Game.MoveFrame && (User.Poison & PoisonType.WraithGrip) != PoisonType.WraithGrip)
+
+                        if (!haselementalhurricane && GameScene.Game.MoveFrame && (User.Poison & PoisonType.WraithGrip) != PoisonType.WraithGrip)
                             MapObject.User.AttemptAction(new ObjectAction(MirAction.Moving, direction, Functions.Move(MapObject.User.CurrentLocation, direction), 1, MagicType.None));
                         return;
                     case MouseButtons.Right:
-
                         Mining = false;
+
+                        if (FishingState != FishingState.None)
+                        {
+                            FishingState = FishingState.Cancel;
+                            break;
+                        }
+
                         if (MapObject.MouseObject is PlayerObject && MapObject.MouseObject != MapObject.User && CEnvir.Ctrl) break;
 
                         if (!GameScene.Game.MoveFrame || (User.Poison & PoisonType.WraithGrip) == PoisonType.WraithGrip) break;
                         
-                        if (Functions.InRange(MapLocation, MapObject.User.CurrentLocation, 2))
+                        if (Functions.InRange(MapLocation, MapObject.User.CurrentLocation, 2) || haselementalhurricane)
                         {
                             if (direction != User.Direction)
                                 MapObject.User.AttemptAction(new ObjectAction(MirAction.Standing, direction, MapObject.User.CurrentLocation));
@@ -845,20 +997,43 @@ namespace Client.Scenes.Views
             {
                 ClientUserItem weap = GameScene.Game.Equipment[(int)EquipmentSlot.Weapon];
 
-                if (MapInfo.CanMine && weap != null && (weap.CurrentDurability > 0 || weap.Info.Durability == 0) && weap.Info.Effect == ItemEffect.PickAxe &&
+                if (MapInfo.CanMine && weap != null && (weap.CurrentDurability > 0 || weap.Info.Durability == 0) && weap.Info.ItemEffect == ItemEffect.PickAxe &&
                     MiningPoint.X >= 0 && MiningPoint.Y >= 0 && MiningPoint.X < Width && MiningPoint.Y < Height && Cells[MiningPoint.X, MiningPoint.Y].Flag &&
-                    Functions.Distance(MiningPoint, MapObject.User.CurrentLocation) == 1  && User.Horse == HorseType.None)
+                    Functions.Distance(MiningPoint, MapObject.User.CurrentLocation) == 1 && User.Horse == HorseType.None)
                 {
                     if (CEnvir.Now > User.AttackTime)
-                    MapObject.User.AttemptAction(new ObjectAction(
-                        MirAction.Mining,
-                        Functions.DirectionFromPoint(MapObject.User.CurrentLocation, MiningPoint),
-                        MapObject.User.CurrentLocation,
-                        false));
+                    {
+                        MapObject.User.AttemptAction(new ObjectAction(
+                            MirAction.Mining,
+                            Functions.DirectionFromPoint(MapObject.User.CurrentLocation, MiningPoint),
+                            MapObject.User.CurrentLocation,
+                            false));
+                    }
                 }
                 else
                 {
                     Mining = false;
+                }
+            }
+
+            if (FishingState != FishingState.None || AutoCast)
+            {
+                if (CEnvir.Now > User.AttackTime)
+                {
+                    if (FishingState == FishingState.Reel)
+                    {
+                        FishingState = FishingState.None;
+                    }
+                    else
+                    {
+                        if (AutoCast)
+                        {
+                            FishingState = FishingState.Cast;
+                            AutoCast = false;
+                        }
+
+                        MapObject.User.AttemptAction(new ObjectAction(MirAction.Fishing, FishingDirection, MapObject.User.CurrentLocation, FishingState, FloatLocation, MapObject.User.FishFound));
+                    }
                 }
             }
 
@@ -868,7 +1043,7 @@ namespace Client.Scenes.Views
 
             direction = Functions.DirectionFromPoint(MapObject.User.CurrentLocation, MapObject.TargetObject.CurrentLocation);
 
-            if (!CanMove(direction, 1))
+            if (!CanMove(direction, 1) || haselementalhurricane)
             {
                 best = DirectionBest(direction, 1, MapObject.TargetObject.CurrentLocation);
 
@@ -881,7 +1056,7 @@ namespace Client.Scenes.Views
                 direction = best;
             }
 
-            if (GameScene.Game.MoveFrame && (User.Poison & PoisonType.WraithGrip) != PoisonType.WraithGrip)
+            if (!haselementalhurricane && GameScene.Game.MoveFrame && (User.Poison & PoisonType.WraithGrip) != PoisonType.WraithGrip)
                 MapObject.User.AttemptAction(new ObjectAction(MirAction.Moving, direction, Functions.Move(MapObject.User.CurrentLocation, direction), 1, MagicType.None));
         }
 
@@ -1048,10 +1223,8 @@ namespace Client.Scenes.Views
         {
             Objects.Add(ob);
 
-
             if (ob.CurrentLocation.X < Width && ob.CurrentLocation.Y < Height)
                 Cells[ob.CurrentLocation.X, ob.CurrentLocation.Y].AddObject(ob);
-
         }
 
         public void RemoveObject(MapObject ob)
@@ -1087,7 +1260,6 @@ namespace Client.Scenes.Views
         {
             if (User == null) return;
 
-
             GameScene.Game.MapControl.MapLocation = new Point((GameScene.Game.MapControl.MouseLocation.X - GameScene.Game.Location.X) / CellWidth - OffSetX + User.CurrentLocation.X,
                                                               (GameScene.Game.MapControl.MouseLocation.Y - GameScene.Game.Location.Y) / CellHeight - OffSetY + User.CurrentLocation.Y);
         }
@@ -1105,6 +1277,7 @@ namespace Client.Scenes.Views
 
             return false;
         }
+
         public bool CanEnergyBlast(MirDirection direction)
         {
             return HasTarget(Functions.Move(MapObject.User.CurrentLocation, direction, 2));
@@ -1119,14 +1292,13 @@ namespace Client.Scenes.Views
             return false;
         }
 
-        public bool CanDestructiveBlow(MirDirection direction)
+        public bool CanDestructiveSurge(MirDirection direction)
         {
             for (int i = 1; i < 8; i++)
                 if (HasTarget(Functions.Move(MapObject.User.CurrentLocation, Functions.ShiftDirection(direction, i)))) return true;
 
             return false;
         }
-
 
         public bool ValidCell(Point location)
         {
@@ -1147,6 +1319,8 @@ namespace Client.Scenes.Views
                 _MapInfo = null;
                 MapInfoChanged = null;
 
+                _InstanceInfo = null;
+
                 _Animation = 0;
                 AnimationChanged = null;
 
@@ -1156,6 +1330,10 @@ namespace Client.Scenes.Views
                 MiningPoint = Point.Empty;
                 MiningDirection = 0;
 
+                FishingState = FishingState.None;
+                FloatLocation = Point.Empty;
+                FishingDirection = 0;
+                AutoCast = false;
 
                 if (FLayer != null)
                 {
@@ -1190,8 +1368,18 @@ namespace Client.Scenes.Views
                 ViewRangeY = 0;
                 OffSetX = 0;
                 OffSetY = 0;
-            }
 
+                if (ParticleEffects != null)
+                {
+                    foreach (var effect in ParticleEffects)
+                    {
+                        effect.Dispose();
+                    }
+
+                    ParticleEffects.Clear();
+                    ParticleEffects = null;
+                }
+            }
         }
 
         #endregion
@@ -1222,14 +1410,14 @@ namespace Client.Scenes.Views
                     if (y < 0) continue;
                     if (y >= GameScene.Game.MapControl.Height) break;
 
-                    int drawY = (y - User.CurrentLocation.Y + OffSetY) * CellHeight - User.MovingOffSet.Y;
+                    int drawY = (y - User.CurrentLocation.Y + OffSetY) * CellHeight - User.MovingOffSet.Y - User.ShakeScreenOffset.Y;
 
                     for (int x = minX; x <= maxX; x++)
                     {
                         if (x < 0) continue;
                         if (x >= GameScene.Game.MapControl.Width) break;
 
-                        int drawX = (x - User.CurrentLocation.X + OffSetX) * CellWidth - User.MovingOffSet.X;
+                        int drawX = (x - User.CurrentLocation.X + OffSetX) * CellWidth - User.MovingOffSet.X - User.ShakeScreenOffset.X;
 
                         Cell tile = GameScene.Game.MapControl.Cells[x, y];
 
@@ -1249,11 +1437,11 @@ namespace Client.Scenes.Views
 
                 for (int y = minY; y <= maxY; y++)
                 {
-                    int drawY = (y - User.CurrentLocation.Y + OffSetY + 1) * CellHeight - User.MovingOffSet.Y;
+                    int drawY = (y - User.CurrentLocation.Y + OffSetY + 1) * CellHeight - User.MovingOffSet.Y - User.ShakeScreenOffset.Y;
 
                     for (int x = minX; x <= maxX; x++)
                     {
-                        int drawX = (x - User.CurrentLocation.X + OffSetX) * CellWidth - User.MovingOffSet.X;
+                        int drawX = (x - User.CurrentLocation.X + OffSetX) * CellWidth - User.MovingOffSet.X - User.ShakeScreenOffset.X;
 
                         Cell cell = GameScene.Game.MapControl.Cells[x, y];
 
@@ -1340,7 +1528,7 @@ namespace Client.Scenes.Views
                 {
                     DXManager.Device.Clear(ClearFlags.Target, Color.Black, 0, 0);
 
-                    float scale = baseSize + 4  * lightScale;
+                    float scale = baseSize + 4 * lightScale;
 
                     fX = (OffSetX + MapObject.User.CurrentLocation.X - User.CurrentLocation.X) * CellWidth  + CellWidth / 2;
                     fY = (OffSetY + MapObject.User.CurrentLocation.Y - User.CurrentLocation.Y) * CellHeight;
@@ -1358,11 +1546,15 @@ namespace Client.Scenes.Views
                     DXManager.Sprite.Transform = Matrix.Identity;
 
                     DXManager.SetBlend(false);
-                    
-                    MapObject.User.AbyssEffect.Draw();
+
+                    var abyssEffects = MapObject.User.CreateMagicEffect(MagicEffect.Abyss);
+
+                    foreach (var effect in abyssEffects)
+                    {
+                        effect.Draw();
+                    }
                     return;
                 }
-
 
                 foreach (MapObject ob in GameScene.Game.MapControl.Objects)
                 {
@@ -1420,14 +1612,14 @@ namespace Client.Scenes.Views
                     if (y < 0) continue;
                     if (y >= GameScene.Game.MapControl.Height) break;
 
-                    int drawY = (y - User.CurrentLocation.Y + OffSetY)*CellHeight - User.MovingOffSet.Y;
+                    int drawY = (y - User.CurrentLocation.Y + OffSetY) * CellHeight - User.MovingOffSet.Y - User.ShakeScreenOffset.Y;
 
                     for (int x = minX; x <= maxX; x++)
                     {
                         if (x < 0) continue;
                         if (x >= GameScene.Game.MapControl.Width) break;
 
-                        int drawX = (x - User.CurrentLocation.X + OffSetX)*CellWidth - User.MovingOffSet.X;
+                        int drawX = (x - User.CurrentLocation.X + OffSetX) * CellWidth - User.MovingOffSet.X - User.ShakeScreenOffset.X;
 
                         Cell tile = GameScene.Game.MapControl.Cells[x, y];
 
@@ -1452,7 +1644,6 @@ namespace Client.Scenes.Views
                     }
                 }
 
-
                 DXManager.SetBlend(false);
             }
 
@@ -1461,7 +1652,7 @@ namespace Client.Scenes.Views
                 switch (GameScene.Game.MapControl.MapInfo.Light)
                 {
                     case LightSetting.Default:
-                        byte shading = (byte) (255*GameScene.Game.DayTime);
+                        byte shading = (byte) (255 * GameScene.Game.DayTime);
                         BackColour = Color.FromArgb(shading, shading, shading);
                         Visible = true;
                         break;
@@ -1469,8 +1660,12 @@ namespace Client.Scenes.Views
                         BackColour = Color.FromArgb(15, 15, 15);
                         Visible = true;
                         break;
+                    case LightSetting.Twilight:
+                        BackColour = Color.FromArgb(100, 100, 100);
+                        Visible = true;
+                        break;
                     case LightSetting.Light:
-                        BackColour = Color.FromArgb(200, 200, 200);
+                        BackColour = Color.FromArgb(255, 255, 255);
                         Visible = true;
                         break;
                 }

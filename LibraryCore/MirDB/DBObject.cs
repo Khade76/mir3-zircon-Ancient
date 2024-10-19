@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Library.MirDB;
 
 namespace MirDB
 {
     public abstract class DBObject : INotifyPropertyChanged
     {
+        [JsonIgnore]
         public int Index { get; internal set; }
 
         [IgnoreProperty]
@@ -27,6 +28,8 @@ namespace MirDB
         }
         private ADBCollection _Collection;
 
+        [IgnoreProperty]
+        protected Session Session { get { return Collection.Session; } }
 
         internal readonly Type ThisType;
 
@@ -36,6 +39,7 @@ namespace MirDB
         [IgnoreProperty]
         protected internal bool IsDeleted { get; private set; }
 
+        [JsonIgnore]
         [IgnoreProperty]
         public bool IsTemporary { get; set; }
 
@@ -194,7 +198,7 @@ namespace MirDB
         {
             if (ob == null) return;
 
-            Association link = info.GetCustomAttribute<Association>();
+            AssociationAttribute link = info.GetCustomAttribute<AssociationAttribute>();
 
             if (link == null) return;
 
@@ -204,7 +208,7 @@ namespace MirDB
 
             foreach (PropertyInfo p in properties)
             {
-                Association obLink = p.GetCustomAttribute<Association>();
+                AssociationAttribute obLink = p.GetCustomAttribute<AssociationAttribute>();
 
                 if (obLink == null || obLink.Identity != link.Identity) continue;
 
@@ -249,7 +253,7 @@ namespace MirDB
         {
             if (ob == null) return;
 
-            Association link = info.GetCustomAttribute<Association>();
+            AssociationAttribute link = info.GetCustomAttribute<AssociationAttribute>();
 
             if (link == null) return;
 
@@ -259,7 +263,7 @@ namespace MirDB
 
             foreach (PropertyInfo p in properties)
             {
-                Association obLink = p.GetCustomAttribute<Association>();
+                AssociationAttribute obLink = p.GetCustomAttribute<AssociationAttribute>();
 
                 if (obLink == null || obLink.Identity != link.Identity) continue;
 
@@ -299,6 +303,11 @@ namespace MirDB
 
 
             throw new ArgumentException($"Unable to find Association {ThisType.Name}, Link: {link.Identity ?? "Empty"} -> {info.PropertyType.Name}");
+        }
+
+        protected Session GetCurrencySession()
+        {
+            return Collection.Session;
         }
 
         #region OnPropertyChanged

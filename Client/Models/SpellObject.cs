@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Client.Envir;
+﻿using Client.Envir;
 using Client.Scenes;
 using Library;
-using SlimDX;
-using SlimDX.Direct3D9;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 using Frame = Library.Frame;
 using S = Library.Network.ServerPackets;
 
@@ -44,7 +39,6 @@ namespace Client.Models
             switch (Effect)
             {
                 case SpellEffect.FireWall:
-                case SpellEffect.MonsterFireWall:
                 case SpellEffect.MonsterDeathCloud:
                     FrameStart -= TimeSpan.FromMilliseconds(CEnvir.Random.Next(300));
                     break;
@@ -70,11 +64,10 @@ namespace Client.Models
                     BlendRate =0.3f;
                     break;
                 case SpellEffect.FireWall:
-                case SpellEffect.MonsterFireWall:
                     CEnvir.LibraryList.TryGetValue(LibraryFile.Magic, out BodyLibrary);
                     Frames[MirAnimation.Standing] = new Frame(920, 3, 0, TimeSpan.FromMilliseconds(150));
                     Blended = true;
-                    LightColour = Color.LightSalmon;
+                    LightColour = Globals.FireColour;
                     BlendRate = 0.55f;
                     Light = 15;
                     break;
@@ -99,6 +92,21 @@ namespace Client.Models
                     Blended = true;
                     Light = 0;
                     DXSoundManager.Play(SoundIndex.PoisonousCloudStart);
+                    break;
+                case SpellEffect.DarkSoulPrison:
+                    CEnvir.LibraryList.TryGetValue(LibraryFile.MagicEx6, out BodyLibrary);
+                    Frames[MirAnimation.Standing] = new Frame(700, 10, 0, TimeSpan.FromMilliseconds(100));
+                    Blended = true;
+                    Light = 0;
+                    DXSoundManager.Play(SoundIndex.DarkSoulPrison);
+                    break;
+                case SpellEffect.BurningFire:
+                    CEnvir.LibraryList.TryGetValue(LibraryFile.MagicEx6, out BodyLibrary);
+                    Frames[MirAnimation.Standing] = new Frame(1000, 8, 0, TimeSpan.FromMilliseconds(100));
+                    Blended = true;
+                    LightColour = Globals.FireColour;
+                    BlendRate = 1F;
+                    Light = 15;
                     break;
                 case SpellEffect.MonsterDeathCloud:
                     CEnvir.LibraryList.TryGetValue(LibraryFile.MonMagicEx2, out BodyLibrary);
@@ -137,6 +145,7 @@ namespace Client.Models
             if (!Frames.TryGetValue(CurrentAnimation, out CurrentFrame))
                 CurrentFrame = Frame.EmptyFrame;
         }
+
         public override void Draw()
         {
             if (Blended)

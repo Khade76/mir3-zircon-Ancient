@@ -16,6 +16,10 @@ namespace Library
             [LibraryFile.Equip] = @"Data\Equip.Zl",
             [LibraryFile.EquipEffect_UI] = @"Data\EquipEffect-UI.Zl",
             [LibraryFile.EquipEffect_Part] = @"Data\EquipEffect-Part.Zl",
+            [LibraryFile.EquipEffect_Full] = @"Data\EquipEffect-Full.Zl",
+            [LibraryFile.EquipEffect_FullEx1] = @"Data\EquipEffect-FullEx1.Zl",
+            [LibraryFile.EquipEffect_FullEx2] = @"Data\EquipEffect-FullEx2.Zl",
+            [LibraryFile.EquipEffect_FullEx3] = @"Data\EquipEffect-FullEx3.Zl",
             [LibraryFile.ProgUse] = @"Data\ProgUse.Zl",
             [LibraryFile.StoreItems] = @"Data\StoreItems.Zl",
             [LibraryFile.Inventory] = @"Data\Inventory.Zl",
@@ -23,10 +27,19 @@ namespace Library
             [LibraryFile.NPC] = @"Data\NPC.Zl",
             [LibraryFile.GameInter2] = @"Data\GameInter2.Zl",
             [LibraryFile.MiniMap] = @"Data\MiniMap.Zl",
-            
+            [LibraryFile.MiniMap2] = @"Data\MiniMap2.Zl",
+
+            [LibraryFile.CastleFlag] = @"Data\Flag.Zl",
+
+            [LibraryFile.MiniMapIcon] = @"Data\MiniMapIcon.Zl",
+
+            [LibraryFile.Background] = @"Data\Background.Zl",
+
             [LibraryFile.MagicIcon] = @"Data\MIcon.Zl",
             [LibraryFile.CBIcon] = @"Data\CBIcons.Zl",
             [LibraryFile.QuestIcon] = @"Data\QuestIcons.Zl",
+
+            [LibraryFile.MiniGames] = @"Data\MiniGames.Zl",
 
             [LibraryFile.NPCImage] = @"Data\NPCface.Zl",
             [LibraryFile.MonImage] = @"Data\MonImg.Zl",
@@ -70,6 +83,14 @@ namespace Library
             [LibraryFile.M_HairA] = @"Data\M-HairA.Zl",
             [LibraryFile.WM_HairA] = @"Data\WM-HairA.Zl",
 
+            [LibraryFile.M_Costume] = @"Data\M-Costume.Zl",
+            [LibraryFile.M_CostumeA] = @"Data\M-CostumeA.Zl",
+            [LibraryFile.M_CostumeEx1] = @"Data\M-CostumeEx1.Zl",
+
+            [LibraryFile.WM_Costume] = @"Data\WM-Costume.Zl",
+            [LibraryFile.WM_CostumeA] = @"Data\WM-CostumeA.Zl",
+            [LibraryFile.WM_CostumeEx1] = @"Data\WM-CostumeEx1.Zl",
+
             [LibraryFile.Horse] = @"Data\Horse.Zl",
             [LibraryFile.HorseIron] = @"Data\Horse_Iron.Zl",
             [LibraryFile.HorseSilver] = @"Data\Horse_Silver.Zl",
@@ -79,6 +100,8 @@ namespace Library
             [LibraryFile.HorseDarkEffect] = @"Data\Horse_DarkEffect.Zl",
             [LibraryFile.HorseRoyal] = @"Data\Horse_Royal.Zl",
             [LibraryFile.HorseRoyalEffect] = @"Data\Horse_RoyalEffect.Zl",
+            [LibraryFile.HorseBlueDragon] = @"Data\Horse_BlueDragon.Zl",
+            [LibraryFile.HorseBlueDragonEffect] = @"Data\Horse_BlueDragonEffect.Zl",
 
             [LibraryFile.M_Shield1] = @"Data\M-Shield1.Zl",
             [LibraryFile.M_Shield2] = @"Data\M-Shield2.Zl",
@@ -128,8 +151,8 @@ namespace Library
             [LibraryFile.M_WeaponAOH2] = @"Data\M-WeaponAOH2.Zl",
             [LibraryFile.M_WeaponAOH3] = @"Data\M-WeaponAOH3.Zl",
             [LibraryFile.M_WeaponAOH4] = @"Data\M-WeaponAOH4.Zl",
-            [LibraryFile.M_WeaponAOH5] = @"Data\WM-WeaponAOH5.Zl",
-            [LibraryFile.M_WeaponAOH6] = @"Data\WM-WeaponAOH6.Zl",
+            [LibraryFile.M_WeaponAOH5] = @"Data\M-WeaponAOH5.Zl",
+            [LibraryFile.M_WeaponAOH6] = @"Data\M-WeaponAOH6.Zl",
 
 
             [LibraryFile.WM_WeaponADL1] = @"Data\WM-WeaponADL1.Zl",
@@ -143,8 +166,8 @@ namespace Library
             [LibraryFile.WM_WeaponAOH2] = @"Data\WM-WeaponAOH2.Zl",
             [LibraryFile.WM_WeaponAOH3] = @"Data\WM-WeaponAOH3.Zl",
             [LibraryFile.WM_WeaponAOH4] = @"Data\WM-WeaponAOH4.Zl",
-            [LibraryFile.WM_WeaponAOH5] = @"Data\WWM-WeaponAOH5.Zl",
-            [LibraryFile.WM_WeaponAOH6] = @"Data\WWM-WeaponAOH6.Zl",
+            [LibraryFile.WM_WeaponAOH5] = @"Data\WM-WeaponAOH5.Zl",
+            [LibraryFile.WM_WeaponAOH6] = @"Data\WM-WeaponAOH6.Zl",
 
 
             [LibraryFile.M_Helmet1] = @"Data\M-Helmet1.Zl",
@@ -273,7 +296,9 @@ namespace Library
             [LibraryFile.MagicEx7] = @"Data\MagicEx7.Zl",
             [LibraryFile.MagicEx8] = @"Data\MagicEx8.Zl",
             [LibraryFile.MagicEx9] = @"Data\MagicEx9.Zl",
-            
+            [LibraryFile.MagicEx10] = @"Data\MagicEx10.Zl",
+            [LibraryFile.MagicEx11] = @"Data\MagicEx11.Zl",
+
             [LibraryFile.Animationsc] = @"Data\Map Data\Animationsc.Zl",
             [LibraryFile.Cliffsc] = @"Data\Map Data\Cliffsc.Zl",
             [LibraryFile.Dungeonsc] = @"Data\Map Data\Dungeonsc.Zl",
@@ -430,15 +455,24 @@ namespace Library
         Equip,
         EquipEffect_UI,
         EquipEffect_Part,
+        EquipEffect_Full,
+        EquipEffect_FullEx1,
+        EquipEffect_FullEx2,
+        EquipEffect_FullEx3,
         ProgUse,
         StoreItems,
         Inventory,
         Ground,
         NPC,
         MiniMap,
+        MiniMap2,
         MagicIcon,
         CBIcon,
         QuestIcon,
+        MiniGames,
+        CastleFlag,
+        MiniMapIcon,
+        Background,
 
         NPCImage,
         MonImage,
@@ -480,7 +514,16 @@ namespace Library
         WM_HumAEx3,
         WM_HairA,
 
+        M_Costume,
+        M_CostumeA,
+        M_CostumeEx1,
+
+        WM_Costume,
+        WM_CostumeA,
+        WM_CostumeEx1,
+
         Horse,
+        HorseS,
 
         HorseIron,
         HorseSilver,
@@ -490,6 +533,8 @@ namespace Library
         HorseDarkEffect,
         HorseRoyal,
         HorseRoyalEffect,
+        HorseBlueDragon,
+        HorseBlueDragonEffect,
 
         M_Weapon1,
         M_Weapon2,
@@ -666,7 +711,6 @@ namespace Library
         Mon_55,
         Mon_56,
 
-
         Magic, 
         MagicEx,
         MagicEx2,
@@ -677,6 +721,8 @@ namespace Library
         MagicEx7,
         MagicEx8,
         MagicEx9,
+        MagicEx10,
+        MagicEx11,
 
         Animationsc,
         Cliffsc,

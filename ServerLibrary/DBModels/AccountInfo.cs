@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Library;
+﻿using Library;
+using Library.SystemModels;
 using MirDB;
 using Server.Envir;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Server.DBModels
 {
@@ -296,7 +297,7 @@ namespace Server.DBModels
         }
         private bool _Banned;
 
-        public DateTime ExpiryDate
+        public DateTime BanExpiry
         {
             get { return _ExpiryDate; }
             set
@@ -327,68 +328,13 @@ namespace Server.DBModels
         private string _BanReason;
 
         [IgnoreProperty]
-        public UserCurrency Gold2 => Currencies.First(x => x.Info.Type == CurrencyType.Gold);
+        public UserCurrency Gold => Currencies.First(x => x.Info.Type == CurrencyType.Gold);
 
         [IgnoreProperty]
-        public UserCurrency GameGold2 => Currencies.First(x => x.Info.Type == CurrencyType.GameGold);
+        public UserCurrency GameGold => Currencies.First(x => x.Info.Type == CurrencyType.GameGold);
 
         [IgnoreProperty]
-        public UserCurrency HuntGold2 => Currencies.First(x => x.Info.Type == CurrencyType.HuntGold);
-
-
-        /// <summary>
-        /// OLD PROPERTY. DO NOT USE.
-        /// </summary>
-        public long Gold
-        {
-            get { return _Gold; }
-            set
-            {
-                if (_Gold == value) return;
-
-                var oldValue = _Gold;
-                _Gold = value;
-
-                OnChanged(oldValue, value, "Gold");
-            }
-        }
-        private long _Gold;
-
-        /// <summary>
-        /// OLD PROPERTY. DO NOT USE.
-        /// </summary>
-        public int GameGold
-        {
-            get { return _GameGold; }
-            set
-            {
-                if (_GameGold == value) return;
-
-                var oldValue = _GameGold;
-                _GameGold = value;
-
-                OnChanged(oldValue, value, "GameGold");
-            }
-        }
-        private int _GameGold;
-
-        /// <summary>
-        /// OLD PROPERTY. DO NOT USE.
-        /// </summary>
-        public int HuntGold
-        {
-            get { return _HuntGold; }
-            set
-            {
-                if (_HuntGold == value) return;
-
-                var oldValue = _HuntGold;
-                _HuntGold = value;
-
-                OnChanged(oldValue, value, "HuntGold");
-            }
-        }
-        private int _HuntGold;
+        public UserCurrency HuntGold => Currencies.First(x => x.Info.Type == CurrencyType.HuntGold);
 
         public bool AllowGroup
         {
@@ -468,7 +414,7 @@ namespace Server.DBModels
         }
         private GuildMemberInfo _GuildMember;
         
-        public DateTime GlobalTime
+        public DateTime GlobalShoutExpiry
         {
             get { return _GlobalTime; }
             set
@@ -651,6 +597,8 @@ namespace Server.DBModels
         [Association("Fortunes")]
         public DBBindingList<UserFortuneInfo> Fortunes { get; set; }
 
+        [Association("Quests")]
+        public DBBindingList<UserQuest> Quests { get; set; }
 
         public CharacterInfo LastCharacter
         {
@@ -685,6 +633,8 @@ namespace Server.DBModels
             buff.TickFrequency = TimeSpan.FromMinutes(1);
             buff.Stats = new Stats { [Stat.AvailableHuntGoldCap] = 15 };
             buff.RemainingTime = TimeSpan.MaxValue;
+
+            AddDefaultCurrencies();
         }
         protected override void OnLoaded()
         {
@@ -696,6 +646,53 @@ namespace Server.DBModels
             BuffInfo buff = Buffs.FirstOrDefault(x => x.Type == BuffType.HuntGold);
             if (buff != null)
                 buff.Stats = new Stats { [Stat.AvailableHuntGoldCap] = 15 };
+
+            var removeList = new List<UserItem>();
+
+            foreach (var item in Items)
+            {
+                if (item.Info == null)
+                    removeList.Add(item);
+            }
+
+            foreach (var item in removeList)
+                Items.Remove(item);
+
+            AddDefaultCurrencies();
+            RemoveDeletedCurrencies();
+        }
+
+        private void AddDefaultCurrencies()
+        {
+            foreach (var currency in Session.GetCollection<CurrencyInfo>().Binding)
+            {
+                var userCurrency = Currencies.FirstOrDefault(x => x.Info == currency);
+
+                if (userCurrency == null)
+                {
+                    userCurrency = Session.GetCollection<UserCurrency>().CreateNewObject();
+                    userCurrency.Account = this;
+                    userCurrency.Info = currency;
+                }
+            }
+        }
+
+        private void RemoveDeletedCurrencies()
+        {
+            for (int i = Currencies.Count - 1; i >= 0; i--)
+            {
+                var currency = Currencies[i];
+
+                if (currency.Info == null)
+                {
+                    Currencies.RemoveAt(i);
+                }
+            }
+        }
+
+        public bool IsAdmin(bool includeTemp = false)
+        {
+            return Admin || (includeTemp && TempAdmin);
         }
 
         public int HighestLevel()

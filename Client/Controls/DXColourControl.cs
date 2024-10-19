@@ -11,6 +11,34 @@ namespace Client.Controls
     {
         #region Properies
         private DXColourPicker Window;
+
+        #region AllowNoColour
+
+        public bool AllowNoColour
+        {
+            get => _AllowNoColour;
+            set
+            {
+                if (_AllowNoColour == value) return;
+
+                bool oldValue = _AllowNoColour;
+                _AllowNoColour = value;
+
+                OnAllowNoColourChanged(oldValue, value);
+            }
+        }
+        private bool _AllowNoColour;
+        public event EventHandler<EventArgs> AllowNoColourChanged;
+        public void OnAllowNoColourChanged(bool oValue, bool nValue)
+        {
+            AllowNoColourChanged?.Invoke(this, EventArgs.Empty);
+
+            if (Window != null)
+                Window.AllowNoColour = nValue;
+        }
+
+        #endregion
+
         #endregion
 
         public DXColourControl()
@@ -40,6 +68,7 @@ namespace Client.Controls
                 Parent = ActiveScene,
                 PreviousColour = BackColour,
                 SelectedColour = BackColour,
+                AllowNoColour = AllowNoColour,
             };
             Window.Location = new Point((ActiveScene.Size.Width - Window.Size.Width) / 2, (ActiveScene.Size.Height - Window.Size.Height) / 2);
         }
@@ -92,6 +121,17 @@ namespace Client.Controls
             if (ColourBox != null)
                 ColourBox.BackColour = SelectedColour;
 
+            if (SelectedColour == Color.FromArgb(0, 0, 0, 0))
+            {
+                ColourBox.Visible = false;
+                NoColourLabel.Visible = true;
+            }
+            else
+            {
+                ColourBox.Visible = true;
+                NoColourLabel.Visible = false;
+            }
+
             if (Target != null)
                 Target.BackColour = SelectedColour;
 
@@ -103,32 +143,60 @@ namespace Client.Controls
         }
 
         #endregion
-        
+
+        #region AllowNoColour
+
+        public bool AllowNoColour
+        {
+            get => _AllowNoColour;
+            set
+            {
+                if (_AllowNoColour == value) return;
+
+                bool oldValue = _AllowNoColour;
+                _AllowNoColour = value;
+
+                OnAllowNoColourChanged(oldValue, value);
+            }
+        }
+        private bool _AllowNoColour;
+        public event EventHandler<EventArgs> AllowNoColourChanged;
+        public void OnAllowNoColourChanged(bool oValue, bool nValue)
+        {
+            AllowNoColourChanged?.Invoke(this, EventArgs.Empty);
+
+            EmptyButton.Visible = nValue;
+        }
+
+        #endregion
+
         public Color PreviousColour;
         public bool Updating;
 
-        public DXButton SelectButton, CancelButton;
+        public DXButton SelectButton, CancelButton, EmptyButton;
         public DXColourControl Target;
         public DXNumberBox RedBox, GreenBox, BlueBox;
         public DXControl ColourScaleBox;
         public DXControl ColourBox;
 
+        public DXLabel NoColourLabel;
+
         public override WindowType Type => WindowType.None;
         public override bool CustomSize => false;
-        public override bool AutomaticVisiblity => false;
+        public override bool AutomaticVisibility => false;
         #endregion
 
         public DXColourPicker()
         {
             Size = new Size(380, 253);
-            TitleLabel.Text = "Colour Picker";
+            TitleLabel.Text = CEnvir.Language.CommonControlColourPickerTitle;
             Modal = true;
             HasFooter = true;
 
             CancelButton = new DXButton
             {
                 Parent = this,
-                Label = { Text = "Cancel" },
+                Label = { Text = CEnvir.Language.CommonControlCancel },
                 Location = new Point(Size.Width / 2 + 10, Size.Height - 43),
                 Size = new Size(80, DefaultHeight),
             };
@@ -138,12 +206,22 @@ namespace Client.Controls
             SelectButton = new DXButton
             {
                 Parent = this,
-                Label = { Text = "Select" },
+                Label = { Text = CEnvir.Language.CommonControlSelect },
                 Location = new Point((Size.Width) / 2 - 80 - 10, Size.Height - 43),
                 Size = new Size(80, DefaultHeight),
             };
             SelectButton.MouseClick += (o, e) => Dispose();
 
+            EmptyButton = new DXButton
+            {
+                Parent = this,
+                Label = { Text = CEnvir.Language.CommonControlColourPickerEmptyLabel },
+                Location = new Point((Size.Width) / 2 - 80 - 10, Size.Height - 43),
+                Size = new Size(80, DefaultHeight),
+                Visible = AllowNoColour
+            };
+            EmptyButton.Location = new Point(Size.Width - EmptyButton.Size.Width - 10, 115);
+            EmptyButton.MouseClick += EmptyButton_MouseClick;
 
             ColourScaleBox = new DXControl
             {
@@ -171,7 +249,7 @@ namespace Client.Controls
             DXLabel label = new DXLabel
             {
                 Parent = this,
-                Text = "Red:",
+                Text = CEnvir.Language.CommonControlColourPickerRedLabel,
             };
             label.Location = new Point(RedBox.Location.X - label.Size.Width - 5, (RedBox.Size.Height - label.Size.Height) / 2 + RedBox.Location.Y);
 
@@ -187,7 +265,7 @@ namespace Client.Controls
             label = new DXLabel
             {
                 Parent = this,
-                Text = "Green:",
+                Text = CEnvir.Language.CommonControlColourPickerGreenLabel,
             };
             label.Location = new Point(GreenBox.Location.X - label.Size.Width - 5, (GreenBox.Size.Height - label.Size.Height) / 2 + GreenBox.Location.Y);
 
@@ -203,10 +281,9 @@ namespace Client.Controls
             label = new DXLabel
             {
                 Parent = this,
-                Text = "Blue:",
+                Text = CEnvir.Language.CommonControlColourPickerBlueLabel,
             };
             label.Location = new Point(BlueBox.Location.X - label.Size.Width - 5, (BlueBox.Size.Height - label.Size.Height) / 2 + BlueBox.Location.Y);
-
 
             ColourBox = new DXControl
             {
@@ -217,21 +294,27 @@ namespace Client.Controls
                 DrawTexture = true,
                 BorderColour = Color.FromArgb(198, 166, 99),
                 Parent = this,
+                Visible = SelectedColour != Color.Empty
             };
             label = new DXLabel
             {
                 Parent = this,
-                Text = "Colour:",
+                Text = CEnvir.Language.CommonControlColourPickerColourLabel,
             };
             label.Location = new Point(BlueBox.Location.X - label.Size.Width - 5, (ColourBox.Size.Height - label.Size.Height) / 2 + ColourBox.Location.Y);
 
-
+            NoColourLabel = new DXLabel
+            {
+                Parent = this,
+                Location = new Point(BlueBox.Location.X + BlueBox.ValueTextBox.Location.X, 172),
+                Text = CEnvir.Language.CommonControlColourPickerNoneLabel,
+                Visible = SelectedColour == Color.Empty
+            };
         }
 
         #region Methods
         private void ColourScaleBox_MouseClick(object sender, MouseEventArgs e)
         {
-
             int x = e.X - ColourScaleBox.DisplayArea.X;
             int y = e.Y - ColourScaleBox.DisplayArea.Y;
 
@@ -250,6 +333,14 @@ namespace Client.Controls
 
             SelectedColour = Color.FromArgb((int) RedBox.Value, (int) GreenBox.Value, (int) BlueBox.Value);
         }
+
+        private void EmptyButton_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (Updating) return;
+
+            SelectedColour = Color.FromArgb(0, 0, 0, 0);
+        }
+
         #endregion
 
         #region IDisposable
@@ -278,6 +369,14 @@ namespace Client.Controls
                         CancelButton.Dispose();
 
                     CancelButton = null;
+                }
+
+                if (EmptyButton != null)
+                {
+                    if (!EmptyButton.IsDisposed)
+                        EmptyButton.Dispose();
+
+                    EmptyButton = null;
                 }
 
                 Target = null;
@@ -320,6 +419,14 @@ namespace Client.Controls
                         ColourBox.Dispose();
 
                     ColourBox = null;
+                }
+
+                if (NoColourLabel != null)
+                {
+                    if (!NoColourLabel.IsDisposed)
+                        NoColourLabel.Dispose();
+
+                    NoColourLabel = null;
                 }
             }
         }

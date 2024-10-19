@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MirDB;
+﻿using MirDB;
+using System;
 
 namespace Library.SystemModels
 {
     public sealed class CastleInfo : DBObject
     {
+        [IsIdentity]
         public string Name
         {
             get { return _Name; }
@@ -24,6 +21,7 @@ namespace Library.SystemModels
         }
         private string _Name;
 
+        [Association("Castles", true)]
         public MapInfo Map
         {
             get { return _Map; }
@@ -144,7 +142,15 @@ namespace Library.SystemModels
         }
         private decimal _Discount;
 
-        
+        [Association("Flags", true)]
+        public DBBindingList<CastleFlagInfo> Flags { get; set; }
+
+        [Association("Gates", true)]
+        public DBBindingList<CastleGateInfo> Gates { get; set; }
+
+        [Association("Guards", true)]
+        public DBBindingList<CastleGuardInfo> Guards { get; set; }
+
         public DateTime WarDate;
     }
 }

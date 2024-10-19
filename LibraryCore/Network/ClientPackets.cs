@@ -107,11 +107,27 @@ namespace Library.Network.ClientPackets
 
     public sealed class Mount : Packet {}
 
+    public sealed class FishingCast : Packet 
+    { 
+        public FishingState State { get; set; }
+        public MirDirection Direction { get; set; }
+        public Point FloatLocation { get; set; }
+        public bool CaughtFish { get; set; }
+    }
+
     public sealed class Attack : Packet
     {
         public MirDirection Direction { get; set; }
         public MirAction Action { get; set; }
         public MagicType AttackMagic { get; set; }
+    }
+
+    public sealed class RangeAttack : Packet
+    {
+        public MirDirection Direction { get; set; }
+        public uint Target { get; set; }
+        public int DelayedTime { get; set; }
+
     }
     public sealed class Mining : Packet
     {
@@ -136,6 +152,17 @@ namespace Library.Network.ClientPackets
         public bool MergeItem { get; set; }
     }
 
+    public sealed class ItemSort : Packet
+    {
+        public GridType Grid { get; set; }
+    }
+
+    public sealed class ItemDelete : Packet
+    {
+        public GridType Grid { get; set; }
+        public int Slot { get; set; }
+    }
+
     public sealed class ItemSplit : Packet 
     {
         public GridType Grid { get; set; }
@@ -146,10 +173,12 @@ namespace Library.Network.ClientPackets
     public sealed class ItemDrop : Packet
     {
         public CellLinkInfo Link { get; set; }
+        public int Slot { get; set; }
     }
 
-    public sealed class GoldDrop : Packet
+    public sealed class CurrencyDrop : Packet
     {
+        public int CurrencyIndex { get; set; }
         public long Amount { get; set; }
     }
 
@@ -196,6 +225,15 @@ namespace Library.Network.ClientPackets
     public sealed class NPCButton : Packet
     {
         public int ButtonID { get; set; }
+    }
+
+    public sealed class NPCRoll : Packet
+    {
+        public int Type { get; set; }
+    }
+
+    public sealed class NPCRollResult : Packet
+    {
     }
 
     public sealed class NPCBuy : Packet
@@ -319,6 +357,7 @@ namespace Library.Network.ClientPackets
     public sealed class Inspect : Packet
     {
         public int Index { get; set; }
+        public bool Ranking { get; set; }
     }
 
     public sealed class RankRequest : Packet
@@ -326,6 +365,11 @@ namespace Library.Network.ClientPackets
         public RequiredClass Class { get; set; }
         public bool OnlineOnly { get; set; }
         public int StartIndex { get; set; }
+    }
+
+    public sealed class RankSearch : Packet
+    {
+        public string Name { get; set; }
     }
 
     public sealed class ObserverRequest : Packet
@@ -503,6 +547,31 @@ namespace Library.Network.ClientPackets
         public int Index { get; set; }
     }
 
+    public sealed class GuildColour : Packet
+    {
+        public Color Colour { get; set; }
+    }
+
+    public sealed class GuildFlag : Packet
+    {
+        public int Flag { get; set; }
+    }
+
+    public sealed class GuildToggleCastleGates : Packet
+    {
+
+    }
+
+    public sealed class GuildRepairCastleGates : Packet
+    {
+
+    }
+
+    public sealed class GuildRepairCastleGuards : Packet
+    {
+
+    }
+
     public sealed class QuestAccept : Packet
     {
         public int Index { get; set; }
@@ -518,6 +587,10 @@ namespace Library.Network.ClientPackets
         public int Index { get; set; }
 
         public bool Track { get; set; }
+    }
+    public sealed class QuestAbandon : Packet
+    {
+        public int Index { get; set; }
     }
 
     public sealed class CompanionUnlock : Packet
@@ -590,6 +663,11 @@ namespace Library.Network.ClientPackets
         public string Name { get; set; }
     }
 
+    public sealed class CaptionChange : Packet
+    {
+        public string Caption { get; set; }
+    }
+
     public sealed class FortuneCheck : Packet
     {
         public int ItemIndex { get; set; }
@@ -638,6 +716,22 @@ namespace Library.Network.ClientPackets
         public List<MirClass> FilterClass { get; set; }
         public List<Rarity> FilterRarity { get; set; }
         public List<ItemType> FilterItemType { get; set; }
+    }
+    public sealed class ChangeOnlineState : Packet
+    {
+        public OnlineState State { get; set; }
+    }
 
+    public sealed class FriendAdd : Packet
+    {
+        public string Name { get; set; }
+    }
+    public sealed class FriendRemove : Packet
+    {
+        public int Index { get; set; }
+    }
+
+    public sealed class IncreaseDiscipline : Packet
+    {
     }
 }

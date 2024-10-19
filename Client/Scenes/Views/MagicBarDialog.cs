@@ -11,6 +11,7 @@ using Client.Models;
 using Client.UserModels;
 using Library;
 using Library.SystemModels;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Client.Scenes.Views
 {
@@ -55,7 +56,7 @@ namespace Client.Scenes.Views
 
         public override WindowType Type => WindowType.MagicBarBox;
         public override bool CustomSize => false;
-        public override bool AutomaticVisiblity => true;
+        public override bool AutomaticVisibility => true;
         
 
         public MagicBarDialog()
@@ -468,7 +469,6 @@ namespace Client.Scenes.Views
                     }
                 });
 
-
                 pair.Value.Tag = magic?.Info;
 
                 if (magic != null)
@@ -530,8 +530,6 @@ namespace Client.Scenes.Views
                 SetLabel.Location = new Point(ClientArea.X + 460, ClientArea.Y + UpButton.Size.Height - 1);
                 DownButton.Location = new Point(ClientArea.X + 461, ClientArea.X + 37 - UpButton.Size.Height);
             }
-
-
         }
 
         public override void Process()
@@ -552,14 +550,33 @@ namespace Client.Scenes.Views
 
                 ClientUserMagic magic = GameScene.Game.User.Magics[info];
 
-                if (CEnvir.Now >= magic.NextCast)
+                bool toggleSkill = false;
+
+                switch (magic.Info.Magic)
+                {
+                    case MagicType.Thrusting:
+                    case MagicType.HalfMoon:
+                    case MagicType.DestructiveSurge:
+                    case MagicType.FlameSplash:
+                    case MagicType.FullBloom:
+                    case MagicType.WhiteLotus:
+                    case MagicType.RedLotus:
+                    case MagicType.SweetBrier:
+                    case MagicType.Karma:
+                        toggleSkill = true;
+                        break;
+                }
+
+                if (CEnvir.Now >= magic.NextCast && (CEnvir.Now >= GameScene.Game.ToggleTime || !toggleSkill))
                 {
                     Cooldowns[pair.Key].Visible = false;
                     continue;
                 }
 
+                var maxTime = (magic.NextCast > GameScene.Game.ToggleTime ? magic.NextCast : GameScene.Game.ToggleTime);
+
                 Cooldowns[pair.Key].Visible = true;
-                TimeSpan remaining = magic.NextCast - CEnvir.Now;
+                TimeSpan remaining = maxTime - CEnvir.Now;
                 Cooldowns[pair.Key].Text = $"{Math.Ceiling(remaining.TotalSeconds)}s";
 
                 if (remaining.TotalSeconds > 5)

@@ -5,8 +5,6 @@ using System.Net.Sockets;
 using System.Reflection;
 using G = Library.Network.GeneralPackets;
 
-
-//TODO Dispose ?
 namespace Library.Network
 {
     public abstract class BaseConnection
@@ -20,6 +18,7 @@ namespace Library.Network
 
         public int TotalBytesSent { get; set; }
         public int TotalBytesReceived { get; set; }
+        public int TotalPacketsProcessed { get; set; }
 
         public bool AdditionalLogging;
 
@@ -54,9 +53,10 @@ namespace Library.Network
             Client = client;
             Client.NoDelay = true;
 
-
             Connected = true;
             TimeConnected = Time.Now;
+
+            TotalPacketsProcessed = 0;
         }
 
         protected void BeginReceive()
@@ -89,6 +89,7 @@ namespace Library.Network
                     Disconnecting = true;
                     return;
                 }
+
                 TotalBytesReceived += dataRead;
 
                 UpdateTimeOut();
@@ -103,7 +104,10 @@ namespace Library.Network
                 Packet p;
 
                 while ((p = Packet.ReceivePacket(_rawData, out _rawData)) != null)
+                {
                     ReceiveList.Enqueue(p);
+                    TotalPacketsProcessed++;
+                }
 
                 BeginReceive();
             }
@@ -240,11 +244,12 @@ namespace Library.Network
                 catch (NotImplementedException ex)
                 {
                     OnException(this, ex);
+                    Disconnecting = true;
                 }
                 catch (Exception ex)
                 {
                     OnException(this, ex);
-                    throw ex;
+                    throw;
                 }
             }
 
@@ -336,9 +341,8 @@ namespace Library.Network
 
             if (p.Length > value.LargestSize)
                 value.LargestSize = p.Length;
-
-
         }
+
         public void UpdateTimeOut()
         {
             if (Disconnecting) return;

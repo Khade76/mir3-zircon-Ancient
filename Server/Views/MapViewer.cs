@@ -1,4 +1,10 @@
-﻿using System;
+﻿using Library;
+using Library.SystemModels;
+using Server.Envir;
+using Server.Views.DirectX;
+using SlimDX;
+using SlimDX.Direct3D9;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,15 +15,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
-using Library;
-using Library.SystemModels;
-using Server.Envir;
-using Server.Views.DirectX;
-using SlimDX;
-using SlimDX.Direct3D9;
 using Blend = SlimDX.Direct3D9.Blend;
 using Matrix = SlimDX.Matrix;
-
 
 namespace Server.Views
 {
@@ -65,14 +64,55 @@ namespace Server.Views
 
             Map.Selection = MapRegion.GetPoints(Map.Width);
 
+            AttributesButton.Enabled = true;
+            BlockedOnlyButton.Enabled = true;
+            SelectionButton.Enabled = true;
+            SaveButton.Enabled = true;
+            CancelButton1.Enabled = true;
+
             MapRegionChanged?.Invoke(this, EventArgs.Empty);
         }
 
         #endregion
 
-        
-        
+        #region Map Path
 
+        public string MapPath
+        {
+            get { return _MapPath; }
+            set
+            {
+                if (_MapPath == value) return;
+
+                string oldValue = _MapPath;
+                _MapPath = value;
+
+                OnMapPathChanged(oldValue, value);
+            }
+        }
+        private string _MapPath;
+        public event EventHandler<EventArgs> MapPathChanged;
+        public virtual void OnMapPathChanged(string oValue, string nValue)
+        {
+            Map.Selection.Clear();
+            Map.TextureValid = false;
+            MapRegion = null;
+
+            if (oValue != nValue)
+                Map.Load(nValue);
+
+            Map.Selection = new HashSet<Point>();
+
+            AttributesButton.Enabled = false;
+            BlockedOnlyButton.Enabled = false;
+            SelectionButton.Enabled = false;
+            SaveButton.Enabled = false;
+            CancelButton1.Enabled = false;
+
+            MapPathChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
 
         public MapViewer()
         {
@@ -308,6 +348,11 @@ namespace Server.Views
 
             Map.TextureValid = false;
         }
+
+        private void BlockedOnlyButton_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            Map.AttributeSelection = !Map.AttributeSelection;
+        }
     }
     
 
@@ -315,7 +360,7 @@ namespace Server.Views
 
 
 namespace Server.Views.DirectX
-{ 
+{
     public class DXManager : IDisposable
     {
         public Graphics Graphics;
@@ -1516,6 +1561,32 @@ namespace Server.Views.DirectX
 
         #endregion
 
+
+        #region AttributeSelection
+
+        public bool AttributeSelection
+        {
+            get { return _AttributeSelection; }
+            set
+            {
+                if (_AttributeSelection == value) return;
+
+                bool oldValue = _AttributeSelection;
+                _AttributeSelection = value;
+
+                OnAttributeSelectionChanged(oldValue, value);
+            }
+        }
+        private bool _AttributeSelection;
+        public event EventHandler<EventArgs> AttributeSelectionChanged;
+        public virtual void OnAttributeSelectionChanged(bool oValue, bool nValue)
+        {
+            AttributeSelectionChanged?.Invoke(this, EventArgs.Empty);
+            TextureValid = false;
+        }
+
+        #endregion
+
         public HashSet<Point> Selection = new HashSet<Point>();
         
         
@@ -1916,7 +1987,7 @@ namespace Server.Views.DirectX
 
                     Cell tile = Cells[x, y];
 
-                    if (tile.Flag)
+                    if (tile.Flag != AttributeSelection)
                     {
                         if (!DrawAttributes) continue;
 
@@ -1976,9 +2047,20 @@ namespace Server.Views.DirectX
         {
             try
             {
-                if (!File.Exists(Config.MapPath + fileName + ".map")) return;
+                string path = null;
 
-                using (MemoryStream mStream = new MemoryStream(File.ReadAllBytes(Config.MapPath + fileName + ".map")))
+                if (Path.IsPathRooted(fileName))
+                {
+                    path = fileName;
+                }
+                else
+                {
+                    path = Config.MapPath + fileName + ".map";
+                }
+
+                if (!File.Exists(path)) return;
+
+                using (MemoryStream mStream = new MemoryStream(File.ReadAllBytes(path)))
                 using (BinaryReader reader = new BinaryReader(mStream))
                 {
                     mStream.Seek(22, SeekOrigin.Begin);
@@ -2094,7 +2176,7 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag != AttributeSelection) continue;
 
                             Selection.Add(new Point(x, y));
                         }
@@ -2106,14 +2188,14 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag != AttributeSelection) continue;
 
                             Selection.Remove(new Point(x, y));
                         }
                     break;
                 case MouseButtons.Middle:
                     if (MouseLocation.X < 0 || MouseLocation.X >= Width || MouseLocation.Y < 0 || MouseLocation.Y >= Height) return;
-                    if (Cells[MouseLocation.X, MouseLocation.Y].Flag) return;
+                    if (Cells[MouseLocation.X, MouseLocation.Y].Flag != AttributeSelection) return;
 
                     HashSet<Point> doneList = new HashSet<Point> { MouseLocation };
                     Queue<Point> todoList = new Queue<Point>();
@@ -2132,7 +2214,7 @@ namespace Server.Views.DirectX
 
                                 if (nPoint.X < 0 || nPoint.X >= Width || nPoint.Y < 0 || nPoint.Y >= Height) continue;
 
-                                if (Cells[nPoint.X, nPoint.Y].Flag) continue;
+                                if (Cells[nPoint.X, nPoint.Y].Flag != AttributeSelection) continue;
 
                                 if (doneList.Contains(nPoint)) continue;
 
@@ -2158,7 +2240,7 @@ namespace Server.Views.DirectX
 
                                 if (nPoint.X < 0 || nPoint.X >= Width || nPoint.Y < 0 || nPoint.Y >= Height) continue;
 
-                                if (Cells[nPoint.X, nPoint.Y].Flag) continue;
+                                if (Cells[nPoint.X, nPoint.Y].Flag != AttributeSelection) continue;
 
                                 if (doneList.Contains(nPoint)) continue;
 
@@ -2186,7 +2268,7 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag != AttributeSelection) continue;
 
                             Selection.Add(new Point(x, y));
                         }
@@ -2196,7 +2278,7 @@ namespace Server.Views.DirectX
                     for (int y = MouseLocation.Y - Radius; y <= MouseLocation.Y + Radius; y++)
                         for (int x = MouseLocation.X - Radius; x <= MouseLocation.X + Radius; x++)
                         {
-                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag) continue;
+                            if (x < 0 || x >= Width || y < 0 || y >= Height || Cells[x, y].Flag != AttributeSelection) continue;
 
                             Selection.Remove(new Point(x, y));
                         }

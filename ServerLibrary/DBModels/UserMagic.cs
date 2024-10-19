@@ -39,7 +39,7 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _Character;
-        
+
         public SpellKey Set1Key
         {
             get { return _Set1Key; }
@@ -130,6 +130,22 @@ namespace Server.DBModels
         }
         private long _Experience;
 
+        [Association("DisciplineMagics")]
+        public UserDiscipline Discipline
+        {
+            get { return _Discipline; }
+            set
+            {
+                if (_Discipline == value) return;
+
+                var oldValue = _Discipline;
+                _Discipline = value;
+
+                OnChanged(oldValue, value, "Discipline");
+            }
+        }
+        private UserDiscipline _Discipline;
+
         public DateTime Cooldown;
         
         [IgnoreProperty]
@@ -139,14 +155,14 @@ namespace Server.DBModels
         {
             Info = null;
             Character = null;
+            Discipline = null;
 
             base.OnDeleted();
         }
 
-
         public int GetPower()
         {
-            int min = Info.MinBasePower + Level*Info.MinLevelPower/3;
+            int min = Info.MinBasePower + Level * Info.MinLevelPower / 3;
             int max = Info.MaxBasePower + Level * Info.MaxLevelPower / 3;
 
             if (min < 0) min = 0;
@@ -161,7 +177,7 @@ namespace Server.DBModels
             {
                 Index = Index,
                 InfoIndex = Info.Index,
-
+              
                 Set1Key = Set1Key,
                 Set2Key = Set2Key,
                 Set3Key = Set3Key,

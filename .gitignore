@@ -5,3 +5,5 @@ Build/
 [Oo]bj/
 [Bb]in/
 packages/
+licenses.licx
+/NuGet.Config

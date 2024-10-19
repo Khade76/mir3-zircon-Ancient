@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using DevExpress.XtraBars;
 using Library;
 using Library.SystemModels;
@@ -13,11 +14,10 @@ namespace Server.Views
 
             MovementGridControl.DataSource = SMain.Session.GetCollection<MovementInfo>().Binding;
 
-
-
-            MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
+            MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapRegion>().Binding.Where(x => x.RegionType == RegionType.None || x.RegionType == RegionType.Connection);
             ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
             SpawnLookUpEdit.DataSource = SMain.Session.GetCollection<RespawnInfo>().Binding;
+            InstanceLookUpEdit.DataSource = SMain.Session.GetCollection<InstanceInfo>().Binding;
 
             MapIconImageComboBox.Items.AddEnum<MapIcon>();
         }
@@ -32,6 +32,16 @@ namespace Server.Views
             base.OnLoad(e);
 
             SMain.SetUpView(MovementGridView);
+        }
+
+        private void ImportButton_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            JsonImporter.Import<MovementInfo>();
+        }
+
+        private void ExportButton_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            JsonExporter.Export<MovementInfo>(MovementGridView);
         }
     }
 }

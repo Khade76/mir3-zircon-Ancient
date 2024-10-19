@@ -1,11 +1,9 @@
-﻿using System;
+﻿using Library.Network;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Library.Network;
 
 namespace Library
 {
@@ -94,6 +92,95 @@ namespace Library
 
         }
 
+        public string GetTitle(Stat stat, bool groupSpellPower = true)
+        {
+            Type type = stat.GetType();
+
+            MemberInfo[] infos = type.GetMember(stat.ToString());
+
+            StatDescription description = infos[0].GetCustomAttribute<StatDescription>();
+
+            if (description == null) return null;
+
+            List<Stat> list;
+            string value;
+            switch (description.Mode)
+            {
+                case StatType.None:
+                    return null;
+                case StatType.Default:
+                    return description.Title;
+                case StatType.Min:
+                    if (this[description.MaxStat] != 0) return null;
+
+                    return description.Title;
+                case StatType.Max:
+                    return description.Title;
+                case StatType.Percent:
+                    return description.Title;
+                case StatType.Text:
+                    return description.Title;
+                case StatType.Time:
+                    if (this[stat] < 0)
+                        return description.Title;
+
+                    return description.Title;
+                case StatType.SpellPower:
+                    if (description.MinStat == stat && this[description.MaxStat] != 0) return null;
+
+                    if (this[Stat.MinMC] != this[Stat.MinSC] || this[Stat.MaxMC] != this[Stat.MaxSC] || !groupSpellPower)
+                        return description.Title;
+
+                    if (stat != Stat.MaxSC) return null;
+
+                    return "Spell Power";
+                case StatType.AttackElement:
+                    return $"E. Atk";
+                case StatType.ElementResistance:
+
+                    list = new List<Stat>();
+                    foreach (KeyValuePair<Stat, int> pair in Values)
+                    {
+                        if (type.GetMember(pair.Key.ToString())[0].GetCustomAttribute<StatDescription>().Mode == StatType.ElementResistance) list.Add(pair.Key);
+                    }
+
+                    if (list.Count == 0)
+                        return null;
+
+                    bool ei;
+                    bool hasAdv = false, hasDis = false;
+
+                    foreach (Stat s in list)
+                    {
+                        if (this[s] > 0)
+                            hasAdv = true;
+
+                        if (this[s] < 0)
+                            hasDis = true;
+                    }
+
+                    if (!hasAdv) // EV Online
+                    {
+                        ei = false;
+
+                        if (list[0] != stat) return null;
+                    }
+                    else
+                    {
+                        if (!hasDis && list[0] != stat) return null;
+
+                        ei = list[0] == stat;
+
+                        if (!ei && list[1] != stat) return null; //Impossible to be false and have less than 2 stats.
+                    }
+
+                    value = ei ? $"E. Adv" : $"E. Dis";
+         
+                    return value;
+                default: return null;
+            }
+        }
+
         public string GetDisplay(Stat stat)
         {
             Type type = stat.GetType();
@@ -136,7 +223,6 @@ namespace Library
 
                     if (stat != Stat.MaxSC) return null;
 
-
                     return "Spell Power: " + string.Format(description.Format, this[description.MinStat], this[stat]);
                 case StatType.AttackElement:
 
@@ -162,7 +248,6 @@ namespace Library
                     }
                     return value;
                 case StatType.ElementResistance:
-
 
                     list = new List<Stat>();
                     foreach (KeyValuePair<Stat, int> pair in Values)
@@ -278,7 +363,6 @@ namespace Library
                 this[Stat.FireResistance] <= 0 && this[Stat.IceResistance] <= 0 && this[Stat.LightningResistance] <= 0 && this[Stat.WindResistance] <= 0 && 
                 this[Stat.HolyResistance] <= 0 && this[Stat.DarkResistance] <= 0 &&
                 this[Stat.PhantomResistance] <= 0 && this[Stat.PhysicalResistance] <= 0;
-
         }
 
         public Stat GetWeaponElement()
@@ -330,7 +414,6 @@ namespace Library
             return this[Stat.FireAttack] + this[Stat.IceAttack] + this[Stat.LightningAttack] + this[Stat.WindAttack] + this[Stat.HolyAttack] + this[Stat.DarkAttack] + this[Stat.PhantomAttack];
         }
 
-
         public int GetElementValue(Element element)
         {
             switch (element)
@@ -352,8 +435,8 @@ namespace Library
                 default:
                     return 0;
             }
-
         }
+
         public int GetAffinityValue(Element element)
         {
             switch (element)
@@ -375,8 +458,8 @@ namespace Library
                 default:
                     return 0;
             }
-
         }
+
         public int GetResistanceValue(Element element)
         {
             switch (element)
@@ -400,36 +483,10 @@ namespace Library
                 default:
                     return 0;
             }
-
         }
         public Element GetAffinityElement()
         {
-            List<Element> elements = new List<Element>();
-
-            if (this[Stat.FireAffinity] > 0)
-                elements.Add(Element.Fire);
-
-            if (this[Stat.IceAffinity] > 0)
-                elements.Add(Element.Ice);
-
-            if (this[Stat.LightningAffinity] > 0)
-                elements.Add(Element.Lightning);
-
-            if (this[Stat.WindAffinity] > 0)
-                elements.Add(Element.Wind);
-
-            if (this[Stat.HolyAffinity] > 0)
-                elements.Add(Element.Holy);
-
-            if (this[Stat.DarkAffinity] > 0)
-                elements.Add(Element.Dark);
-
-            if (this[Stat.PhantomAffinity] > 0)
-                elements.Add(Element.Phantom);
-
-            if (elements.Count == 0) return Element.None;
-
-            return elements[Globals.Random.Next(elements.Count)];
+            return Functions.GetAffinityElement(this);
         }
     }
 
@@ -457,13 +514,13 @@ namespace Library
         MinDC,
         [StatDescription(Title = "DC", Format = "{0}-{1}", Mode = StatType.Max, MinStat = MinDC, MaxStat = MaxDC)]
         MaxDC,
-        [StatDescription(Title = "SP (Nature)", Format = "{0}-0", Mode = StatType.SpellPower, MinStat = MinMC, MaxStat = MaxMC)]
+        [StatDescription(Title = "MC", Format = "{0}-0", Mode = StatType.SpellPower, MinStat = MinMC, MaxStat = MaxMC)]
         MinMC,
-        [StatDescription(Title = "SP (Nature)", Format = "{0}-{1}", Mode = StatType.SpellPower, MinStat = MinMC, MaxStat = MaxMC)]
+        [StatDescription(Title = "MC", Format = "{0}-{1}", Mode = StatType.SpellPower, MinStat = MinMC, MaxStat = MaxMC)]
         MaxMC,
-        [StatDescription(Title = "SP (Spirit)", Format = "{0}-0", Mode = StatType.SpellPower, MinStat = MinSC, MaxStat = MaxSC)]
+        [StatDescription(Title = "SC", Format = "{0}-0", Mode = StatType.SpellPower, MinStat = MinSC, MaxStat = MaxSC)]
         MinSC,
-        [StatDescription(Title = "SP (Spirit)", Format = "{0}-{1}", Mode = StatType.SpellPower, MinStat = MinSC, MaxStat = MaxSC)]
+        [StatDescription(Title = "SC", Format = "{0}-{1}", Mode = StatType.SpellPower, MinStat = MinSC, MaxStat = MaxSC)]
         MaxSC,
 
         [StatDescription(Title = "Accuracy", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
@@ -478,7 +535,7 @@ namespace Library
         [StatDescription(Title = "Strength", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
         Strength, //Also known as Inten (Intensity)
         [StatDescription(Title = "Luck", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
-        Luck, //does nothing at the moment
+        Luck,
 
         [StatDescription(Title = "Fire", Format = "{0:+#0;-#0;#0}", Mode = StatType.AttackElement)]
         FireAttack,
@@ -531,7 +588,6 @@ namespace Library
 
         [StatDescription(Title = "Pick Up Range", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
         PickUpRadius,
-
 
         [StatDescription(Title = "Total Healing", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
         Healing,
@@ -590,12 +646,12 @@ namespace Library
 
         [StatDescription(Title = "Brown, People can attack you freely", Mode = StatType.Text)]
         Brown,
-        [StatDescription(Title = "PK Points:", Format = "{0}", Mode = StatType.Default)]
+        [StatDescription(Title = "PK Points", Format = "{0}", Mode = StatType.Default)]
         PKPoint,
-
 
         [StatDescription(Title = "Global Shout no level restriction", Mode = StatType.Text)]
         GlobalShout,
+
         [StatDescription(Title = "MC", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         MCPercent,
 
@@ -625,7 +681,7 @@ namespace Library
         GoldRate,
 
         [StatDescription(Title = "OldDuration", Mode = StatType.Time)]
-        OldDuration,
+        OldDuration,//UNUSED
         [StatDescription(Title = "Available Hunt Gold", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
         AvailableHuntGold,
         [StatDescription(Title = "Maximum Available Hunt Gold", Format = "{0:#0}", Mode = StatType.Default)]
@@ -659,10 +715,10 @@ namespace Library
 
         [StatDescription(Title = "Weight Rate", Format = "x{0}", Mode = StatType.Default)]
         WeightRate,
-        [StatDescription(Title = "MinAC and MinMR have been greatly Increased.", Mode = StatType.Text)]
-        Defiance,
-        [StatDescription(Title = "You sacrfice your Defense for Offense.", Mode = StatType.Text)]
-        Might,
+        [StatDescription(Title = "Magic Defence", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        MagicDefencePercent,
+        [StatDescription(Title = "Physical Defence", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        PhysicalDefencePercent,
         [StatDescription(Title = "Mana", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         ManaPercent,
 
@@ -723,7 +779,7 @@ namespace Library
         [StatDescription(Title = "Max Regular Monster's Base Health", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         MaxMonsterHealth,
 
-        [StatDescription(Title = "Critical Damage (PvE)", Format = "x{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        [StatDescription(Title = "Critical Dmg (PvE)", Format = "x{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         CriticalDamage,
 
         [StatDescription(Title = "Experience", Format = "{0}", Mode = StatType.Default)]
@@ -741,8 +797,8 @@ namespace Library
         [StatDescription(Title = "Chance to summon map ", Mode = StatType.Text)]
         MapSummoning,
 
-        [StatDescription(Title = "Max Frost Bite Damage", Format = "{0}", Mode = StatType.Default)]
-        FrostBiteMaxDamage,
+        [StatDescription(Title = "Frost Bite Chance", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        FrostBiteChance,
 
         [StatDescription(Title = "Paralysis Chance", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
         ParalysisChance,
@@ -766,7 +822,44 @@ namespace Library
         [StatDescription(Title = "Rebirth ", Format = "{0}", Mode = StatType.Default)]
         Rebirth,
 
+        [StatDescription(Title = "Focus", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default)]
+        Focus,
 
+        [StatDescription(Title = "Size Percent", Mode = StatType.None)]
+        SizePercent,
+
+        [StatDescription(Title = "Growth Level", Format = "{0}", Mode = StatType.Default)]
+        GrowthLevel,
+
+        [StatDescription(Title = "You are immune to all damage.", Mode = StatType.Text)]
+        Invincibility,
+
+        [StatDescription(Title = "Absorbing Power", Format = "{0:+#0;-#0;#0}", Mode = StatType.Default, UsageHint = "Used in Superior Magic Shield Skill to represent remaining power to absorb.")]
+        SuperiorMagicShield,
+
+        [StatDescription(Title = "Defensive Mastery", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent, UsageHint = "Used in Defensive Mastery Skill to give Luck on AC")]
+        DefensiveMastery,
+
+        [StatDescription(Title = "You are soulbound to another player.", Mode = StatType.Text, UsageHint = "Used in Soul Resonance to tie together 2 players HP")]
+        SoulResonance,
+
+        [StatDescription(Mode = StatType.None)]
+        Fame,
+
+        [StatDescription(Title = "Throw Distance", Format = "{0}", Mode = StatType.Default, UsageHint = "1 to 4")]
+        ThrowDistance = 200,
+        [StatDescription(Title = "Auto Cast", Mode = StatType.Text)]
+        AutoCast,
+        [StatDescription(Title = "Flexibility", Format = "{0}", Mode = StatType.Default)]
+        Flexibility,
+        [StatDescription(Title = "Float Strength", Format = "{0}", Mode = StatType.Default)]
+        FloatStrength,
+        [StatDescription(Title = "Reel Bonus", Format = "{0}", Mode = StatType.Default)]
+        ReelBonus,
+        [StatDescription(Title = "Nibble Chance", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        NibbleChance,
+        [StatDescription(Title = "Finder Chance", Format = "{0:+#0%;-#0%;#0%}", Mode = StatType.Percent)]
+        FinderChance,
 
         [StatDescription(Title = "Duration", Mode = StatType.Time)]
         Duration = 10000,
@@ -803,5 +896,6 @@ namespace Library
         public StatType Mode { get; set; }
         public Stat MinStat { get; set; }
         public Stat MaxStat { get; set; }
+        public string UsageHint { get; set; }
     }
 }

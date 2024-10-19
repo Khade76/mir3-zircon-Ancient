@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Library;
+﻿using Library;
 using Library.SystemModels;
 using MirDB;
 using Server.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Server.DBModels
 {
@@ -43,7 +41,23 @@ namespace Server.DBModels
             }
         }
         private CharacterInfo _Character;
-        
+
+        [Association("Quests")]
+        public AccountInfo Account
+        {
+            get { return _Account; }
+            set
+            {
+                if (_Account == value) return;
+
+                var oldValue = _Account;
+                _Account = value;
+
+                OnChanged(oldValue, value, "Account");
+            }
+        }
+        private AccountInfo _Account;
+
         public bool Completed
         {
             get { return _Completed; }
@@ -131,13 +145,13 @@ namespace Server.DBModels
         {
             QuestInfo = null;
             Character = null;
+            Account = null;
 
             for (int i = Tasks.Count - 1; i >= 0; i--)
                 Tasks[i].Delete();
 
             base.OnDeleted();
         }
-
 
         public ClientUserQuest ToClientInfo()
         {

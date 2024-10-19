@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -8,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Library.MirDB;
-using Library.SystemModels;
 
 namespace MirDB
 {
@@ -24,7 +22,6 @@ namespace MirDB
         public bool BackUp { get; set; } = true;
         public int BackUpDelay { get; set; }
         private string BackupRoot { get; }
-
 
         public string SystemPath => Root + "System" + Extension;
         public string SystemBackupPath => BackupRoot + @"System\";
@@ -69,8 +66,9 @@ namespace MirDB
 
         public Session(SessionMode mode, string root = @".\Database\", string backup = @".\Backup\")
         {
-            Root = root;
-            BackupRoot = backup;
+            Root = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, root));
+            BackupRoot = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, backup));
+
             Mode = mode;
         }
 
@@ -137,7 +135,7 @@ namespace MirDB
 
             if (!File.Exists(SystemPath)) return;
 
-            using (BinaryReader reader = new BinaryReader(File.OpenRead(SystemPath)))
+            using (BinaryReader reader = Library.Encryption.GetReader(File.OpenRead(SystemPath)))
             {
                 int count = reader.ReadInt32();
 
@@ -183,7 +181,7 @@ namespace MirDB
 
             if (!File.Exists(UsersPath)) return;
 
-            using (BinaryReader reader = new BinaryReader(File.OpenRead(UsersPath)))
+            using (BinaryReader reader = Library.Encryption.GetReader(File.OpenRead(UsersPath)))
             {
                 int count = reader.ReadInt32();
 
@@ -226,7 +224,7 @@ namespace MirDB
             if (!Directory.Exists(Root))
                 Directory.CreateDirectory(Root);
 
-            using (BinaryWriter writer = new BinaryWriter(File.Create(SystemPath + TempExtension)))
+            using (BinaryWriter writer = Library.Encryption.GetWriter(File.Create(SystemPath + TempExtension)))
             {
                 writer.Write(SystemHeader);
 
@@ -265,7 +263,7 @@ namespace MirDB
             if (!Directory.Exists(Root))
                 Directory.CreateDirectory(Root);
 
-            using (BinaryWriter writer = new BinaryWriter(File.Create(UsersPath + TempExtension)))
+            using (BinaryWriter writer = Library.Encryption.GetWriter(File.Create(UsersPath + TempExtension)))
             {
                 writer.Write(UsersHeader);
 
@@ -324,6 +322,7 @@ namespace MirDB
         {
             return $"{time.Year:0000}-{time.Month:00}-{time.Day:00} {time.Hour:00}-{time.Minute:00}";
         }
+
         public string ToBackUpFileName(DateTime time)
         {
             if (BackUpDelay == 0)
@@ -333,6 +332,7 @@ namespace MirDB
 
             return $"{time.Year:0000}-{time.Month:00}-{time.Day:00} {time.Hour:00}-{time.Minute:00}";
         }
+
         internal void Delete(DBObject ob)
         {
             if (ob.IsDeleted) return;
@@ -346,7 +346,7 @@ namespace MirDB
             //Remove Internal Reference
             foreach (PropertyInfo property in properties)
             {
-                Association link = property.GetCustomAttribute<Association>();
+                AssociationAttribute link = property.GetCustomAttribute<AssociationAttribute>();
 
                 if (property.PropertyType.IsSubclassOf(typeof(DBObject)))
                 {

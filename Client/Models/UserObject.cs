@@ -134,6 +134,20 @@ namespace Client.Models
         private int _CurrentMP;
         #endregion
 
+        #region CurrentFP
+        public override int CurrentFP
+        {
+            get { return _CurrentFP; }
+            set
+            {
+                _CurrentFP = value;
+
+                GameScene.Game.FocusChanged();
+            }
+        }
+        private int _CurrentFP;
+        #endregion
+
         #region AttackMode
         public AttackMode AttackMode
         {
@@ -175,6 +189,8 @@ namespace Client.Models
         #endregion
 
         public int BagWeight, WearWeight, HandWeight;
+        public float ShakeScreenCount;
+        public Point ShakeScreenOffset;
 
         public bool InSafeZone
         {
@@ -191,8 +207,6 @@ namespace Client.Models
         private bool _InSafeZone;
 
         public int HermitPoints;
-        
-
 
         public List<ClientBuffInfo> Buffs = new List<ClientBuffInfo>();
         
@@ -202,7 +216,9 @@ namespace Client.Models
         public MagicType AttackMagic;
 
         public ObjectAction MagicAction;
-        public bool CanPowerAttack;
+        public bool CanPowerAttack, CanPoisonAttack, CanFullMoonAttack, CanWaningMoonAttack;
+
+        public ClientUserDiscipline Discipline;
 
         public bool CanThrusting
         {
@@ -213,7 +229,7 @@ namespace Client.Models
                 
                 _canThrusting = value;
 
-                GameScene.Game.ReceiveChat(CanThrusting ? "Use Thrusting." : "Do not use Thrusting.", MessageType.Hint);
+                GameScene.Game.ReceiveChat(CanThrusting ? CEnvir.Language.UseThrusting : CEnvir.Language.DoNotUseThrusting, MessageType.Hint);
             }
         }
         private bool _canThrusting;
@@ -227,24 +243,24 @@ namespace Client.Models
 
                 _CanHalfMoon = value;
 
-                GameScene.Game.ReceiveChat(CanHalfMoon ? "Use Half Moon Strike." : "Do not use Half Moon Strike.", MessageType.Hint);
+                GameScene.Game.ReceiveChat(CanHalfMoon ? CEnvir.Language.UseHalfMoon : CEnvir.Language.DoNotUseHalfMoon, MessageType.Hint);
             }
         }
         private bool _CanHalfMoon;
-        public bool CanDestructiveBlow
+        public bool CanDestructiveSurge
         {
-            get { return _CanDestructiveBlow; }
+            get { return _CanDestructiveSurge; }
             set
             {
-                if (_CanDestructiveBlow == value) return;
-                _CanDestructiveBlow = value;
+                if (_CanDestructiveSurge == value) return;
+                _CanDestructiveSurge = value;
 
-                GameScene.Game.ReceiveChat(CanDestructiveBlow ? "Use Destructive Blow." : "Do not use Destructive Blow.", MessageType.Hint);
+                GameScene.Game.ReceiveChat(CanDestructiveSurge ? CEnvir.Language.UseDestructiveSurge : CEnvir.Language.DoNotUseDestructiveSurge, MessageType.Hint);
             }
         }
-        private bool _CanDestructiveBlow;
+        private bool _CanDestructiveSurge;
 
-        public bool CanFlamingSword, CanDragonRise, CanBladeStorm;
+        public bool CanFlamingSword, CanDragonRise, CanBladeStorm, CanDefensiveBlow;
 
         public bool CanFlameSplash
         {
@@ -254,7 +270,7 @@ namespace Client.Models
                 if (_CanFlameSplash == value) return;
                 _CanFlameSplash = value;
 
-                GameScene.Game.ReceiveChat(CanFlameSplash ? "Use Flame Splash." : "Do not use Flame Splash.", MessageType.Hint);
+                GameScene.Game.ReceiveChat(CanFlameSplash ? CEnvir.Language.UseFlameSplash : CEnvir.Language.DoNotUseFlameSplash, MessageType.Hint);
             }
         }
         private bool _CanFlameSplash;
@@ -267,6 +283,7 @@ namespace Client.Models
             ObjectID = info.ObjectID;
 
             Name = info.Name;
+            Caption = info.Caption;
             NameColour = info.NameColour;
 
             Class = info.Class;
@@ -280,6 +297,7 @@ namespace Client.Models
 
             CurrentHP = info.CurrentHP;
             CurrentMP = info.CurrentMP;
+            CurrentFP = info.CurrentFP;
 
             Level = info.Level;
             Experience = info.Experience;
@@ -288,11 +306,15 @@ namespace Client.Models
             HairColour = info.HairColour;
 
             ArmourShape = info.Armour;
-            ArmourImage = info.ArmourImage;
             ArmourColour = info.ArmourColour;
             LibraryWeaponShape = info.Weapon;
-            WingsShape = info.WingsShape;
-            EmblemShape = info.EmblemShape;
+
+            CostumeShape = info.Costume;
+
+            ArmourEffect = info.ArmourEffect;
+            EmblemEffect = info.EmblemEffect;
+            WeaponEffect = info.WeaponEffect;
+            ShieldEffect = info.ShieldEffect;
 
             Poison = info.Poison;
 
@@ -308,8 +330,13 @@ namespace Client.Models
             HelmetShape = info.HelmetShape;
             ShieldShape = info.Shield;
 
+            HideHead = info.HideHead;
+
             GameScene.Game.DayTime = info.DayTime;
             GameScene.Game.GroupBox.AllowGroup = info.AllowGroup;
+
+            GameScene.Game.StruckEnabled = info.StruckEnabled;
+            GameScene.Game.HermitEnabled = info.HermitEnabled;
 
             HermitPoints = info.HermitPoints;
 
@@ -317,10 +344,7 @@ namespace Client.Models
                 Magics[magic.Info] = magic;
 
             foreach (ClientBuffInfo buff in info.Buffs)
-            {
-                Buffs.Add(buff);
-                VisibleBuffs.Add(buff.Type);
-            }
+                AddBuff(buff);
 
             foreach (ClientUserCurrency currency in info.Currencies)
             {
@@ -330,6 +354,12 @@ namespace Client.Models
                     Info = Globals.CurrencyInfoList.Binding.First(x => x.Index == currency.CurrencyIndex),
                     Amount = currency.Amount
                 });
+            }
+
+            if (info.Discipline != null)
+            {
+                Discipline = info.Discipline;
+                Discipline.DisciplineInfo = Globals.DisciplineInfoList.Binding.First(x => x.Index == info.Discipline.InfoIndex);
             }
 
             FiltersClass = info.FiltersClass;
@@ -359,9 +389,13 @@ namespace Client.Models
             }
             GameScene.Game.AutoPotionBox.UpdateLinks();
 
-            GameScene.Game.MapControl.AddObject(this);
+            GameScene.Game.CommunicationBox.OnlineState = info.OnlineState;
+            GameScene.Game.CommunicationBox.FriendList = info.Friends;
+            GameScene.Game.CommunicationBox.RefreshFriendList();
 
+            GameScene.Game.MapControl.AddObject(this);
         }
+
         public override void LocationChanged()
         {
             base.LocationChanged();
@@ -406,37 +440,11 @@ namespace Client.Models
                     if (CEnvir.Now < MoveTime) return;
                     break;
                 case MirAction.Attack:
-                    action.Extra[2] = Functions.GetElement(Stats);
+                    action.Extra[2] = Functions.GetAttackElement(Stats);
                     
                     if (GameScene.Game.Equipment[(int)EquipmentSlot.Amulet]?.Info.ItemType == ItemType.DarkStone)
                     {
-                        foreach (KeyValuePair<Stat, int> stats in GameScene.Game.Equipment[(int)EquipmentSlot.Amulet].Info.Stats.Values)
-                        {
-                            switch (stats.Key)
-                            {
-                                case Stat.FireAffinity:
-                                    action.Extra[2] = Element.Fire;
-                                    break;
-                                case Stat.IceAffinity:
-                                    action.Extra[2] = Element.Ice;
-                                    break;
-                                case Stat.LightningAffinity:
-                                    action.Extra[2] = Element.Lightning;
-                                    break;
-                                case Stat.WindAffinity:
-                                    action.Extra[2] = Element.Wind;
-                                    break;
-                                case Stat.HolyAffinity:
-                                    action.Extra[2] = Element.Holy;
-                                    break;
-                                case Stat.DarkAffinity:
-                                    action.Extra[2] = Element.Dark;
-                                    break;
-                                case Stat.PhantomAffinity:
-                                    action.Extra[2] = Element.Phantom;
-                                    break;
-                            }
-                        }
+                        action.Extra[2] = GameScene.Game.Equipment[(int)EquipmentSlot.Amulet].Info.Stats.GetAffinityElement();
                     }
 
                     MagicType attackMagic = MagicType.None;
@@ -456,7 +464,6 @@ namespace Client.Models
                             }
                             else 
                                 if (pair.Value.Cost > CurrentMP) break;
-
 
                             attackMagic = AttackMagic;
                             break;
@@ -504,7 +511,7 @@ namespace Client.Models
                     }
 
 
-                    if (CanDestructiveBlow && (TargetObject != null || (GameScene.Game.MapControl.CanDestructiveBlow(action.Direction) &&
+                    if (CanDestructiveSurge && (TargetObject != null || (GameScene.Game.MapControl.CanDestructiveSurge(action.Direction) &&
                                                                         (GameScene.Game.MapControl.HasTarget(Functions.Move(CurrentLocation, action.Direction)) || attackMagic != MagicType.Thrusting))))
                     {
                         foreach (KeyValuePair<MagicInfo, ClientUserMagic> pair in Magics)
@@ -518,7 +525,20 @@ namespace Client.Models
                         }
                     }
 
-                    if (attackMagic == MagicType.None && CanFlameSplash && (TargetObject != null || GameScene.Game.MapControl.CanDestructiveBlow(action.Direction)))
+                    if (attackMagic == MagicType.None && CanPoisonAttack && TargetObject != null)
+                    {
+                        foreach (KeyValuePair<MagicInfo, ClientUserMagic> pair in Magics)
+                        {
+                            if (pair.Key.Magic != MagicType.DragonBlood) continue;
+
+                            if (pair.Value.Cost > CurrentMP) break;
+
+                            attackMagic = pair.Key.Magic;
+                            break;
+                        }
+                    }
+
+                    if (attackMagic == MagicType.None && CanFlameSplash && (TargetObject != null || GameScene.Game.MapControl.CanDestructiveSurge(action.Direction)))
                     {
                         foreach (KeyValuePair<MagicInfo, ClientUserMagic> pair in Magics)
                         {
@@ -531,14 +551,40 @@ namespace Client.Models
                         }
                     }
 
+                    if (attackMagic == MagicType.None && CanWaningMoonAttack && TargetObject != null)
+                    {
+                        foreach (KeyValuePair<MagicInfo, ClientUserMagic> pair in Magics)
+                        {
+                            if (pair.Key.Magic != MagicType.WaningMoon) continue;
 
-                    if (CanBladeStorm)
+                            if (pair.Value.Cost > CurrentMP) break;
+
+                            attackMagic = pair.Key.Magic;
+                            break;
+                        }
+                    }
+
+                    if (attackMagic == MagicType.None && CanFullMoonAttack && TargetObject != null)
+                    {
+                        foreach (KeyValuePair<MagicInfo, ClientUserMagic> pair in Magics)
+                        {
+                            if (pair.Key.Magic != MagicType.CalamityOfFullMoon) continue;
+
+                            if (pair.Value.Cost > CurrentMP) break;
+
+                            attackMagic = pair.Key.Magic;
+                            break;
+                        }
+                    }
+
+                    if (CanDefensiveBlow && GameScene.Game.MapControl.HasTarget(Functions.Move(CurrentLocation, action.Direction)))
+                        attackMagic = MagicType.DefensiveBlow;
+                    else if (CanBladeStorm)
                         attackMagic = MagicType.BladeStorm;
                     else if (CanDragonRise)
                         attackMagic = MagicType.DragonRise;
                     else if (CanFlamingSword)
                         attackMagic = MagicType.FlamingSword;
-                    
 
                     action.Extra[1] = attackMagic;
                     break;
@@ -573,24 +619,49 @@ namespace Client.Models
                     attackDelay = Math.Max(800, attackDelay);
                     AttackTime = CEnvir.Now + TimeSpan.FromMilliseconds(attackDelay);
 
-                    if (BagWeight > Stats[Stat.BagWeight])
+                    if (BagWeight > Stats[Stat.BagWeight] || (Poison & PoisonType.Neutralize) == PoisonType.Neutralize)
                         AttackTime += TimeSpan.FromMilliseconds(attackDelay);
 
                     CEnvir.Enqueue(new C.Attack { Direction = action.Direction, Action = action.Action, AttackMagic = MagicType });
                     GameScene.Game.CanRun = false;
                     break;
+                case MirAction.RangeAttack:
+                    attackDelay = Globals.AttackDelay - Stats[Stat.AttackSpeed] * Globals.ASpeedRate;
+                    attackDelay = Math.Max(800, attackDelay);
+                    AttackTime = CEnvir.Now + TimeSpan.FromMilliseconds(attackDelay);
+
+                    if (BagWeight > Stats[Stat.BagWeight] || (Poison & PoisonType.Neutralize) == PoisonType.Neutralize)
+                        AttackTime += TimeSpan.FromMilliseconds(attackDelay);
+
+                    CEnvir.Enqueue(new C.RangeAttack { Direction = action.Direction, Target = (uint)action.Extra[0], DelayedTime = (int)action.Extra[2] });
+                    GameScene.Game.CanRun = false;
+                    break;
                 case MirAction.Spell:
                     NextMagicTime = CEnvir.Now + Globals.MagicDelay;
-                    if (BagWeight > Stats[Stat.BagWeight])
+
+                    if (BagWeight > Stats[Stat.BagWeight] || (Poison & PoisonType.Neutralize) == PoisonType.Neutralize)
                         NextMagicTime += Globals.MagicDelay;
 
                     CEnvir.Enqueue(new C.Magic { Direction = action.Direction, Action = action.Action, Type = MagicType, Target = AttackTargets?.Count > 0 ? AttackTargets[0].ObjectID : 0, Location = MagicLocations?.Count > 0 ? MagicLocations[0] : Point.Empty });
+                    GameScene.Game.CanRun = false;
+                    break;
+                case MirAction.Fishing:
+                    AttackTime = CEnvir.Now + TimeSpan.FromMilliseconds(Globals.AttackDelay);
+
+                    var state = (FishingState)action.Extra[0];
+                    var floatLocation = (Point)action.Extra[1];
+                    var caughtFish = GameScene.Game.FishingCatchBox.CaughtFish;
+
+                    CEnvir.Enqueue(new C.FishingCast { State = state, Direction = action.Direction, FloatLocation = floatLocation, CaughtFish = caughtFish });
                     GameScene.Game.CanRun = false;
                     break;
                 case MirAction.Mining:
                     attackDelay = Globals.AttackDelay - Stats[Stat.AttackSpeed] * Globals.ASpeedRate;
                     attackDelay = Math.Max(800, attackDelay);
                     AttackTime = CEnvir.Now + TimeSpan.FromMilliseconds(attackDelay);
+
+                    if (BagWeight > Stats[Stat.BagWeight] || (Poison & PoisonType.Neutralize) == PoisonType.Neutralize)
+                        AttackTime += TimeSpan.FromMilliseconds(attackDelay);
 
                     if (BagWeight > Stats[Stat.BagWeight])
                         AttackTime += TimeSpan.FromMilliseconds(attackDelay);
@@ -602,8 +673,8 @@ namespace Client.Models
                     GameScene.Game.CanRun = false;
                     break;
             }
-            ServerTime = CEnvir.Now.AddSeconds(5);
 
+            ServerTime = CEnvir.Now.AddSeconds(5);
         }
 
         public override void Process()
@@ -615,7 +686,14 @@ namespace Client.Models
                 if (BagWeight > Stats[Stat.BagWeight] || WearWeight > Stats[Stat.WearWeight] || HandWeight > Stats[Stat.HandWeight])
                     DrawColour = Color.CornflowerBlue;
             }
-            
+
+            ShakeScreenOffset = new Point(0, (int)(Math.Sin(ShakeScreenCount) * 10));
+            if (ShakeScreenCount > 0)
+            {
+                ShakeScreenCount -= 1F;
+                GameScene.Game.MapControl.FLayer.TextureValid = false;
+            }
+
             TimeSpan ticks = CEnvir.Now - BuffTime;
             BuffTime = CEnvir.Now;
 
@@ -652,6 +730,17 @@ namespace Client.Models
                     }
 
                     break;
+                case MirAction.Spell:
+                    switch (MagicType)
+                    {
+                        case MagicType.SeismicSlam:
+                            if (FrameIndex == 4)
+                            {
+                                ShakeScreenCount = 20F;
+                            }
+                            break;
+                    }
+                    break;
             }
         }
         public override void MovingOffSetChanged()
@@ -669,7 +758,20 @@ namespace Client.Models
             GameScene.Game.CharacterBox.GuildRankLabel.Text = GuildRank;
 
             GameScene.Game.CharacterBox.CharacterNameLabel.Text = Name;
+
             GameScene.Game.TradeBox.UserLabel.Text = Name;
+        }
+
+        public void AddBuff(ClientBuffInfo buff)
+        {
+            Buffs.Add(buff);
+            VisibleBuffs.Add(buff.Type);
+
+            if (buff.Type == BuffType.SuperiorMagicShield)
+            {
+                MaximumSuperiorMagicShield = buff.Stats[Stat.SuperiorMagicShield];
+                EndMagicEffect(MagicEffect.MagicShield);
+            }
         }
 
         public ClientUserCurrency GetCurrency(ItemInfo item)
@@ -683,6 +785,7 @@ namespace Client.Models
 
             return Currencies.First(x => x.Info == info);
         }
+
         public ClientUserCurrency GetCurrency(CurrencyInfo info)
         {
             if (info == null)
@@ -691,6 +794,11 @@ namespace Client.Models
             }
 
             return Currencies.First(x => x.Info == info);
+        }
+
+        public ClientUserCurrency GetCurrency(CurrencyType type)
+        {
+            return Currencies.FirstOrDefault(x => x.Info.Type == type);
         }
     }
 }

@@ -1,9 +1,12 @@
 ﻿using MirDB;
+using System;
+using System.Text.Json.Serialization;
 
 namespace Library.SystemModels
 {
     public sealed class MapInfo : DBObject
     {
+        [IsIdentity]
         public string FileName
         {
             get { return _FileName; }
@@ -34,9 +37,9 @@ namespace Library.SystemModels
         }
         private string _Description;
 
+        [JsonIgnore]
         [IgnoreProperty]
         public string ServerDescription => $"{FileName} - {Description}";
-
 
         public int MiniMap
         {
@@ -67,6 +70,21 @@ namespace Library.SystemModels
             }
         }
         private LightSetting _Light;
+
+        public Weather Weather
+        {
+            get { return _Weather; }
+            set
+            {
+                if (_Weather == value) return;
+
+                var oldValue = _Weather;
+                _Weather = value;
+
+                OnChanged(oldValue, value, "Weather");
+            }
+        }
+        private Weather _Weather;
 
         public FightSetting Fight
         {
@@ -248,8 +266,22 @@ namespace Library.SystemModels
         }
         private SoundIndex _Music;
 
+        public int Background
+        {
+            get { return _Background; }
+            set
+            {
+                if (_Background == value) return;
 
+                var oldValue = _Background;
+                _Background = value;
 
+                OnChanged(oldValue, value, "Background");
+            }
+        }
+        private int _Background;
+
+        //DO NOT USE
 
         public int MonsterHealth
         {
@@ -400,8 +432,9 @@ namespace Library.SystemModels
             }
         }
         private int _MaxGoldRate;
+        //DO NOT USE
 
-
+        [JsonIgnore]
         [Association("Maps")]
         public InstanceInfo Instance
         {
@@ -434,11 +467,21 @@ namespace Library.SystemModels
         [Association("Guards", true)]
         public DBBindingList<GuardInfo> Guards { get; set; }
 
+        [JsonIgnore]
         [Association("Regions", true)]
         public DBBindingList<MapRegion> Regions { get; set; }
 
         [Association("Mining", true)]
         public DBBindingList<MineInfo> Mining { get; set; }
+
+        [JsonIgnore]
+        [Association("Castles", true)]
+        public DBBindingList<CastleInfo> Castles { get; set; }
+
+        [Association("MapInfoStats", true)]
+        public DBBindingList<MapInfoStat> BuffStats { get; set; }
+
+        public Stats Stats = new();
 
         protected internal override void OnCreated()
         {
@@ -450,8 +493,74 @@ namespace Library.SystemModels
             AllowRecall = true;
         }
 
+        protected internal override void OnLoaded()
+        {
+            base.OnLoaded();
+
+            StatsChanged();
+        }
+
+        public void StatsChanged()
+        {
+            Stats.Clear();
+            foreach (MapInfoStat stat in BuffStats)
+                Stats[stat.Stat] += stat.Amount;
+        }
+
         //Client Variables
 
         public bool Expanded = true;
+    }
+
+
+    public sealed class MapInfoStat : DBObject
+    {
+        [IsIdentity]
+        [Association("MapInfoStats")]
+        public MapInfo Map
+        {
+            get { return _Map; }
+            set
+            {
+                if (_Map == value) return;
+
+                var oldValue = _Map;
+                _Map = value;
+
+                OnChanged(oldValue, value, "Map");
+            }
+        }
+        private MapInfo _Map;
+
+        [IsIdentity]
+        public Stat Stat
+        {
+            get { return _Stat; }
+            set
+            {
+                if (_Stat == value) return;
+
+                var oldValue = _Stat;
+                _Stat = value;
+
+                OnChanged(oldValue, value, "Stat");
+            }
+        }
+        private Stat _Stat;
+
+        public int Amount
+        {
+            get { return _Amount; }
+            set
+            {
+                if (_Amount == value) return;
+
+                var oldValue = _Amount;
+                _Amount = value;
+
+                OnChanged(oldValue, value, "Amount");
+            }
+        }
+        private int _Amount;
     }
 }

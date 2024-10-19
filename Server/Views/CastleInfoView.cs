@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using DevExpress.XtraBars;
 using Library.SystemModels;
 
@@ -17,10 +11,9 @@ namespace Server.Views
         {
             InitializeComponent();
 
-
             CastleInfoGridControl.DataSource = SMain.Session.GetCollection<CastleInfo>().Binding;
-            
-            MonsterLookUpEdit.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding;
+
+            MonsterLookUpEdit.DataSource = SMain.Session.GetCollection<MonsterInfo>().Binding.Where(x => x.Flag == Library.MonsterFlag.CastleObjective || x.Flag == Library.MonsterFlag.CastleDefense);
             RegionLookUpEdit.DataSource = SMain.Session.GetCollection<MapRegion>().Binding;
             MapLookUpEdit.DataSource = SMain.Session.GetCollection<MapInfo>().Binding;
             ItemLookUpEdit.DataSource = SMain.Session.GetCollection<ItemInfo>().Binding;
@@ -36,6 +29,16 @@ namespace Server.Views
         private void SaveButton_ItemClick(object sender, ItemClickEventArgs e)
         {
             SMain.Session.Save(true);
+        }
+
+        private void ImportButton_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            JsonImporter.Import<CastleInfo>();
+        }
+
+        private void ExportButton_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            JsonExporter.Export<CastleInfo>(CastleInfoGridView);
         }
     }
 }

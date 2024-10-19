@@ -332,6 +332,12 @@ namespace Client.UserModels
         FortuneWindow,
 
         [Description("Currency Window")]
-        CurrencyWindow
+        CurrencyWindow,
+
+        [Description("Filter Drop Window")]
+        FilterDropWindow,
+
+        [Description("Menu Window")]
+        MenuWindow,
     }
 }

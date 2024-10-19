@@ -27,7 +27,6 @@ namespace Server.Models.Monsters
         {
             base.OnSpawned();
 
-
             DespawnTime = SEnvir.Now.AddMinutes(20);
 
             foreach (SConnection con in SEnvir.Connections)
@@ -54,7 +53,7 @@ namespace Server.Models.Monsters
             if (SEnvir.Now >= SearchTime && SEnvir.MysteryShipMapRegion != null && SEnvir.MysteryShipMapRegion.PointList.Count > 0)
             {
                 SearchTime = SEnvir.Now.AddSeconds(3);
-                Map map = SEnvir.GetMap(SEnvir.MysteryShipMapRegion.Map, CurrentMap.Instance, CurrentMap.InstanceIndex);
+                Map map = SEnvir.GetMap(SEnvir.MysteryShipMapRegion.Map, CurrentMap.Instance, CurrentMap.InstanceSequence);
 
                 if (map == null)
                 {

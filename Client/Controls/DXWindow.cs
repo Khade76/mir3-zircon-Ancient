@@ -124,7 +124,7 @@ namespace Client.Controls
 
         public abstract WindowType Type { get; }
         public abstract bool CustomSize { get; }
-        public abstract bool AutomaticVisiblity { get; }
+        public abstract bool AutomaticVisibility { get; }
 
         public DXButton CloseButton { get; protected set; }
         public DXLabel TitleLabel { get; protected set; }
@@ -171,7 +171,7 @@ namespace Client.Controls
             if (IsVisible)
                 BringToFront();
 
-            if (Settings != null && AutomaticVisiblity)
+            if (Settings != null && AutomaticVisibility)
                 Settings.Visible = nValue;
         }
 
@@ -234,6 +234,7 @@ namespace Client.Controls
                 WindowValid = false;
             }
         }
+
         public override void DisposeTexture()
         {
             base.DisposeTexture();
@@ -253,18 +254,15 @@ namespace Client.Controls
 
                 WindowSurface = null;
             }
-
         }
 
         private void UpdateLocations()
         {
-
             if (CloseButton != null)
-                CloseButton.Location = new Point(DisplayArea.Width - CloseButton.Size.Width - 5, 5);
+                CloseButton.Location = new Point(DisplayArea.Width - CloseButton.Size.Width - 3, 3);
 
             if (TitleLabel != null)
                 TitleLabel.Location = new Point((DisplayArea.Width - TitleLabel.Size.Width) / 2, 8);
-
         }
 
         protected internal override void UpdateDisplayArea()
@@ -300,6 +298,7 @@ namespace Client.Controls
         {
             Size = GetSize(clientSize);
         }
+
         public Size GetSize(Size clientSize)
         {
             int w = 3 + 6 + 6 + 3; //Border Padding Padding Border
@@ -377,7 +376,6 @@ namespace Client.Controls
 
             DXManager.SetOpacity(Opacity);
             PresentTexture(WindowTexture, Parent, DisplayArea, ForeColour, this);
-
 
             DXManager.SetOpacity(oldOpacity);
         }
@@ -476,9 +474,6 @@ namespace Client.Controls
                 s = InterfaceLibrary.GetSize(14);
                 InterfaceLibrary.Draw(14, Size.Width - s.Width, Size.Height - s.Height, Color.White, false, 1F, ImageType.Image);
             }
-
-
-
         }
 
         public void LoadSettings()
@@ -493,20 +488,27 @@ namespace Client.Controls
                 return;
             }
 
-            Settings = CEnvir.WindowSettings.CreateNewObject();
+            UpdateSettings();
+        }
+
+        public void UpdateSettings()
+        {
+            Settings ??= CEnvir.WindowSettings.CreateNewObject();
+
             Settings.Resolution = Config.GameSize;
             Settings.Window = Type;
             Settings.Size = Size;
             Settings.Visible = Visible;
             Settings.Location = Location;
         }
+
         public virtual void ApplySettings()
         {
             if (Settings == null) return;
 
             Location = Settings.Location;
 
-            if (AutomaticVisiblity)
+            if (AutomaticVisibility)
                 Visible = Settings.Visible;
 
             if (CustomSize)

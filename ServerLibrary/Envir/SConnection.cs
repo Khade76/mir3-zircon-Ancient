@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Threading;
-using Library;
+﻿using Library;
 using Library.Network;
 using Library.SystemModels;
 using Server.DBModels;
 using Server.Envir.Translations;
 using Server.Models;
-using G = Library.Network.GeneralPackets;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Sockets;
 using C = Library.Network.ClientPackets;
+using G = Library.Network.GeneralPackets;
 using S = Library.Network.ServerPackets;
 
 namespace Server.Envir
@@ -45,8 +44,7 @@ namespace Server.Envir
             IPAddress = client.Client.RemoteEndPoint.ToString().Split(':')[0];
             SessionID = ++SessionCount;
 
-
-            Language = (StringMessages) ConfigReader.ConfigObjects[typeof(EnglishMessages)]; //Todo Language Selections
+            Language = (StringMessages)ConfigReader.ConfigObjects[typeof(EnglishMessages)];
 
             OnException += (o, e) =>
             {
@@ -168,6 +166,7 @@ namespace Server.Envir
             //   ItemList.Clear();
             //    MagicList.Clear();
         }
+
         public override void Process()
         {
             if (SEnvir.Now >= PingTime && !PingSent && Stage != GameStage.None)
@@ -177,6 +176,19 @@ namespace Server.Envir
                 Enqueue(new G.Ping { ObserverPacket = false });
             }
 
+            if (TotalPacketsProcessed == 0 && TotalBytesReceived > 1024)
+            {
+                TryDisconnect();
+                SEnvir.IPBlocks[IPAddress] = SEnvir.Now.Add(Config.PacketBanTime);
+
+                for (int i = SEnvir.Connections.Count - 1; i >= 0; i--)
+                    if (SEnvir.Connections[i].IPAddress == IPAddress)
+                        SEnvir.Connections[i].TryDisconnect();
+
+                SEnvir.Log($"{IPAddress} Disconnected, Large Packet");
+                return;
+            }
+            
             if (ReceiveList.Count > Config.MaxPacket)
             {
                 TryDisconnect();
@@ -203,9 +215,8 @@ namespace Server.Envir
                 observer.Enqueue(p);
         }
 
-        public void ReceiveChat(string text, MessageType type, uint objectID = 0)
+        public void ReceiveChat(string text, MessageType type, List<ClientUserItem> linkedItems = null, uint objectID = 0)
         {
-
             switch (Stage)
             {
                 case GameStage.Game:
@@ -216,6 +227,7 @@ namespace Server.Envir
                         Type = type,
                         ObjectID = objectID, // && type != guild
 
+                        LinkedItems = linkedItems,
                         ObserverPacket = false,
                     });
                     break;
@@ -224,15 +236,23 @@ namespace Server.Envir
             }
         }
 
+        public void ReceiveChatWithObservers(Func<SConnection, string> messageFunc, MessageType messageType, List<ClientUserItem> linkedItems = null, uint objectID = 0)
+        {
+            ReceiveChat(messageFunc(this), messageType, linkedItems, objectID);
+
+            foreach (SConnection observer in Observers)
+                observer.ReceiveChat(messageFunc(observer), messageType, linkedItems, objectID);
+        }
+
         public void Process(C.SelectLanguage p)
         {
             switch (p.Language.ToUpper())
             {
                 case "ENGLISH":
-                    Language = (StringMessages)ConfigReader.ConfigObjects[typeof(EnglishMessages)]; //Todo Language Selections
+                    Language = (StringMessages)ConfigReader.ConfigObjects[typeof(EnglishMessages)];
                     break;
                 case "CHINESE":
-                    Language = (StringMessages)ConfigReader.ConfigObjects[typeof(ChineseMessages)]; //Todo Language Selections
+                    Language = (StringMessages)ConfigReader.ConfigObjects[typeof(ChineseMessages)];
                     break;
             }
 
@@ -250,7 +270,7 @@ namespace Server.Envir
             }
 
             Stage = GameStage.Login;
-            Enqueue(new G.GoodVersion());
+            Enqueue(new G.GoodVersion() { DatabaseKey = Config.EncryptionEnabled ? SEnvir.CryptoKey : null });
         }
         public void Process(G.Version p)
         {
@@ -263,13 +283,13 @@ namespace Server.Envir
             }
 
             Stage = GameStage.Login;
-            Enqueue(new G.GoodVersion());
+            Enqueue(new G.GoodVersion() { DatabaseKey = Config.EncryptionEnabled ? SEnvir.CryptoKey : null });
         }
         public void Process(G.Ping p)
         {
             if (Stage == GameStage.None) return;
 
-            int ping = (int) (SEnvir.Now - PingTime).TotalMilliseconds/2;
+            int ping = (int)(SEnvir.Now - PingTime).TotalMilliseconds / 2;
             PingSent = false;
             PingTime = SEnvir.Now + Config.PingDelay;
 
@@ -410,6 +430,13 @@ namespace Server.Envir
 
             Player.Mount();
         }
+        public void Process(C.FishingCast p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.FishingCast(p.State, p.Direction, p.FloatLocation, p.CaughtFish);
+        }
+
         public void Process(C.Attack p)
         {
             if (Stage != GameStage.Game) return;
@@ -417,6 +444,15 @@ namespace Server.Envir
             if (p.Direction < MirDirection.Up || p.Direction > MirDirection.UpLeft) return;
 
             Player.Attack(p.Direction, p.AttackMagic);
+        }
+
+        public void Process(C.RangeAttack p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            if (p.Direction < MirDirection.Up || p.Direction > MirDirection.UpLeft) return;
+
+            Player.RangeAttack(p.Direction, p.DelayedTime, p.Target);
         }
         public void Process(C.Magic p)
         {
@@ -447,6 +483,18 @@ namespace Server.Envir
 
             Player.ItemMove(p);
         }
+        public void Process(C.ItemSort p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.ItemSort(p);
+        }
+        public void Process(C.ItemDelete p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.ItemDelete(p);
+        }
         public void Process(C.ItemDrop p)
         {
             if (Stage != GameStage.Game) return;
@@ -459,11 +507,11 @@ namespace Server.Envir
 
             Player.PickUp();
         }
-        public void Process(C.GoldDrop p)
+        public void Process(C.CurrencyDrop p)
         {
             if (Stage != GameStage.Game) return;
 
-            Player.GoldDrop(p);
+            Player.CurrencyDrop(p);
         }
         public void Process(C.ItemUse p)
         {
@@ -495,18 +543,34 @@ namespace Server.Envir
             if (Stage == GameStage.Observer)
                 Observed.Player.ObserverChat(this, p.Text);
         }
+
         public void Process(C.NPCCall p)
         {
             if (Stage != GameStage.Game) return;
 
             Player.NPCCall(p.ObjectID);
         }
+
         public void Process(C.NPCButton p)
         {
             if (Stage != GameStage.Game) return;
 
             Player.NPCButton(p.ButtonID);
         }
+
+        public void Process(C.NPCRoll p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.NPCRoll(p.Type);
+        }
+        public void Process(C.NPCRollResult p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.NPCRollResult();
+        }
+
         public void Process(C.NPCBuy p)
         {
             if (Stage != GameStage.Game) return;
@@ -586,35 +650,33 @@ namespace Server.Envir
             Player.NPCAccessoryUpgrade(p);
         }
 
-
         public void Process(C.MagicKey p)
         {
             if (Stage != GameStage.Game) return;
 
-
-            foreach (KeyValuePair<MagicType, UserMagic> pair in Player.Magics)
+            foreach (var type in Player.MagicObjects.Keys)
             {
-                if (pair.Value.Set1Key == p.Set1Key)
-                    pair.Value.Set1Key = SpellKey.None;
+                var magicObject = Player.MagicObjects[type];
 
-                if (pair.Value.Set2Key == p.Set2Key)
-                    pair.Value.Set2Key = SpellKey.None;
+                if (magicObject.Magic.Set1Key == p.Set1Key)
+                    magicObject.Magic.Set1Key = SpellKey.None;
 
-                if (pair.Value.Set3Key == p.Set3Key)
-                    pair.Value.Set3Key = SpellKey.None;
+                if (magicObject.Magic.Set2Key == p.Set2Key)
+                    magicObject.Magic.Set2Key = SpellKey.None;
 
-                if (pair.Value.Set4Key == p.Set4Key)
-                    pair.Value.Set4Key = SpellKey.None;
+                if (magicObject.Magic.Set3Key == p.Set3Key)
+                    magicObject.Magic.Set3Key = SpellKey.None;
+
+                if (magicObject.Magic.Set4Key == p.Set4Key)
+                    magicObject.Magic.Set4Key = SpellKey.None;
             }
 
-            UserMagic magic;
+            if (!Player.GetMagic(p.Magic, out MagicObject magic)) return;
 
-            if (!Player.Magics.TryGetValue(p.Magic, out magic)) return;
-
-            magic.Set1Key = p.Set1Key;
-            magic.Set2Key = p.Set2Key;
-            magic.Set3Key = p.Set3Key;
-            magic.Set4Key = p.Set4Key;
+            magic.Magic.Set1Key = p.Set1Key;
+            magic.Magic.Set2Key = p.Set2Key;
+            magic.Magic.Set3Key = p.Set3Key;
+            magic.Magic.Set4Key = p.Set4Key;
         }
 
         public void Process(C.GroupSwitch p)
@@ -648,16 +710,50 @@ namespace Server.Envir
         public void Process(C.Inspect p)
         {
             if (Stage == GameStage.Game)
-                Player.Inspect(p.Index, this);
+                Player.Inspect(p.Index, p.Ranking, this);
 
             if (Stage == GameStage.Observer)
-                Observed.Player.Inspect(p.Index, this);
+                Observed.Player.Inspect(p.Index, p.Ranking, this);
         }
         public void Process(C.RankRequest p)
         {
             if (Stage != GameStage.Game && Stage != GameStage.Observer && Stage != GameStage.Login) return;
 
             Enqueue(SEnvir.GetRanks(p, Account != null && (Account.TempAdmin || Account.Observer)));
+        }
+
+        public void Process(C.RankSearch p)
+        {
+            if (Stage != GameStage.Game && Stage != GameStage.Observer && Stage != GameStage.Login) return;
+
+            bool isGM = Account != null && (Account.TempAdmin || Account.Observer);
+
+            RankInfo rank = null;
+
+            CharacterInfo info = SEnvir.GetCharacter(p.Name);
+
+            if (info != null)
+            {
+                info.CurrentRank.TryGetValue(RequiredClass.All, out int currentRank);
+                info.RankChange.TryGetValue(RequiredClass.All, out int positionChange);
+
+                rank = new RankInfo
+                {
+                    Rank = 0,//currentRank,
+                    Index = info.Index,
+                    Class = info.Class,
+                    Experience = info.Experience,
+                    MaxExperience = info.Level >= Globals.ExperienceList.Count ? 0 : Globals.ExperienceList[info.Level],
+                    Level = info.Level,
+                    Name = info.CharacterName,
+                    Online = info.Player != null,
+                    Observable = info.Observable || isGM,
+                    Rebirth = info.Rebirth,
+                    RankChange = positionChange
+                };
+            }
+
+            Enqueue(new S.RankSearch { Rank = rank });
         }
 
         public void Process(C.ObserverRequest p)
@@ -722,7 +818,7 @@ namespace Server.Envir
             }
 
             if (count == 0) return;
-            result.AveragePrice = average/count;
+            result.AveragePrice = average / count;
         }
         public void Process(C.MarketPlaceConsign p)
         {
@@ -744,9 +840,9 @@ namespace Server.Envir
             {
                 try
                 {
-                if (!string.IsNullOrEmpty(p.Name) && info.ItemName.IndexOf(p.Name, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                
-                matches.Add(info.Index);
+                    if (!string.IsNullOrEmpty(p.Name) && info.ItemName.IndexOf(p.Name, StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+                    matches.Add(info.Index);
 
                 }
                 catch (Exception e)
@@ -762,7 +858,7 @@ namespace Server.Envir
 
                 if (p.ItemTypeFilter && info.Item.Info.ItemType != p.ItemType) continue;
 
-                switch (info.Item.Info.Effect)
+                switch (info.Item.Info.ItemEffect)
                 {
                     case ItemEffect.ItemPart:
                         if (!matches.Contains(info.Item.Stats[Stat.ItemIndex])) continue;
@@ -900,7 +996,7 @@ namespace Server.Envir
                     break;
             }
         }
-        
+
         public void Process(C.ItemSplit p)
         {
             if (Stage != GameStage.Game) return;
@@ -1025,6 +1121,37 @@ namespace Server.Envir
             Player.GuildConquest(p.Index);
         }
 
+        public void Process(C.GuildColour p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.GuildColour(p.Colour);
+        }
+        public void Process(C.GuildFlag p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.GuildFlag(p.Flag);
+        }
+        public void Process(C.GuildToggleCastleGates p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.GuildToggleCastleGates();
+        }
+        public void Process(C.GuildRepairCastleGates p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.GuildRepairCastleGates();
+        }
+        public void Process(C.GuildRepairCastleGuards p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.GuildRepairCastleGuards();
+        }
+
         public void Process(C.QuestAccept p)
         {
             if (Stage != GameStage.Game) return;
@@ -1042,6 +1169,12 @@ namespace Server.Envir
             if (Stage != GameStage.Game) return;
 
             Player.QuestTrack(p);
+        }
+        public void Process(C.QuestAbandon p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.QuestAbandon(p);
         }
 
         public void Process(C.CompanionUnlock p)
@@ -1097,14 +1230,11 @@ namespace Server.Envir
         {
             if (Stage != GameStage.Game && Stage != GameStage.Observer) return;
 
-            if (Account == null) return;
-
             CharacterInfo info = SEnvir.GetCharacter(p.Name);
 
             if (info == null)
             {
                 ReceiveChat(string.Format(Language.CannotFindPlayer, p.Name), MessageType.System);
-
                 return;
             }
 
@@ -1149,21 +1279,19 @@ namespace Server.Envir
         {
             if (Stage != GameStage.Game) return;
 
-            
             Player.GenderChange(p);
         }
+
         public void Process(C.HairChange p)
         {
             if (Stage != GameStage.Game) return;
 
-
             Player.HairChange(p);
-
         }
+
         public void Process(C.ArmourDye p)
         {
             if (Stage != GameStage.Game) return;
-
 
             Player.ArmourDye(p.ArmourColour);
         }
@@ -1171,29 +1299,35 @@ namespace Server.Envir
         {
             if (Stage != GameStage.Game) return;
 
-            
             Player.NameChange(p.Name);
+        }
+
+        public void Process(C.CaptionChange p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.CaptionChange(p.Caption);
         }
 
         public void Process(C.FortuneCheck p)
         {
             if (Stage != GameStage.Game) return;
-            
+
             Player.FortuneCheck(p.ItemIndex);
         }
+
         public void Process(C.TeleportRing p)
         {
             if (Stage != GameStage.Game) return;
 
             Player.TeleportRing(p.Location, p.Index);
-
         }
+
         public void Process(C.JoinStarterGuild p)
         {
             if (Stage != GameStage.Game) return;
 
             Player.JoinStarterGuild();
-
         }
         public void Process(C.NPCAccessoryReset p)
         {
@@ -1226,10 +1360,69 @@ namespace Server.Envir
         public void Process(C.SendCompanionFilters p)
         {
             if (Stage != GameStage.Game) return;
+
             Player.SetFilters(p);
         }
-    }
 
+        public void Process(C.ChangeOnlineState p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.OnlineState = p.State;
+
+            Player.UpdateOnlineState();
+        }
+
+        public void Process(C.FriendAdd p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            CharacterInfo info = SEnvir.GetCharacter(p.Name);
+
+            if (info == null)
+            {
+                ReceiveChat(string.Format(Language.CannotFindPlayer, p.Name), MessageType.System);
+                return;
+            }
+
+            foreach (FriendInfo friendInfo in Player.Character.Friends)
+            {
+                if (friendInfo.FriendedCharacter == info)
+                {
+                    ReceiveChat(string.Format(Language.AlreadyFriended, p.Name), MessageType.System);
+                    return;
+                }
+            }
+
+            FriendInfo friend = SEnvir.FriendInfoList.CreateNewObject();
+
+            friend.Character = Player.Character;
+            friend.FriendedCharacter = info;
+            friend.FriendName = info.CharacterName;
+
+            Enqueue(new S.FriendAdd { Info = friend.ToClientInfo(), ObserverPacket = false });
+        }
+
+        public void Process(C.FriendRemove p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            FriendInfo friend = Player.Character.Friends.FirstOrDefault(x => x.Index == p.Index);
+
+            if (friend == null) return;
+
+            friend.Delete();
+
+            Enqueue(new S.FriendRemove { Index = p.Index, ObserverPacket = false });
+        }
+
+        public void Process(C.IncreaseDiscipline p)
+        {
+            if (Stage != GameStage.Game) return;
+
+            Player.IncreaseDiscipline();
+        }
+    }
 
     public enum GameStage
     {

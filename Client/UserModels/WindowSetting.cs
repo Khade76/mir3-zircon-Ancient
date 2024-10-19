@@ -122,6 +122,7 @@ namespace Client.UserModels
     {
         None,
         ConfigBox,
+        CaptionBox,
         InventoryBox,
         CharacterBox,
         ExitBox,
@@ -153,6 +154,10 @@ namespace Client.UserModels
         MagicBarBox,
         MessageBox,
         ItemAmountBox,
-        InputWindow
+        InputWindow,
+        FilterDropBox,
+        CommunicationBox,
+        FishingBox,
+        MenuBox
     }
 }

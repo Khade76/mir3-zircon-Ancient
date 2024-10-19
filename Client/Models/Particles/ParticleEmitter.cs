@@ -2,16 +2,18 @@
 using Client.Scenes;
 using Library;
 using SlimDX;
+using SlimDX.X3DAudio;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Client.Models.Particles.Rain;
 
 namespace Client.Models.Particles
 {
-    public abstract class ParticleEmitter
+    public abstract class ParticleEmitter : IDisposable
     {
         protected Point[] CenterPoint;
 
@@ -20,11 +22,11 @@ namespace Client.Models.Particles
 
         public Vector2 Location { get; set; }
         public float Angle { get; set; }
-        public int Direction { get; set; }
+        public int Direction16 { get; set; }
 
         public List<ParticleType> ParticleTypes;
 
-        private readonly MirEffect _owner;
+        private MirEffect _owner;
 
         private bool _stopGeneration;
 
@@ -37,20 +39,22 @@ namespace Client.Models.Particles
         {
             _owner = owner;
             _startTime = CEnvir.Now.Add(StartDelay);
-
-            _owner.CompleteAction += () =>
-            {
-                _stopGeneration = true;
-            };
         }
 
-        public void SetLocation(int dir, int x, int y)
+        public ParticleEmitter(Point location)
         {
-            var center = CenterPoint[dir];
+            _startTime = CEnvir.Now.Add(StartDelay);
 
-            Angle = (float)Functions.DegreesToRadians(dir * 22.5);
+            Location = new Vector2(location.X, location.Y);
+        }
 
-            Direction = dir;
+        public void SetLocation(int direction16, int x, int y)
+        {
+            var center = CenterPoint[direction16];
+
+            Angle = (float)Functions.DegreesToRadians(direction16 * 22.5);
+
+            Direction16 = direction16;
 
             Location = new Vector2(center.X + x, center.Y + y);
         }
@@ -65,24 +69,37 @@ namespace Client.Models.Particles
             {
                 foreach (var particle in ParticleTypes)
                 {
-                    if (particle.Particles.Count <= particle.MaxCount && particle.NextSpawn < CEnvir.Now)
+                    if (particle.Particles.Count < particle.MaxCount && particle.NextSpawn < CEnvir.Now)
                     {
-                        particle.Particles.Add(particle.CreateParticle(Location, Direction, Angle));
+                        particle.Particles.Add(particle.CreateParticle(Location, Direction16, Angle));
                         particle.NextSpawn = CEnvir.Now.Add(particle.SpawnFrequency);
                     }
                 }
             }
 
-            foreach (var particle in ParticleTypes)
+            foreach (var type in ParticleTypes)
             {
-                for (int i = 0; i < particle.Particles.Count; i++)
+                for (int i = 0; i < type.Particles.Count; i++)
                 {
-                    particle.Particles[i].Update();
+                    var particle = type.Particles[i];
 
-                    if (particle.Particles[i].Opacity <= 0F)
+                    if (particle.Update())
                     {
-                        particle.Particles.RemoveAt(i);
-                        i--;
+                        type.Updated(this, particle);
+                    }
+
+                    if (particle.Remove)
+                    {
+                        type.Completed(this, particle);
+
+                        if (particle.Remove)
+                        {
+                            if (!particle.IsDisposed)
+                                particle.Dispose();
+
+                            type.Particles.RemoveAt(i);
+                            i--;
+                        }
                     }
                 }
 
@@ -98,19 +115,69 @@ namespace Client.Models.Particles
         {
             if (_startTime > CEnvir.Now) return;
 
-            foreach (var particle in ParticleTypes)
+            foreach (var types in ParticleTypes)
             {
-                for (int i = 0; i < particle.Particles.Count; i++)
+                for (int i = types.Particles.Count - 1; i >= 0; i--)
                 {
-                    particle.Particles[i].Draw();
+                    var p = types.Particles[i];
+
+                    Size size = p.Library.GetSize(p.TextureIndex);
+
+                    var centerX = ((size.Width) / 2) * p.Scale;
+                    var centerY = ((size.Height) / 2) * p.Scale;
+
+                    if (p.Position.X - centerX > Config.GameSize.Width || p.Position.Y - centerY > Config.GameSize.Height)
+                    {
+                        types.Particles.Remove(p);
+                        continue;
+                    }
+
+                    p.Draw();
                 }
             }
+        }
+
+        public void StopGeneration()
+        {
+            _stopGeneration = true;
         }
 
         public void Remove()
         {
             GameScene.Game.MapControl.ParticleEffects.Remove(this);
         }
-    }
 
+        #region IDisposable
+
+        public bool IsDisposed { get; private set; }
+        public void Dispose()
+        {
+            Dispose(!IsDisposed);
+            GC.SuppressFinalize(this);
+        }
+
+        protected void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                CenterPoint = null;
+                _owner = null;
+
+                if (ParticleTypes != null)
+                {
+                    foreach (var particle in ParticleTypes)
+                    {
+                        if (!particle.IsDisposed)
+                            particle.Dispose();
+                    }
+
+                    ParticleTypes = null;
+                }
+
+                IsDisposed = true;
+            }
+        }
+
+        #endregion
+    }
 }

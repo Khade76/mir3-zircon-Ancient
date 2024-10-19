@@ -1,16 +1,15 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-using Client.Controls;
+﻿using Client.Controls;
 using Client.Envir;
 using Client.UserModels;
 using Library;
+using System;
+using System.Drawing;
+using System.Windows.Forms;
 using C = Library.Network.ClientPackets;
 
 //Cleaned
 namespace Client.Scenes.Views
 {
-
     public sealed class ChatTextBox : DXWindow
     {
         #region Properties
@@ -44,7 +43,6 @@ namespace Client.Scenes.Views
 
         public string LastPM;
         
-
         public DXTextBox TextBox;
         public DXButton OptionsButton;
         public DXButton ChatModeButton;
@@ -55,7 +53,7 @@ namespace Client.Scenes.Views
 
             if (GameScene.Game.MainPanel == null) return;
 
-            Location = new Point(GameScene.Game.MainPanel.Location.X, (GameScene.Game.MainPanel.DisplayArea.Top - Size.Height));
+            SetDefaultLocation();
         }
         public override void OnSizeChanged(Size oValue, Size nValue)
         {
@@ -64,14 +62,14 @@ namespace Client.Scenes.Views
             if (TextBox == null || ChatModeButton == null || OptionsButton == null) return;
 
             ChatModeButton.Location = new Point(ClientArea.Location.X, ClientArea.Y - 1);
-            TextBox.Size = new Size(ClientArea.Width - ChatModeButton.Size.Width - 10 - OptionsButton.Size.Width, 20);
+            TextBox.Size = new Size(ClientArea.Width - ChatModeButton.Size.Width - 10 - OptionsButton.Size.Width, 100);
             TextBox.Location = new Point(ClientArea.Location.X + ChatModeButton.Size.Width + 5, ClientArea.Y);
             OptionsButton.Location = new Point(ClientArea.Location.X + TextBox.Size.Width + ChatModeButton.Size.Width + 10, ClientArea.Y - 1);
         }
 
         public override WindowType Type => WindowType.ChatTextBox;
         public override bool CustomSize => true;
-        public override bool AutomaticVisiblity => true;
+        public override bool AutomaticVisibility => true;
 
         #endregion
 
@@ -102,7 +100,7 @@ namespace Client.Scenes.Views
             {
                 ButtonType = ButtonType.SmallButton,
                 Size = new Size(50, SmallButtonHeight),
-                Label = { Text = "Options" },
+                Label = { Text = CEnvir.Language.ChatTextBoxOptionsButtonLabel },
                 Parent = this,
             };
             OptionsButton.MouseClick += (o, e) =>
@@ -110,24 +108,32 @@ namespace Client.Scenes.Views
                 GameScene.Game.ChatOptionsBox.Visible = !GameScene.Game.ChatOptionsBox.Visible;
             };
 
-
-
             TextBox = new DXTextBox
             {
-                Size = new Size(350, 20),
+                Size = new Size(350, 100),
                 Parent = this,
                 MaxLength = Globals.MaxChatLength,
                 Opacity = 0.35f,
             };
             TextBox.TextBox.KeyPress += TextBox_KeyPress;
-          //  TextBox.TextBox.KeyDown += TextBox_KeyDown;
-         //   TextBox.TextBox.KeyUp += TextBox_KeyUp;
+            //TextBox.TextBox.KeyDown += TextBox_KeyDown;
+            //TextBox.TextBox.KeyUp += TextBox_KeyUp;
 
-            SetClientSize(new Size(TextBox.Size.Width + ChatModeButton.Size.Width + 15 + OptionsButton.Size.Width, TextBox.Size.Height));
+            SetDefaultSize();
 
             ChatModeButton.Location = new Point(ClientArea.Location.X, ClientArea.Y - 1);
             TextBox.Location = new Point(ClientArea.Location.X + ChatModeButton.Size.Width + 5, ClientArea.Y);
             OptionsButton.Location = new Point(ClientArea.Location.X + TextBox.Size.Width + ChatModeButton.Size.Width + 10, ClientArea.Y - 1);
+        }
+
+        public void SetDefaultSize()
+        {
+            SetClientSize(new Size(TextBox.Size.Width + ChatModeButton.Size.Width + 15 + OptionsButton.Size.Width, TextBox.Size.Height));
+        }
+
+        public void SetDefaultLocation()
+        {
+            Location = new Point(GameScene.Game.MainPanel.Location.X, (GameScene.Game.MainPanel.Location.Y - Size.Height));
         }
 
         #region Methods
@@ -154,11 +160,15 @@ namespace Client.Scenes.Views
 
                     DXTextBox.ActiveTextBox = null;
                     TextBox.TextBox.Text = string.Empty;
+
+                    ToggleVisibility(e, true);
                     break;
                 case (char)Keys.Escape:
                     e.Handled = true;
                     DXTextBox.ActiveTextBox = null;
                     TextBox.TextBox.Text = string.Empty;
+
+                    ToggleVisibility(e, false);
                     break;
             }
         }
@@ -205,6 +215,32 @@ namespace Client.Scenes.Views
             }
         }
 
+        public void ToggleVisibility(KeyPressEventArgs e, bool hide)
+        {
+            if (Config.HideChatBar)
+            {
+                if (Visible)
+                {
+                    if (hide)
+                    {
+                        if (ChatTab.Tabs.Count > 0 && ChatTab.Tabs[0].Panel.TransparentCheckBox.Checked == true)
+                        {
+                            Visible = false;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!hide)
+                    {
+                        Visible = true;
+
+                        OnKeyPress(e);
+                    }
+                }
+            }
+        }
+
         public void OpenChat()
         {
             if (string.IsNullOrEmpty(TextBox.TextBox.Text))
@@ -243,6 +279,15 @@ namespace Client.Scenes.Views
             TextBox.TextBox.SelectionStart = TextBox.TextBox.Text.Length;
         }
 
+        public void LinkItem(ClientUserItem item)
+        {
+            if (item == null) return;
+
+            TextBox.TextBox.Text += $"[{item.Info.ItemName}:{item.Index}]";
+            TextBox.SetFocus();
+            TextBox.TextBox.SelectionLength = 0;
+            TextBox.TextBox.SelectionStart = TextBox.TextBox.Text.Length;
+        }
         #endregion
 
         #region IDisposable
@@ -296,7 +341,7 @@ namespace Client.Scenes.Views
         Guild,
         Shout,
         Global,
-        Observer, //7
+        Observer,
     }
 
     public class Message
@@ -304,6 +349,5 @@ namespace Client.Scenes.Views
         public string Text { get; set; }
         public DateTime ReceivedTime { get; set; }
         public MessageType Type { get; set; }
-    }
-    
+    } 
 }

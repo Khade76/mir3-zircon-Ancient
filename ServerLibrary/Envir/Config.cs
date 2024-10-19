@@ -34,6 +34,8 @@ namespace Server.Envir
         public static DateTime HalloweenEventEnd { get; set; } = new DateTime(2018, 11, 07, 00, 00, 00, DateTimeKind.Utc);
         public static DateTime ChristmasEventEnd { get; set; } = new DateTime(2019, 01, 03, 00, 00, 00, DateTimeKind.Utc);
         public static TimeSpan DBSaveDelay { get; set; } = TimeSpan.FromMinutes(5);
+        public static bool EncryptionEnabled { get; set; } = false;
+        public static string EncryptionKey { get; set; } = string.Empty;
 
         [ConfigSection("Control")]
         public static bool AllowLogin { get; set; } = true;
@@ -104,7 +106,9 @@ namespace Server.Envir
         public static TimeSpan PvPCurseDuration { get; set; } = TimeSpan.FromMinutes(60);
         public static int PvPCurseRate { get; set; } = 4;
         public static TimeSpan AutoReviveDelay { get; set; } = TimeSpan.FromMinutes(10);
-
+        public static TimeSpan RankChangeResetDelay { get; set; } = TimeSpan.FromHours(24);
+        public static bool EnableStruck { get; set; } = false;
+        public static bool EnableHermit { get; set; } = false;
 
         [ConfigSection("Monsters")]
         public static TimeSpan DeadDuration { get; set; } = TimeSpan.FromMinutes(1);
@@ -134,6 +138,15 @@ namespace Server.Envir
         public static int GoldRate { get; set; } = 0;
         public static int SkillRate { get; set; } = 0;
         public static int CompanionRate { get; set; } = 0;
+
+        [ConfigSection("Fishing")]
+        public static bool FishEnablePerfectCatch { get; set; } = true;
+        public static int FishNibbleChanceBase { get; set; } = 10;
+        public static int FishPointsRequired { get; set; } = 50;
+        public static int FishPointSuccessRewardMin { get; set; } = 2; 
+        public static int FishPointSuccessRewardMax { get; set; } = 5;
+        public static int FishPointFailureRewardMin { get; set; } = 0;
+        public static int FishPointFailureRewardMax { get; set; } = 5;
 
         public static void LoadVersion()
         {

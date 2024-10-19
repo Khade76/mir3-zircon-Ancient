@@ -78,7 +78,7 @@ namespace Client.Scenes.Views
 
         public override WindowType Type => WindowType.DungeonFinderBox;
         public override bool CustomSize => false;
-        public override bool AutomaticVisiblity => true;
+        public override bool AutomaticVisibility => true;
 
         public DungeonFinderDialog()
         {
@@ -356,7 +356,7 @@ namespace Client.Scenes.Views
 
             if (GameScene.Game.MapControl.InstanceInfo != null)
             {
-                GameScene.Game.ReceiveChat("You are already in an instance.", MessageType.System);
+                GameScene.Game.ReceiveChat(CEnvir.Language.DungeonAlreadyInInstance, MessageType.System);
                 return;
             }
 
@@ -364,28 +364,68 @@ namespace Client.Scenes.Views
 
             if (instance.ConnectRegion == null)
             {
-                GameScene.Game.ReceiveChat("Connect Region not configured for this instance.", MessageType.System);
+                GameScene.Game.ReceiveChat(CEnvir.Language.DungeonRegionNotConfigured, MessageType.System);
             }
 
             if (instance.MinPlayerLevel > 0 && MapObject.User.Level < instance.MinPlayerLevel || instance.MaxPlayerLevel > 0 && MapObject.User.Level > instance.MaxPlayerLevel)
             {
-                GameScene.Game.ReceiveChat("You are not the correct level.", MessageType.System);
+                GameScene.Game.ReceiveChat(CEnvir.Language.DungeonNotCorrectLevel, MessageType.System);
                 return;
             }
 
-            if (instance.MinPlayerCount > 1 && ( GameScene.Game.GroupBox.Members.Count < instance.MinPlayerCount))
+            if (instance.Type == InstanceType.Solo)
             {
-                GameScene.Game.ReceiveChat("There are not enough people in your group.", MessageType.System);
-                return;
+                CEnvir.Enqueue(new C.JoinInstance { Index = SelectedDungeonRow.InstanceInfo.Index });
             }
-
-            if (instance.MaxPlayerCount > 1 && (GameScene.Game.GroupBox.Members.Count > instance.MaxPlayerCount))
+            else if (instance.Type == InstanceType.Group)
             {
-                GameScene.Game.ReceiveChat("There are too many people in your group.", MessageType.System);
+                if (GameScene.Game.GroupBox.Members.Count == 0)
+                {
+                    GameScene.Game.ReceiveChat(CEnvir.Language.DungeonInGroup, MessageType.System);
+                    return;
+                }
+
+                if (instance.MinPlayerCount > 1 && (GameScene.Game.GroupBox.Members.Count < instance.MinPlayerCount))
+                {
+                    GameScene.Game.ReceiveChat(CEnvir.Language.DungeonNotEnoughPeople, MessageType.System);
+                    return;
+                }
+
+                if (instance.MaxPlayerCount > 1 && (GameScene.Game.GroupBox.Members.Count > instance.MaxPlayerCount))
+                {
+                    GameScene.Game.ReceiveChat(CEnvir.Language.DungeonTooManyPeople, MessageType.System);
+                    return;
+                }
+
+                DXMessageBox box = new DXMessageBox("Your group will be teleported to the instance. Are you ready?", "Instance Confirmation", DXMessageBoxButtons.YesNo);
+
+                box.YesButton.MouseClick += (o1, e1) =>
+                {
+                    CEnvir.Enqueue(new C.JoinInstance { Index = SelectedDungeonRow.InstanceInfo.Index });
+                };
+
                 return;
             }
+            else if (instance.Type == InstanceType.Guild)
+            {
+                if (GameScene.Game.GuildBox.GuildInfo == null)
+                {
+                    GameScene.Game.ReceiveChat(CEnvir.Language.DungeonInGuild, MessageType.System);
+                    return;
+                }
 
-            CEnvir.Enqueue(new C.JoinInstance { Index = SelectedDungeonRow.InstanceInfo.Index });
+                CEnvir.Enqueue(new C.JoinInstance { Index = SelectedDungeonRow.InstanceInfo.Index });
+            }
+            else if (instance.Type == InstanceType.Castle)
+            {
+                if (GameScene.Game.GuildBox.GuildInfo == null || !GameScene.Game.CastleOwners.Any(x => x.Value == GameScene.Game.GuildBox.GuildInfo.GuildName))
+                {
+                    GameScene.Game.ReceiveChat(CEnvir.Language.DungeonInGuild, MessageType.System);
+                    return;
+                }
+
+                CEnvir.Enqueue(new C.JoinInstance { Index = SelectedDungeonRow.InstanceInfo.Index });
+            }
         }
 
 
@@ -459,6 +499,7 @@ namespace Client.Scenes.Views
             Visible = true;
 
             NameLabel.Text = InstanceInfo.Name;
+            TypeLabel.Text = InstanceInfo.Type.ToString();
             LevelLabel.Text = $"Level: {GetLevel(InstanceInfo)}";
             CountLabel.Text = $"Player Count: {GetPlayerCount(InstanceInfo)}";
             //FreeSlotLabel.Text = $"Slots: 0 / {InstanceInfo.MaxInstances}";
@@ -471,12 +512,18 @@ namespace Client.Scenes.Views
 
         private string GetLevel(InstanceInfo instance)
         {
-            if (instance.MaxPlayerLevel == 0)
+            if (instance.MinPlayerLevel == 0 && instance.MaxPlayerLevel == 0)
             {
                 return "Any";
             }
-
-            return $"{InstanceInfo.MinPlayerLevel} - {InstanceInfo.MaxPlayerLevel}";
+            else if (instance.MinPlayerLevel > 0 && instance.MaxPlayerLevel == 0)
+            {
+                return $"{InstanceInfo.MinPlayerLevel}+";
+            }
+            else
+            {
+                return $"{InstanceInfo.MinPlayerLevel} - {InstanceInfo.MaxPlayerLevel}";
+            }
         }
 
         private string GetPlayerCount(InstanceInfo instance)
@@ -491,7 +538,7 @@ namespace Client.Scenes.Views
 
         #endregion
 
-        public DXLabel NameLabel, LevelLabel, CountLabel;
+        public DXLabel NameLabel, TypeLabel, LevelLabel, CountLabel;
         public DXButton FavouriteImage;
 
         #endregion
@@ -510,17 +557,24 @@ namespace Client.Scenes.Views
                 IsControl = false,
             };
 
-            LevelLabel = new DXLabel
+            TypeLabel = new DXLabel
             {
                 Parent = this,
                 Location = new Point(150, 12),
                 IsControl = false,
             };
 
-            CountLabel = new DXLabel
+            LevelLabel = new DXLabel
             {
                 Parent = this,
                 Location = new Point(250, 12),
+                IsControl = false,
+            };
+
+            CountLabel = new DXLabel
+            {
+                Parent = this,
+                Location = new Point(350, 12),
                 IsControl = false,
             };
 
@@ -564,6 +618,30 @@ namespace Client.Scenes.Views
                         NameLabel.Dispose();
 
                     NameLabel = null;
+                }
+
+                if (TypeLabel != null)
+                {
+                    if (!TypeLabel.IsDisposed)
+                        TypeLabel.Dispose();
+
+                    TypeLabel = null;
+                }
+
+                if (CountLabel != null)
+                {
+                    if (!CountLabel.IsDisposed)
+                        CountLabel.Dispose();
+
+                    CountLabel = null;
+                }
+
+                if (LevelLabel != null)
+                {
+                    if (!LevelLabel.IsDisposed)
+                        LevelLabel.Dispose();
+
+                    LevelLabel = null;
                 }
 
                 //if (FreeSlotLabel != null)

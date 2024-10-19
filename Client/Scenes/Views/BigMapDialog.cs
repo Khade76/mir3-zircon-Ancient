@@ -70,9 +70,11 @@ namespace Client.Scenes.Views
         }
         private Size GetMapSize(string fileName)
         {
-            if (!File.Exists(Config.MapPath + fileName + ".map")) return Size.Empty;
+            var path = Path.Combine(Config.MapPath, fileName + ".map");
 
-            using (FileStream stream = File.OpenRead(Config.MapPath + fileName + ".map"))
+            if (!File.Exists(path)) return Size.Empty;
+
+            using (FileStream stream = File.OpenRead(path))
             using (BinaryReader reader = new BinaryReader(stream))
             {
                 stream.Seek(22, SeekOrigin.Begin);
@@ -127,7 +129,7 @@ namespace Client.Scenes.Views
 
         public override WindowType Type => WindowType.None;
         public override bool CustomSize => false;
-        public override bool AutomaticVisiblity => false;
+        public override bool AutomaticVisibility => false;
 
         #endregion
 
@@ -155,16 +157,8 @@ namespace Client.Scenes.Views
 
         private void Image_MouseClick(object sender, MouseEventArgs e)
         {
-
-            //if (SelectedInfo != GameScene.Game.MapControl.MapInfo) return;
-
-            //if (MapObject.User.Buffs.All(z => z.Type != BuffType.Developer))
-            //if (!SelectedInfo.AllowRT || !SelectedInfo.AllowTT || !GameScene.Game.MapControl.MapInfo.AllowRT || !GameScene.Game.MapControl.MapInfo.AllowTT) return;
-
-
             if ((e.Button & MouseButtons.Right) == MouseButtons.Right)
             {
-                //TODO Teleport Ring
                 int x = (int)((e.Location.X - Image.DisplayArea.X) / ScaleX);
                 int y = (int)((e.Location.Y - Image.DisplayArea.Y) / ScaleY);
                
@@ -243,8 +237,11 @@ namespace Client.Scenes.Views
             if (ob.SourceRegion == null || ob.SourceRegion.Map != SelectedInfo) return;
             if (ob.DestinationRegion?.Map == null || ob.Icon == MapIcon.None) return;
 
-            if (GameScene.Game.MapControl.InstanceInfo != null && !GameScene.Game.MapControl.InstanceInfo.Maps.Any(m => m.Map == ob.SourceRegion.Map)) return;
-            if (GameScene.Game.MapControl.InstanceInfo != null && !GameScene.Game.MapControl.InstanceInfo.Maps.Any(m => m.Map == ob.DestinationRegion?.Map)) return;
+            if (GameScene.Game.MapControl.InstanceInfo != null)
+            {
+                if (!GameScene.Game.MapControl.InstanceInfo.Maps.Any(m => m.Map == ob.SourceRegion.Map) && ob.NeedInstance == null) return;
+                if (!GameScene.Game.MapControl.InstanceInfo.Maps.Any(m => m.Map == ob.DestinationRegion?.Map) && ob.NeedInstance == null) return;
+            }
 
             Size size = GetMapSize(SelectedInfo.FileName);
 
@@ -273,7 +270,7 @@ namespace Client.Scenes.Views
             DXImageControl control;
             MapInfoObjects[ob] = control = new DXImageControl
             {
-                LibraryFile = LibraryFile.Interface,
+                LibraryFile = LibraryFile.MiniMapIcon,
                 Parent = Image,
                 Opacity =  Opacity,
                 ImageOpacity =  Opacity,
@@ -281,33 +278,8 @@ namespace Client.Scenes.Views
             };
             control.OpacityChanged += (o, e) => control.ImageOpacity = control.Opacity;
 
-            switch (ob.Icon)
-            {
-                case MapIcon.Cave:
-                    control.Index = 70;
-                    control.ForeColour = Color.Red;
-                    break;
-                case MapIcon.Exit:
-                    control.Index = 70;
-                    control.ForeColour = Color.Green;
-                    break;
-                case MapIcon.Down:
-                    control.Index = 70;
-                    control.ForeColour = Color.MediumVioletRed;
-                    break;
-                case MapIcon.Up:
-                    control.Index = 70;
-                    control.ForeColour = Color.DeepSkyBlue;
-                    break;
-                case MapIcon.Province:
-                    control.Index = 6125;
-                    control.LibraryFile = LibraryFile.GameInter;
-                    break;
-                case MapIcon.Building:
-                    control.Index = 6124;
-                    control.LibraryFile = LibraryFile.GameInter;
-                    break;
-            }
+            GameScene.Game.UpdateMapIcon(control, ob.Icon);
+
             control.MouseClick += (o, e) => SelectedInfo = ob.DestinationRegion.Map;
             control.Location = new Point((int) (ScaleX*x) - control.Size.Width/2, (int) (ScaleY*y) - control.Size.Height/2);
         }
@@ -315,15 +287,13 @@ namespace Client.Scenes.Views
         {
             if (SelectedInfo == null) return;
 
-
             DXControl control;
 
             if (!MapInfoObjects.TryGetValue(ob, out control))
             {
                 if (ob.MapIndex != SelectedInfo.Index) return;
                 if (ob.ItemInfo != null && ob.ItemInfo.Rarity == Rarity.Common) return;
-                if (ob.MonsterInfo != null && ob.Dead) return;
-
+                if (ob.MonsterInfo != null && (ob.Dead || ob.MonsterInfo.Image == MonsterImage.None)) return;
 
                 MapInfoObjects[ob] = control = new DXControl
                 {
@@ -331,8 +301,6 @@ namespace Client.Scenes.Views
                     Parent = Image,
                     Opacity =  Opacity,
                 };
-
-
             }
             else if (ob.MapIndex != SelectedInfo.Index || (ob.MonsterInfo != null && ob.Dead) || (ob.ItemInfo != null && ob.ItemInfo.Rarity == Rarity.Common))
             {
@@ -347,7 +315,6 @@ namespace Client.Scenes.Views
 
             if (ob.MonsterInfo != null)
             {
-
                 name = $"{ob.MonsterInfo.MonsterName}";
                 if (ob.MonsterInfo.AI < 0)
                 {
@@ -359,6 +326,11 @@ namespace Client.Scenes.Views
 
                     if (GameScene.Game.HasQuest(ob.MonsterInfo, GameScene.Game.MapControl.MapInfo))
                         colour = Color.Orange;
+                }
+
+                if (ob.MonsterInfo.Flag == MonsterFlag.CastleObjective || ob.MonsterInfo.Flag == MonsterFlag.CastleDefense)
+                {
+                    control.Visible = false;
                 }
 
                 if (ob.MonsterInfo.IsBoss)
@@ -380,7 +352,6 @@ namespace Client.Scenes.Views
                         control.Controls[0].BackColour = colour;
 
                     colour = Color.White;
-
                 }
 
                 if (!string.IsNullOrEmpty(ob.PetOwner))

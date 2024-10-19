@@ -40,6 +40,7 @@ namespace Client
         static void Init()
         {
             Application.EnableVisualStyles();
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
             foreach (KeyValuePair<LibraryFile, string> pair in Libraries.LibraryList)
@@ -49,9 +50,8 @@ namespace Client
                 CEnvir.LibraryList[pair.Key] = new MirLibrary(@".\" + pair.Value);
             }
 
-            CEnvir.LoadDatabase();
-
             CEnvir.Target = new TargetForm();
+
             DXManager.Create();
             DXSoundManager.Create();
 

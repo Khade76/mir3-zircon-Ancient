@@ -6,7 +6,6 @@ using Library;
 using SlimDX;
 using SlimDX.Direct3D9;
 
-//Cleaned
 namespace Client.Controls
 {
     public class DXButton : DXImageControl
@@ -147,6 +146,58 @@ namespace Client.Controls
 
         #endregion
 
+        #region HoverIndex
+
+        public int HoverIndex
+        {
+            get => _HoverIndex;
+            set
+            {
+                if (_HoverIndex == value) return;
+
+                int oldValue = _HoverIndex;
+                _HoverIndex = value;
+
+                OnHoverIndexChanged(oldValue, value);
+            }
+        }
+        private int _HoverIndex;
+        public event EventHandler<EventArgs> HoverIndexChanged;
+        public virtual void OnHoverIndexChanged(int oValue, int nValue)
+        {
+            TextureValid = false;
+            UpdateDisplayArea();
+            HoverIndexChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
+        #region PressedIndex
+
+        public int PressedIndex
+        {
+            get => _PressedIndex;
+            set
+            {
+                if (_PressedIndex == value) return;
+
+                int oldValue = _PressedIndex;
+                _PressedIndex = value;
+
+                OnPressedIndexChanged(oldValue, value);
+            }
+        }
+        private int _PressedIndex;
+        public event EventHandler<EventArgs> PressedIndexChanged;
+        public virtual void OnPressedIndexChanged(int oValue, int nValue)
+        {
+            TextureValid = false;
+            UpdateDisplayArea();
+            PressedIndexChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
         public DXLabel Label { get; private set; }
 
         public override void OnIsEnabledChanged(bool oValue, bool nValue)
@@ -207,7 +258,7 @@ namespace Client.Controls
         }
         protected override void DrawMirTexture()
         {
-            Texture texture;
+            Texture texture = null;
 
             if (Library == null)
             {
@@ -231,6 +282,12 @@ namespace Client.Controls
                     case ButtonType.SmallButton:
                         DrawSmallButton();
                         break;
+                    case ButtonType.AddButton:
+                        InterfaceLibrary.Draw(241, 0, 0, Color.White, false, 1F, ImageType.Image);
+                        break;
+                    case ButtonType.RemoveButton:
+                        InterfaceLibrary.Draw(242, 0, 0, Color.White, false, 1F, ImageType.Image);
+                        break;
                 }
 
                 DXManager.SetSurface(oldSurface);
@@ -239,10 +296,23 @@ namespace Client.Controls
             }
             else
             {
-                MirImage image = Library.CreateImage(Index, ImageType.Image);
-                texture = image.Image;
-                image.ExpireTime = CEnvir.Now + Config.CacheDuration;
+                var index = Index;
+
+                if (HoverIndex > 0 && MouseControl == this && IsEnabled && CanBePressed)
+                    index = HoverIndex;
+
+                if (PressedIndex > 0 && Pressed && IsEnabled)
+                    index = PressedIndex;
+
+                if (index > 0)
+                {
+                    MirImage image = Library.CreateImage(index, ImageType.Image);
+                    texture = image.Image;
+                    image.ExpireTime = CEnvir.Now + Config.CacheDuration;
+                }
             }
+
+            if (texture == null) return;
 
             bool oldBlend = DXManager.Blending;
             float oldRate = DXManager.BlendRate;
@@ -252,7 +322,7 @@ namespace Client.Controls
             else
                 DXManager.SetOpacity(Opacity);
 
-            PresentTexture(texture, Parent, DisplayArea, ForeColour, this);
+            PresentTexture(texture, Parent, DisplayArea, ForeColour, this, 0, Pressed ? 1 : 0);
             
             if (Blend)
                 DXManager.SetBlend(oldBlend, oldRate, BlendMode);
@@ -312,30 +382,30 @@ namespace Client.Controls
         }
         private void DrawSelectedTab()
         {
-            Size s = InterfaceLibrary.GetSize(22);
-            InterfaceLibrary.Draw(22, 0, 0, Color.White, false, 1F, ImageType.Image);
+            Size s = InterfaceLibrary.GetSize(56);
+            InterfaceLibrary.Draw(56, 0, 0, Color.White, false, 1F, ImageType.Image);
 
             int x = s.Width;
-            s = InterfaceLibrary.GetSize(24);
-            InterfaceLibrary.Draw(24, x, 0, Color.White, new Rectangle(0, 0, Size.Width - x * 2, s.Height), 1f, ImageType.Image);
+            s = InterfaceLibrary.GetSize(58);
+            InterfaceLibrary.Draw(58, x, 0, Color.White, new Rectangle(0, 0, Size.Width - x * 2, s.Height), 1f, ImageType.Image);
 
-
-            s = InterfaceLibrary.GetSize(23);
-            InterfaceLibrary.Draw(23, Size.Width - s.Width, 0, Color.White, false, 1F, ImageType.Image);
+            s = InterfaceLibrary.GetSize(57);
+            InterfaceLibrary.Draw(57, Size.Width - s.Width, 0, Color.White, false, 1F, ImageType.Image);
         }
         private void DrawDeselectedTab()
         {
-            Size s = InterfaceLibrary.GetSize(19);
-            InterfaceLibrary.Draw(19, 0, 0, Color.White, false, 1F, ImageType.Image);
+            Size s = InterfaceLibrary.GetSize(53);
+            InterfaceLibrary.Draw(53, 0, 0, Color.White, false, 1F, ImageType.Image);
 
             int x = s.Width;
-            s = InterfaceLibrary.GetSize(21);
-            InterfaceLibrary.Draw(21, x, 0, Color.White, new Rectangle(0, 0, Size.Width - x * 2, s.Height), 1f, ImageType.Image);
+            s = InterfaceLibrary.GetSize(55);
+            InterfaceLibrary.Draw(55, x, 0, Color.White, new Rectangle(0, 0, Size.Width - x * 2, s.Height), 1f, ImageType.Image);
 
 
-            s = InterfaceLibrary.GetSize(20);
-            InterfaceLibrary.Draw(20, Size.Width - s.Width, 0, Color.White, false, 1F, ImageType.Image);
+            s = InterfaceLibrary.GetSize(54);
+            InterfaceLibrary.Draw(54, Size.Width - s.Width, 0, Color.White, false, 1F, ImageType.Image);
         }
+
         private void DrawSmallButton()
         {
             Size s = InterfaceLibrary.GetSize(41);
@@ -365,6 +435,9 @@ namespace Client.Controls
                 _RightAligned = false;
                 _ButtonType = 0;
 
+                _HoverIndex = 0;
+                _PressedIndex = 0;
+
                 if (Label != null)
                 {
                     if (!Label.IsDisposed)
@@ -378,6 +451,8 @@ namespace Client.Controls
                 PressedChanged = null;
                 RightAlignedChanged = null;
                 ButtonTypeChanged = null;
+                HoverIndexChanged = null;
+                PressedIndexChanged = null;
             }
         }
         #endregion
@@ -389,5 +464,7 @@ namespace Client.Controls
         SelectedTab,
         DeselectedTab,
         SmallButton,
+        AddButton,
+        RemoveButton
     }
 }
